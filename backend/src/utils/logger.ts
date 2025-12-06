@@ -37,18 +37,22 @@ const format = winston.format.combine(
     )
 );
 
-// Define transports
-const transports = [
-    // Console output
+// Define transports - only console in production (Render has read-only filesystem)
+const transports: winston.transport[] = [
+    // Always log to console
     new winston.transports.Console(),
-    // Error log file
-    new winston.transports.File({
-        filename: 'logs/error.log',
-        level: 'error',
-    }),
-    // Combined log file
-    new winston.transports.File({ filename: 'logs/combined.log' }),
 ];
+
+// Add file transports only in development
+if (env.NODE_ENV === 'development') {
+    transports.push(
+        new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+        }),
+        new winston.transports.File({ filename: 'logs/combined.log' })
+    );
+}
 
 // Create the logger
 const logger = winston.createLogger({
