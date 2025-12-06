@@ -1,0 +1,94 @@
+import express, { Application, Request, Response } from 'express';
+import helmet from 'helmet';
+import { corsConfig } from './config/cors';
+import { apiLimiter } from './middlewares/rateLimit.middleware';
+import { globalErrorHandler, notFoundHandler } from './middlewares/error.middleware';
+import logger from './utils/logger';
+import env from './config/env';
+
+// Import routes
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
+import adminRoutes from './routes/admin.routes';
+
+/**
+ * Create and configure Express application
+ */
+function createApp(): Application {
+    const app = express();
+
+    // ==================== SECURITY MIDDLEWARE ====================
+
+    // Helmet - sets various HTTP headers for security
+    app.use(helmet());
+
+    // CORS - strict origin whitelisting
+    app.use(corsConfig);
+
+    // ==================== PARSING MIDDLEWARE ====================
+
+    // Parse JSON bodies
+    app.use(express.json({ limit: '10mb' }));
+
+    // Parse URL-encoded bodies
+    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+    // ==================== RATE LIMITING ====================
+
+    // Apply general rate limiting to all API routes
+    app.use('/api', apiLimiter);
+
+    // ==================== ROUTES ====================
+
+    // Health check endpoint (no rate limit, no auth)
+    app.get('/health', (_req: Request, res: Response) => {
+        res.status(200).json({
+            success: true,
+            message: 'Server is healthy',
+            timestamp: new Date().toISOString(),
+            environment: env.NODE_ENV,
+        });
+    });
+
+    // API Routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/user', userRoutes);
+    app.use('/api/admin', adminRoutes); // Admin routes
+    // Add more routes here as needed:
+    // app.use('/api/admin', adminRoutes);
+    // app.use('/api/payment', paymentRoutes);
+    // app.use('/api/exam', examRoutes);
+
+    // ==================== ERROR HANDLING ====================
+
+    // 404 handler - must be AFTER all routes
+    app.use(notFoundHandler);
+
+    // Global error handler - must be LAST middleware
+    app.use(globalErrorHandler);
+
+    return app;
+}
+
+/**
+ * Start the Express server
+ */
+function startServer(): void {
+    const app = createApp();
+    const port = env.PORT;
+
+    app.listen(port, () => {
+        logger.info(`🚀 Server running on port ${port}`);
+        logger.info(`📝 Environment: ${env.NODE_ENV}`);
+        logger.info(`🔒 CORS origins: ${env.ALLOWED_ORIGINS}`);
+        logger.info(`✅ Health check: http://localhost:${port}/health`);
+    });
+}
+
+// Start server if this file is run directly
+if (require.main === module) {
+    startServer();
+}
+
+export { createApp, startServer };
+export default createApp;
