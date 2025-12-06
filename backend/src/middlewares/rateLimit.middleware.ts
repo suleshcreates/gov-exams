@@ -2,11 +2,11 @@ import rateLimit from 'express-rate-limit';
 
 /**
  * Rate limiter for signup endpoint
- * Max 3 signups per IP per hour
+ * Max 50 signups per IP per hour (increased for testing)
  */
 export const signupLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3,
+    max: 50, // Increased from 3 to 50 for testing
     message: {
         success: false,
         error: 'Too many signup attempts from this IP. Please try again after an hour.',
