@@ -10,6 +10,7 @@ import env from './config/env';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/admin.routes';
+import paymentRoutes from './routes/payment.routes';
 
 /**
  * Create and configure Express application
@@ -53,10 +54,9 @@ function createApp(): Application {
     // API Routes
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
-    app.use('/api/admin', adminRoutes); // Admin routes
+    app.use('/api/admin', adminRoutes);
+    app.use('/api/payments', paymentRoutes); // Payment routes
     // Add more routes here as needed:
-    // app.use('/api/admin', adminRoutes);
-    // app.use('/api/payment', paymentRoutes);
     // app.use('/api/exam', examRoutes);
 
     // ==================== ERROR HANDLING ====================
