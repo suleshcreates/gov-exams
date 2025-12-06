@@ -64,7 +64,7 @@ const PrivacyPolicy = () => {
                                 <li>With your explicit consent</li>
                                 <li>To comply with legal obligations</li>
                                 <li>To protect our rights and prevent fraud</li>
-                                <li>With service providers who assist in our operations (e.g., Razorpay for payments, EmailJS for notifications)</li>
+                                <li>With service providers who assist in our operations (e.g., Razorpay for payments)</li>
                             </ul>
                         </section>
 
