@@ -38,64 +38,86 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
                 throw new Error('Razorpay SDK failed to load. Are you online?');
             }
 
-            // 2. Create Order on Backend
-            const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
-                body: {
+            // 2. Create Order on Backend using Render API
+            const orderResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-order`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: JSON.stringify({
                     amount: plan.price,
                     planId: plan.id,
                     receipt: `receipt_${auth.user?.phone}_${Date.now()}`
-                }
+                })
             });
 
-            if (orderError || !orderData) {
-                logger.error('Order creation failed:', orderError);
+            if (!orderResponse.ok) {
+                const errorData = await orderResponse.json();
+                throw new Error(errorData.error || 'Failed to create payment order');
+            }
+
+            const orderData = await orderResponse.json();
+
+            if (!orderData.success || !orderData.order) {
+                logger.error('Order creation failed:', orderData);
                 throw new Error('Failed to create payment order. Please try again.');
             }
 
             // 3. Initialize Razorpay Checkout
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-                amount: orderData.amount,
-                currency: orderData.currency,
+                amount: orderData.order.amount,
+                currency: orderData.order.currency,
                 name: "Ethereal Exam Quest",
                 description: `Purchase ${plan.name}`,
-                order_id: orderData.id,
+                order_id: orderData.order.id,
                 handler: async function (response: any) {
                     try {
                         logger.info('Payment successful:', response);
 
-                        // 4. Save Purchase to Database
-                        const examIds = plan.subjects;
-                        const expiresAt = plan.validity_days
-                            ? new Date(Date.now() + plan.validity_days * 24 * 60 * 60 * 1000).toISOString()
-                            : null;
-
-                        await supabaseService.savePlanPurchase({
-                            student_phone: auth.user?.phone || '',
-                            student_name: auth.user?.name || '',
-                            plan_id: plan.id,
-                            plan_name: plan.name,
-                            price_paid: plan.price,
-                            exam_ids: examIds,
-                            expires_at: expiresAt,
-                            // Store Razorpay details
-                            payment_id: response.razorpay_payment_id,
+                        // 4. Verify Payment and Save Purchase to Database
+                        const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                planId: plan.id,
+                                planName: plan.name,
+                                pricePaid: plan.price,
+                                examIds: plan.subjects,
+                                validityDays: plan.validity_days
+                            })
                         });
+
+                        const verifyData = await verifyResponse.json();
+
+                        if (!verifyResponse.ok || !verifyData.success) {
+                            throw new Error(verifyData.error || 'Payment verification failed');
+                        }
 
                         toast({
                             title: "Payment Successful! 🎉",
                             description: `You have successfully purchased the ${plan.name}.`,
                         });
 
+                        // Call onSuccess and close modal
+                        setProcessing(false);
                         onSuccess();
                         onClose();
-                    } catch (err) {
-                        logger.error('Post-payment save failed:', err);
+                    } catch (err: any) {
+                        logger.error('Post-payment verification failed:', err);
                         toast({
                             title: "Payment Recorded",
-                            description: "Payment successful but there was an issue activating the plan. Please contact support.",
+                            description: err.message || "Payment successful but there was an issue activating the plan. Please contact support.",
                             variant: "destructive"
                         });
+                        setProcessing(false);
                     }
                 },
                 prefill: {

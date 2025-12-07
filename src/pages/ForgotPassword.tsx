@@ -5,7 +5,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabaseService } from '@/lib/supabaseService';
-import { generateOTP, sendPasswordResetOTP, storeOTP } from '@/lib/emailService';
 
 type Step = 'email' | 'otp' | 'password';
 
@@ -146,9 +145,20 @@ const ForgotPassword = () => {
         setOtpCode('');
 
         try {
-            const otp = generateOTP();
-            await sendPasswordResetOTP(email, userName, otp);
-            storeOTP(email, otp, 5);
+            // Call backend API to resend OTP
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to resend code');
+            }
 
             toast({
                 title: 'Code Resent!',
@@ -157,7 +167,7 @@ const ForgotPassword = () => {
         } catch (err: any) {
             toast({
                 title: 'Error',
-                description: 'Failed to resend code',
+                description: err.message || 'Failed to resend code',
                 variant: 'destructive',
             });
         } finally {

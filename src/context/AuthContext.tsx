@@ -65,6 +65,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
   }, []);
 
+  // Session validation polling - check every 30 seconds if session is still valid
+  useEffect(() => {
+    if (!user) return; // Only run if user is logged in
+
+    const validateSession = async () => {
+      try {
+        const response = await api.getProfile();
+
+        if (!response.success) {
+          logger.warn('[AuthContext] Session invalidated - logging out');
+          // Session is no longer valid (logged in on another device)
+          api.clearTokens();
+          setUser(null);
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        logger.error('[AuthContext] Session validation error:', error);
+        // On error, consider session invalid
+        api.clearTokens();
+        setUser(null);
+        window.location.href = '/login';
+      }
+    };
+
+    // Check immediately
+    validateSession();
+
+    // Then check every 30 seconds
+    const interval = setInterval(validateSession, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Load user profile from backend
   const loadUserProfile = async () => {
     try {
