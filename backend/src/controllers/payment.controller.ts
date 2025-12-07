@@ -94,6 +94,10 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             });
         }
 
+        // Ensure examIds is an array
+        const normalizedExamIds = Array.isArray(examIds) ? examIds : (examIds ? [examIds] : []);
+        logger.info(`[PAYMENT] Exam IDs received:`, normalizedExamIds);
+
         // Get student from authenticated user
         const authUserId = (req as any).user?.auth_user_id;
         const studentPhone = (req as any).user?.phone;
@@ -124,7 +128,7 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
                 original_price: pricePaid,
                 price_paid: pricePaid,
                 discount_amount: 0,
-                exam_ids: examIds,
+                exam_ids: normalizedExamIds,
                 purchased_at: new Date().toISOString(),
                 expires_at: expiresAt,
                 is_active: true,
