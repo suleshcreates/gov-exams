@@ -225,28 +225,43 @@ export async function login(
             };
         }
 
-        // Generate JWT tokens
-        const tokens = generateTokenPair(student.auth_user_id, student.email);
-
         // SINGLE DEVICE ENFORCEMENT: Delete all existing sessions for this user
         const { deleteAllUserSessions } = await import('./session.service');
         await deleteAllUserSessions(student.auth_user_id);
         logger.info(`[Single Device] Cleared existing sessions for: ${student.email}`);
 
-        // Store new session
-        const refreshTokenHash = hashRefreshToken(tokens.refreshToken);
-        const session = await createSession(
+        // Create new session FIRST (to get session ID)
+        // Use temporary hash, will update with real refresh token hash later
+        const tempSession = await createSession(
             student.auth_user_id,
-            refreshTokenHash,
+            'temp_hash', // Temporary placeholder
             userAgent,
             ipAddress
         );
 
-        if (!session) {
-            logger.warn('Failed to create session for login');
+        if (!tempSession) {
+            logger.error('Failed to create session for login');
+            return {
+                success: false,
+                error: 'Failed to create session',
+            };
         }
 
-        logger.info(`User logged in: ${student.email}`);
+        // Generate JWT tokens WITH session ID
+        const tokens = generateTokenPair(
+            student.auth_user_id,
+            student.email,
+            tempSession.id // Link tokens to this specific session
+        );
+
+        // Update session with actual refresh token hash
+        const refreshTokenHash = hashRefreshToken(tokens.refreshToken);
+        await supabaseAdmin
+            .from('sessions')
+            .update({ refresh_token_hash: refreshTokenHash })
+            .eq('id', tempSession.id);
+
+        logger.info(`User logged in: ${student.email}, Session ID: ${tempSession.id}`);
 
         return {
             success: true,

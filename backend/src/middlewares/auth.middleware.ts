@@ -53,20 +53,44 @@ export const requireAuth = async (
             return;
         }
 
-        // CRITICAL: Check if user has any active session (single-device enforcement)
-        const { data: sessions, error: sessionError } = await supabaseAdmin
-            .from('sessions')
-            .select('id')
-            .eq('user_id', decoded.userId)
-            .gte('expires_at', new Date().toISOString())
-            .limit(1);
+        // CRITICAL: Check if THIS SPECIFIC SESSION (from JWT) is still active
+        // This enforces single-device: when user logs in on Device 2,
+        // Device 1's session is deleted, so Device 1's JWT fails this check
+        if (decoded.sessionId) {
+            const { data: session, error: sessionError } = await supabaseAdmin
+                .from('sessions')
+                .select('id, expires_at')
+                .eq('id', decoded.sessionId)
+                .eq('user_id', decoded.userId)
+                .single();
 
-        if (sessionError || !sessions || sessions.length === 0) {
-            logger.warn(`[Single Device] No active session found for user: ${decoded.userId}. Logged in on another device.`);
+            if (sessionError || !session) {
+                logger.warn(`[Single Device] Session ${decoded.sessionId} not found for user: ${decoded.userId}`);
+                res.status(401).json({
+                    success: false,
+                    error: 'Session expired. You have been logged in on another device.',
+                    code: 'SESSION_INVALIDATED',
+                });
+                return;
+            }
+
+            // Check if session has expired
+            if (new Date(session.expires_at) < new Date()) {
+                logger.warn(`[Single Device] Session ${decoded.sessionId} expired`);
+                res.status(401).json({
+                    success: false,
+                    error: 'Session expired.',
+                    code: 'SESSION_EXPIRED',
+                });
+                return;
+            }
+        } else {
+            // Legacy tokens without sessionId - reject them for security
+            logger.warn(`[Single Device] Token without sessionId for user: ${decoded.userId}`);
             res.status(401).json({
                 success: false,
-                error: 'Session expired. You have been logged in on another device.',
-                code: 'SESSION_INVALIDATED',
+                error: 'Invalid token format. Please log in again.',
+                code: 'LEGACY_TOKEN',
             });
             return;
         }
