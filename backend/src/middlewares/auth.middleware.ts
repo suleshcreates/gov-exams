@@ -53,6 +53,24 @@ export const requireAuth = async (
             return;
         }
 
+        // CRITICAL: Check if user has any active session (single-device enforcement)
+        const { data: sessions, error: sessionError } = await supabaseAdmin
+            .from('sessions')
+            .select('id')
+            .eq('user_id', decoded.userId)
+            .gte('expires_at', new Date().toISOString())
+            .limit(1);
+
+        if (sessionError || !sessions || sessions.length === 0) {
+            logger.warn(`[Single Device] No active session found for user: ${decoded.userId}. Logged in on another device.`);
+            res.status(401).json({
+                success: false,
+                error: 'Session expired. You have been logged in on another device.',
+                code: 'SESSION_INVALIDATED',
+            });
+            return;
+        }
+
         // Attach user to request object
         req.user = user as Student;
         next();
