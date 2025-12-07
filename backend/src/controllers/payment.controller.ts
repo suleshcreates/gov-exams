@@ -68,7 +68,6 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             planId,
             planName,
             pricePaid,
-            examIds,
             validityDays,
         } = req.body;
 
@@ -98,7 +97,6 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
         const authUserId = (req as any).user?.auth_user_id;
         const studentPhone = (req as any).user?.phone;
         const studentName = (req as any).user?.name;
-        const studentEmail = (req as any).user?.email;
 
         if (!authUserId) {
             return res.status(401).json({
