@@ -18,6 +18,9 @@ import paymentRoutes from './routes/payment.routes';
 function createApp(): Application {
     const app = express();
 
+    // Trust proxy - required for Render/reverse proxies to get correct client IP
+    app.set('trust proxy', 1);
+
     // ==================== SECURITY MIDDLEWARE ====================
 
     // Helmet - sets various HTTP headers for security
