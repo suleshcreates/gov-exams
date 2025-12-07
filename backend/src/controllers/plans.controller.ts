@@ -17,10 +17,12 @@ export const getUserPlansController = async (req: Request, res: Response) => {
             });
         }
 
-        logger.info(`[PLANS] Fetching plans for user: ${userPhone}`);
+        logger.info(`[PLANS] Fetching plans for user: ${userPhone}, auth_user_id: ${userId}`);
 
         const now = new Date().toISOString();
-        const { data, error } = await supabaseAdmin
+
+        // Try querying by auth_user_id first
+        let { data, error } = await supabaseAdmin
             .from('user_plans')
             .select('*')
             .eq('auth_user_id', userId)
@@ -29,14 +31,33 @@ export const getUserPlansController = async (req: Request, res: Response) => {
             .order('purchased_at', { ascending: false });
 
         if (error) {
-            logger.error('[PLANS] Error fetching user plans:', error);
+            logger.error('[PLANS] Error fetching user plans by auth_user_id:', error);
             return res.status(500).json({
                 success: false,
                 error: 'Failed to fetch plans',
             });
         }
 
-        logger.info(`[PLANS] Found ${data?.length || 0} active plans for user ${userPhone}`);
+        // Fallback: if no plans found by auth_user_id, try by phone
+        if ((!data || data.length === 0) && userPhone) {
+            logger.warn(`[PLANS] No plans found by auth_user_id (${userId}), trying phone: ${userPhone}`);
+            const phoneResult = await supabaseAdmin
+                .from('user_plans')
+                .select('*')
+                .eq('student_phone', userPhone)
+                .eq('is_active', true)
+                .or(`expires_at.is.null,expires_at.gt."${now}"`)
+                .order('purchased_at', { ascending: false });
+
+            if (phoneResult.error) {
+                logger.error('[PLANS] Error fetching by phone:', phoneResult.error);
+            } else {
+                data = phoneResult.data;
+                logger.info(`[PLANS] Found ${data?.length || 0} plans by phone`);
+            }
+        }
+
+        logger.info(`[PLANS] Returning ${data?.length || 0} active plans for user ${userPhone}`);
 
         return res.status(200).json({
             success: true,
