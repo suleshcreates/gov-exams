@@ -68,6 +68,7 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             planId,
             planName,
             pricePaid,
+            examIds,
             validityDays,
         } = req.body;
 
@@ -123,6 +124,7 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
                 original_price: pricePaid,
                 price_paid: pricePaid,
                 discount_amount: 0,
+                exam_ids: examIds,
                 purchased_at: new Date().toISOString(),
                 expires_at: expiresAt,
                 is_active: true,
