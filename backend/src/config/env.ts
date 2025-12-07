@@ -10,6 +10,7 @@ interface EnvironmentConfig {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
     JWT_SECRET: string;
+    JWT_REFRESH_SECRET: string;
     JWT_ACCESS_EXPIRY: string;
     JWT_REFRESH_EXPIRY: string;
     RAZORPAY_KEY_ID: string;
@@ -45,6 +46,7 @@ export const env: EnvironmentConfig = {
     SUPABASE_URL: process.env.SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     JWT_SECRET: process.env.JWT_SECRET!,
+    JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET!,
     JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '15m',
     JWT_REFRESH_EXPIRY: process.env.JWT_REFRESH_EXPIRY || '30d',
     RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID!,
