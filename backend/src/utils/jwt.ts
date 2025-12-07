@@ -39,14 +39,6 @@ export function generateRefreshToken(userId: string, email: string, sessionId?: 
         expiresIn: env.JWT_REFRESH_EXPIRY,
     } as jwt.SignOptions) as string;
 }
-email,
-    type: 'refresh',
-    };
-
-return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRY,
-} as jwt.SignOptions) as string;
-}
 
 /**
  * Verify any token and return decoded payload
