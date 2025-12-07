@@ -95,10 +95,12 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
         }
 
         // Get student from authenticated user
+        const authUserId = (req as any).user?.auth_user_id;
         const studentPhone = (req as any).user?.phone;
         const studentName = (req as any).user?.name;
+        const studentEmail = (req as any).user?.email;
 
-        if (!studentPhone) {
+        if (!authUserId) {
             return res.status(401).json({
                 success: false,
                 error: 'User not authenticated',
@@ -110,17 +112,24 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             ? new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString()
             : null;
 
-        // Save purchase to database
+        // Save purchase to user_plans table
         const { data, error } = await supabaseAdmin
-            .from('plan_purchases')
+            .from('user_plans')
             .insert({
-                student_phone: studentPhone,
-                student_name: studentName,
+                auth_user_id: authUserId,
+                plan_template_id: planId,
                 plan_id: planId,
                 plan_name: planName,
+                student_phone: studentPhone,
+                student_name: studentName,
+                student_email: studentEmail,
+                original_price: pricePaid,
                 price_paid: pricePaid,
-                exam_ids: examIds,
+                discount_amount: 0,
+                exam_id: examIds,
+                purchased_at: new Date().toISOString(),
                 expires_at: expiresAt,
+                is_active: true,
                 payment_id: razorpay_payment_id,
                 order_id: razorpay_order_id,
                 payment_signature: razorpay_signature,
