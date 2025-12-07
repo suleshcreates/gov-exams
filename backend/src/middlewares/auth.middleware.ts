@@ -53,10 +53,11 @@ export const requireAuth = async (
             return;
         }
 
-        // CRITICAL: Check if THIS SPECIFIC SESSION (from JWT) is still active
-        // This enforces single-device: when user logs in on Device 2,
-        // Device 1's session is deleted, so Device 1's JWT fails this check
+        // SINGLE-DEVICE ENFORCEMENT (if token has sessionId)
+        // New tokens have sessionId, old tokens don't
+        // We enforce single-device only for new tokens to allow graceful migration
         if (decoded.sessionId) {
+            // Check if THIS SPECIFIC SESSION (from JWT) is still active
             const { data: session, error: sessionError } = await supabaseAdmin
                 .from('sessions')
                 .select('id, expires_at')
@@ -84,15 +85,13 @@ export const requireAuth = async (
                 });
                 return;
             }
+
+            logger.debug(`[Auth] Session ${decoded.sessionId} validated for user: ${decoded.userId}`);
         } else {
-            // Legacy tokens without sessionId - reject them for security
-            logger.warn(`[Single Device] Token without sessionId for user: ${decoded.userId}`);
-            res.status(401).json({
-                success: false,
-                error: 'Invalid token format. Please log in again.',
-                code: 'LEGACY_TOKEN',
-            });
-            return;
+            // Legacy token without sessionId - allow it but log for monitoring
+            // Single-device enforcement won't work for these tokens
+            // User will get new token with sessionId on next login
+            logger.info(`[Auth] Legacy token (no sessionId) for user: ${decoded.userId} - allowing access`);
         }
 
         // Attach user to request object
