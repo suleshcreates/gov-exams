@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getUserPlansController, checkExamAccessController, deactivateUserPlanController } from '../controllers/plans.controller';
 import authMiddleware from '../middlewares/auth.middleware';
-import { adminMiddleware } from '../middlewares/admin.middleware';
+import adminMiddleware from '../middlewares/admin.middleware';
 
 const router = Router();
 
