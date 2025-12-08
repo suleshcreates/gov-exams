@@ -128,3 +128,49 @@ export const checkExamAccessController = async (req: Request, res: Response) => 
         });
     }
 };
+
+/**
+ * Deactivate a user plan (admin only)
+ */
+export const deactivateUserPlanController = async (req: Request, res: Response) => {
+    try {
+        const { planId } = req.params;
+
+        if (!planId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Plan ID required',
+            });
+        }
+
+        logger.info(`[PLANS] Deactivating plan: ${planId}`);
+
+        const { data, error } = await supabaseAdmin
+            .from('user_plans')
+            .update({ is_active: false })
+            .eq('id', planId)
+            .select()
+            .single();
+
+        if (error) {
+            logger.error('[PLANS] Error deactivating plan:', error);
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to deactivate plan',
+            });
+        }
+
+        logger.info(`[PLANS] Successfully deactivated plan ${planId}`);
+
+        return res.status(200).json({
+            success: true,
+            plan: data,
+        });
+    } catch (error) {
+        logger.error('[PLANS] Unexpected error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+        });
+    }
+};
