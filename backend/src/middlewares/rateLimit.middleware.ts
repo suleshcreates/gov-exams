@@ -17,11 +17,11 @@ export const signupLimiter = rateLimit({
 
 /**
  * Rate limiter for login endpoint
- * Max 5 login attempts per IP per 15 minutes
+ * Max 100 login attempts per IP per 15 minutes (increased for development)
  */
 export const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5,
+    max: 100, // Increased from 5 to 100 for development
     message: {
         success: false,
         error: 'Too many login attempts. Please try again after 15 minutes.',

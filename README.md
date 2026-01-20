@@ -1,6 +1,6 @@
-# DMLT Academy Exam Portal
+# GovExams Exam Portal
 
-A comprehensive online examination platform built for DMLT Academy with Google OAuth authentication, bilingual support (English/Marathi), and real-time exam monitoring.
+A comprehensive online examination platform built for GovExams with Google OAuth authentication, bilingual support (English/Marathi), and real-time exam monitoring.
 
 ## 🚀 Quick Start
 
@@ -155,7 +155,7 @@ npm run lint         # Run ESLint
 
 ## 📄 License
 
-Private - DMLT Academy
+Private - GovExams
 
 ## 🆘 Support
 
@@ -166,4 +166,4 @@ For issues or questions:
 
 ---
 
-**Made with ❤️ for DMLT Academy**
+**Made with ❤️ for GovExams**

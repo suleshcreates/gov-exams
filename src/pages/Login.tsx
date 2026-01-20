@@ -75,7 +75,7 @@ const Login = () => {
         >
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-gray-600">Sign in to continue to DMLT Academy</p>
+            <p className="text-gray-600">Sign in to continue to GovExams</p>
           </div>
 
           {error && (
@@ -97,7 +97,7 @@ const Login = () => {
                   name="identifier"
                   value={formData.identifier}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Enter your email or username"
                   disabled={loading}
                   required
@@ -118,7 +118,7 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Enter your password"
                   disabled={loading}
                   required
@@ -137,7 +137,7 @@ const Login = () => {
             <div className="flex items-center justify-end">
               <Link
                 to="/forgot-password"
-                className="text-sm text-blue-600 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 Forgot password?
               </Link>
@@ -146,7 +146,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -155,7 +155,7 @@ const Login = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-blue-600 font-semibold hover:underline">
+              <Link to="/signup" className="text-primary font-semibold hover:underline">
                 Sign Up
               </Link>
             </p>

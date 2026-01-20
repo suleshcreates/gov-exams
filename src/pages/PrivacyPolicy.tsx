@@ -92,7 +92,7 @@ const PrivacyPolicy = () => {
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">7. Children's Privacy</h2>
                             <p className="text-muted-foreground">
-                                Our services are intended for students preparing for DMLT exams. If you are under 18, please ensure you have parental consent before using our platform.
+                                Our services are intended for students preparing for government exams. If you are under 18, please ensure you have parental consent before using our platform.
                             </p>
                         </section>
 
@@ -109,7 +109,7 @@ const PrivacyPolicy = () => {
                                 If you have any questions about this Privacy Policy, please contact us:
                             </p>
                             <div className="bg-primary/5 rounded-lg p-4 mt-4">
-                                <p className="text-muted-foreground"><strong>Email:</strong> dmltadamany23@gmail.com</p>
+                                <p className="text-muted-foreground"><strong>Email:</strong> governmentadamany23@gmail.com</p>
                                 <p className="text-muted-foreground"><strong>Phone:</strong> +91 9834100959</p>
                                 <p className="text-muted-foreground"><strong>Address:</strong> Udgir, Maharashtra, India</p>
                             </div>

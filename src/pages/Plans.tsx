@@ -38,8 +38,17 @@ const Plans = () => {
     const loadPlans = async () => {
       try {
         setLoading(true);
-        const plans = await adminService.getPlanTemplates(false); // Only active plans
-        setPlanTemplates(plans);
+        // Use public endpoint
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/public/plans`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch plan templates');
+        }
+
+        const result = await response.json();
+        // Filter for active plans (backend might return all, so filter here too safely)
+        const activePlans = (result.data || []).filter((p: PlanTemplate) => p.is_active !== false);
+        setPlanTemplates(activePlans);
       } catch (error) {
         logger.error("Error loading plans:", error);
         toast({

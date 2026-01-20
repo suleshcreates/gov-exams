@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import logger from '@/lib/logger';
 import { useParams, Link } from 'react-router-dom';
 import { adminService } from '../lib/adminService';
-import { ArrowLeft, Plus, Edit, Trash2, Clock, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Clock, FileText, Video } from 'lucide-react';
 
 interface Subject {
   id: string;
@@ -41,7 +41,7 @@ const SubjectDetail = () => {
       ]);
 
       setSubject(subjectData);
-      
+
       // Get question counts for each set - do this in parallel but handle errors
       const setsWithCounts = await Promise.all(
         setsData.map(async (set) => {
@@ -54,7 +54,7 @@ const SubjectDetail = () => {
           }
         })
       );
-      
+
       setQuestionSets(setsWithCounts);
     } catch (error) {
       logger.error('Error loading subject data:', error);
@@ -115,13 +115,22 @@ const SubjectDetail = () => {
             )}
           </div>
         </div>
-        <Link
-          to={`/admin/subjects/${subjectId}/question-sets/new`}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus size={20} />
-          Add Question Set
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            to={`/admin/subjects/${subjectId}/topics`}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+          >
+            <Video size={20} />
+            Manage Topics
+          </Link>
+          <Link
+            to={`/admin/subjects/${subjectId}/question-sets/new`}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus size={20} />
+            Add Question Set
+          </Link>
+        </div>
       </div>
 
       {/* Question Sets Table */}
@@ -129,7 +138,7 @@ const SubjectDetail = () => {
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold">Question Sets</h2>
         </div>
-        
+
         {questionSets.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="mx-auto text-gray-400 mb-4" size={48} />
@@ -201,7 +210,7 @@ const SubjectDetail = () => {
                           Manage Questions
                         </Link>
                         <Link
-                          to={`/admin/subjects/${subjectId}/question-sets/${set.id}/edit`}
+                          to={`/admin/subjects/${subjectId}/question-sets/${set.id}`}
                           className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                         >
                           <Edit size={16} />
@@ -261,7 +270,7 @@ const SubjectDetail = () => {
                 <p className="text-2xl font-bold">
                   {Math.round(
                     questionSets.reduce((sum, set) => sum + set.time_limit_minutes, 0) /
-                      questionSets.length
+                    questionSets.length
                   )}{' '}
                   min
                 </p>

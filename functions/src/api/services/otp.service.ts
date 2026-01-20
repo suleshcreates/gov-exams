@@ -217,9 +217,9 @@ export async function sendOTPEmail(
 ): Promise<boolean> {
   try {
     const mailOptions = {
-      from: `"DMLT Academy" <${env.EMAIL_USER}>`,
+      from: `"GovExams" <${env.EMAIL_USER}>`,
       to: email,
-      subject: 'Your Verification Code - DMLT Academy',
+      subject: 'Your Verification Code - GovExams',
       html: `
   <div style="margin:0;padding:0;background:#f4f5f7;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" 
@@ -243,8 +243,8 @@ export async function sendOTPEmail(
                   color:white;">
                   
                   <img 
-                    src="https://i.ibb.co/W4jLJpcz/dmlt-logo.jpg" 
-                    alt="DMLT Academy" 
+                    src="https://i.ibb.co/W4jLJpcz/logo.png" 
+                    alt="GovExams" 
                     style="width:180px;margin-bottom:20px;border-radius:6px;"
                   />
 
@@ -253,7 +253,7 @@ export async function sendOTPEmail(
                   </h1>
 
                   <p style="margin-top:10px;font-size:15px;color:#063056;">
-                    Secure login for DMLT Academy
+                    Secure login for GovExams
                   </p>
 
                 </div>
@@ -269,7 +269,7 @@ export async function sendOTPEmail(
                 </p>
 
                 <p style="font-size:15px;line-height:1.6;margin:0 0 25px;">
-                  Your verification code for <strong>DMLT Academy</strong> is:
+                  Your verification code for <strong>GovExams</strong> is:
                 </p>
 
                 <!-- OTP Box -->
@@ -296,7 +296,7 @@ export async function sendOTPEmail(
 
                 <p style="font-size:15px;margin:0;">
                   Best regards,<br/>
-                  <strong>DMLT Academy Team</strong>
+                  <strong>GovExams Team</strong>
                 </p>
 
               </td>
@@ -305,7 +305,7 @@ export async function sendOTPEmail(
             <!-- Footer -->
             <tr>
               <td style="background:#f8fafc;padding:18px;text-align:center;color:#94a3b8;font-size:12px;">
-                © ${new Date().getFullYear()} DMLT Academy. All rights reserved.
+                © ${new Date().getFullYear()} GovExams. All rights reserved.
               </td>
             </tr>
 

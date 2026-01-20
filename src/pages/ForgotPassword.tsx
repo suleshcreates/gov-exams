@@ -264,7 +264,7 @@ const ForgotPassword = () => {
                                                 setEmail(e.target.value);
                                                 setError('');
                                             }}
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                             placeholder="your.email@example.com"
                                             disabled={loading}
                                             required
@@ -276,7 +276,7 @@ const ForgotPassword = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     {loading ? 'Sending Code...' : 'Send Verification Code'}
                                 </button>
@@ -294,7 +294,7 @@ const ForgotPassword = () => {
                             >
                                 <div className="text-center mb-6">
                                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Mail className="w-8 h-8 text-blue-600" />
+                                        <Mail className="w-8 h-8 text-primary" />
                                     </div>
                                     <p className="text-gray-600">
                                         We've sent a 6-digit code to<br />
@@ -314,7 +314,7 @@ const ForgotPassword = () => {
                                             setOtpCode(value);
                                             setError('');
                                         }}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-primary focus:border-transparent"
                                         placeholder="000000"
                                         maxLength={6}
                                         disabled={loading}
@@ -325,7 +325,7 @@ const ForgotPassword = () => {
                                 <button
                                     onClick={handleOTPVerify}
                                     disabled={loading || otpCode.length !== 6}
-                                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     Verify Code
                                 </button>
@@ -333,7 +333,7 @@ const ForgotPassword = () => {
                                 <button
                                     onClick={resendOTP}
                                     disabled={loading}
-                                    className="w-full text-blue-600 py-2 rounded-lg font-semibold hover:bg-blue-50 disabled:opacity-50 transition-colors"
+                                    className="w-full text-primary py-2 rounded-lg font-semibold hover:bg-primary/10 disabled:opacity-50 transition-colors"
                                 >
                                     Resend Code
                                 </button>
@@ -376,7 +376,7 @@ const ForgotPassword = () => {
                                                 setPassword(e.target.value);
                                                 setError('');
                                             }}
-                                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                             placeholder="Enter new password"
                                             disabled={loading}
                                             required
@@ -409,7 +409,7 @@ const ForgotPassword = () => {
                                                 setConfirmPassword(e.target.value);
                                                 setError('');
                                             }}
-                                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                             placeholder="Confirm new password"
                                             disabled={loading}
                                             required
@@ -427,7 +427,7 @@ const ForgotPassword = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     {loading ? 'Resetting Password...' : 'Reset Password'}
                                 </button>
@@ -439,7 +439,7 @@ const ForgotPassword = () => {
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
                             Remember your password?{' '}
-                            <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+                            <Link to="/login" className="text-primary font-semibold hover:underline">
                                 Back to Login
                             </Link>
                         </p>

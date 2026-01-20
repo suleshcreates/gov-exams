@@ -53,11 +53,11 @@ class AuthErrorBoundary extends Component<Props, State> {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
-              
+
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Authentication Error
               </h1>
-              
+
               <p className="text-gray-600 mb-6">
                 We encountered an issue with your authentication session. This might be due to:
               </p>
@@ -88,12 +88,12 @@ class AuthErrorBoundary extends Component<Props, State> {
               <div className="flex flex-col sm:flex-row gap-3 w-full">
                 <button
                   onClick={this.handleRetry}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-3 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Retry
                 </button>
-                
+
                 <button
                   onClick={this.handleLogout}
                   className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors"

@@ -40,33 +40,48 @@ const Profile = () => {
 
       try {
         setLoading(true);
-        // Load student info
-        const student = await supabaseService.getStudentByPhone(user.phone);
-        setStudentInfo(student);
 
-        // Load exam history
-        const results = await supabaseService.getStudentExamResults(user.phone);
-        setHistory(results);
+        // Get auth token
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          console.error('No auth token found');
+          setLoading(false);
+          return;
+        }
 
-        // Load analytics
-        const stats = await supabaseService.getStudentAnalytics(user.phone);
-        setAnalytics({
-          totalExams: stats.totalExams,
-          averageScore: stats.averageScore.toString(),
-          examsPassed: stats.examsPassed,
+        // Fetch complete profile from backend API
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         });
 
-        // Load purchased plans
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const { profile } = data;
+
+        // Set all profile data from API response
+        setStudentInfo(profile.student);
+        setHistory(profile.examResults || []);
+        setAnalytics({
+          totalExams: profile.analytics.totalExams,
+          averageScore: profile.analytics.averageScore.toString(),
+          examsPassed: profile.analytics.examsPassed,
+        });
+        setGlobalRank(profile.globalRank || 1);
+
+        // Load purchased plans (already using API)
         const plans = await supabaseService.getStudentPlans(user.phone);
         setPurchasedPlans(plans);
 
         // Load subjects for plan display
         const allSubjects = await adminService.getSubjects();
         setSubjects(allSubjects);
-
-        // Load global rank
-        const rank = await supabaseService.getStudentGlobalRank(user.phone);
-        setGlobalRank(rank);
       } catch (error) {
         console.error("Error loading profile data:", error);
       } finally {

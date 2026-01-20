@@ -11,9 +11,9 @@ const Navbar = () => {
   const { visible } = useNavbar();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { auth, signOut } = useAuth();
-  const onLogout = async () => { 
-    await signOut(); 
-    window.location.href = "/login"; 
+  const onLogout = async () => {
+    await signOut();
+    window.location.href = "/login";
   };
 
   const isLoginPage = location.pathname === "/login";
@@ -48,15 +48,15 @@ const Navbar = () => {
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 3, repeat: Infinity }}
-              className="w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-full bg-white shadow-lg border-2 border-primary/20 overflow-hidden"
             >
               <img
-                src="/dmlt-logo.jpg"
-                alt="DMLT Academy logo"
-                className="w-8 h-8 sm:w-12 sm:h-12 object-contain drop-shadow-md"
+                src="/logo.png"
+                alt="GovExams logo"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
             </motion.div>
-            <span className="text-xl sm:text-2xl font-extrabold gradient-text">DMLT Academy</span>
+            <span className="text-xl sm:text-2xl font-extrabold gradient-text">GovExams</span>
           </Link>
           {/* Desktop Navigation */}
           <div className="hidden md:flex gap-2">
@@ -81,30 +81,29 @@ const Navbar = () => {
               </>
             ) : (
               <>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="relative"
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all ${
-                      isActive
-                        ? "gradient-primary text-white neon-border"
-                        : "glass-card hover:bg-white/10"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="font-bold">{item.label}</span>
-                  </motion.div>
-                </Link>
-              );
-            })}
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className="relative"
+                    >
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all ${isActive
+                          ? "gradient-primary text-white neon-border"
+                          : "glass-card hover:bg-white/10"
+                          }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="font-bold">{item.label}</span>
+                      </motion.div>
+                    </Link>
+                  );
+                })}
                 <button
                   onClick={onLogout}
                   className="ml-2 px-6 py-2.5 rounded-full glass-card border font-bold hover:bg-white/10 transition"
@@ -161,11 +160,10 @@ const Navbar = () => {
                         >
                           <motion.div
                             whileTap={{ scale: 0.95 }}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-full transition-all ${
-                              isActive
-                                ? "gradient-primary text-white neon-border"
-                                : "glass-card hover:bg-white/10"
-                            }`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-full transition-all ${isActive
+                              ? "gradient-primary text-white neon-border"
+                              : "glass-card hover:bg-white/10"
+                              }`}
                           >
                             <Icon className="w-5 h-5" />
                             <span className="font-bold">{item.label}</span>

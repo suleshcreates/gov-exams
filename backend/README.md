@@ -226,7 +226,7 @@ gcloud logging read "resource.type=cloud_run_revision" --limit 50
 
 ## 📄 License
 
-Private - DMLT Academy
+Private - GovExams
 
 ---
 

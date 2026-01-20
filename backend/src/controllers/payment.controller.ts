@@ -6,6 +6,7 @@ import { supabaseAdmin } from '../config/supabase';
 import logger from '../utils/logger';
 
 // Initialize Razorpay
+// Initialize Razorpay
 const razorpay = new Razorpay({
     key_id: env.RAZORPAY_KEY_ID,
     key_secret: env.RAZORPAY_KEY_SECRET,
@@ -25,6 +26,23 @@ export const createOrderController = async (req: Request, res: Response) => {
             });
         }
 
+        // --- SIMULATION MODE START ---
+        // Mock order creation
+        const mockOrderId = `order_mock_${Date.now()}`;
+        logger.info(`[PAYMENT SIMULATION] Mock order created: ${mockOrderId} for plan: ${planId}`);
+
+        return res.status(200).json({
+            success: true,
+            order: {
+                id: mockOrderId,
+                amount: amount * 100,
+                currency: 'INR',
+            },
+        });
+        // --- SIMULATION MODE END ---
+
+        /* 
+        // REAL RAZORPAY LOGIC (COMMENTED OUT)
         // Create Razorpay order
         const options = {
             amount: amount * 100, // Amount in paise
@@ -47,6 +65,7 @@ export const createOrderController = async (req: Request, res: Response) => {
                 currency: order.currency,
             },
         });
+        */
     } catch (error: any) {
         logger.error('[PAYMENT] Error creating order:', error);
         return res.status(500).json({
@@ -72,6 +91,8 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             validityDays,
         } = req.body;
 
+        /*
+        // REAL VERIFICATION LOGIC (COMMENTED OUT)
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
             return res.status(400).json({
                 success: false,
@@ -93,6 +114,12 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
                 error: 'Invalid payment signature',
             });
         }
+        */
+
+        // --- SIMULATION MODE START ---
+        logger.info(`[PAYMENT SIMULATION] Verifying mock payment: ${razorpay_payment_id}`);
+        // --- SIMULATION MODE END ---
+
 
         // Ensure examIds is an array
         const normalizedExamIds = Array.isArray(examIds) ? examIds : (examIds ? [examIds] : []);
@@ -134,7 +161,7 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
                 is_active: true,
                 payment_id: razorpay_payment_id,
                 order_id: razorpay_order_id,
-                payment_signature: razorpay_signature,
+                payment_signature: razorpay_signature || 'mock_signature',
                 payment_status: 'completed',
             });
 

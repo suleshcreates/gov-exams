@@ -2,7 +2,7 @@
 
 ## ✅ What's Been Built
 
-Your DMLT Academy Exam Portal now has a complete email-based authentication system!
+Your GovExams Exam Portal now has a complete email-based authentication system!
 
 ### 1. Database Migration ✅
 - Added `email`, `username`, `auth_user_id`, `email_verified` columns to students table

@@ -1,8 +1,8 @@
-# Project Analysis: DMLT Academy Exam Portal
+# Project Analysis: GovExams Exam Portal
 
 ## 📋 Executive Summary
 
-This is a comprehensive **online examination platform** built for DMLT Academy. It's a React-based Single Page Application (SPA) that allows students to take MCQ exams with multiple question sets per subject. The application features phone-based authentication, bilingual support (English/Marathi), real-time camera monitoring, and comprehensive result tracking.
+This is a comprehensive **online examination platform** built for GovExams. It's a React-based Single Page Application (SPA) that allows students to take MCQ exams with multiple question sets per subject. The application features phone-based authentication, bilingual support (English/Marathi), real-time camera monitoring, and comprehensive result tracking.
 
 ---
 
@@ -317,7 +317,7 @@ ethereal-exam-quest/
 ### Recommended Improvements
 
 1. **Backend API**: Move sensitive operations to backend
-2. **Real Questions**: Replace mock data with actual DMLT exam questions
+2. **Real Questions**: Replace mock data with actual Government Exam exam questions
 3. **SMS Integration**: Integrate Twilio/MSG91 for OTP
 4. **Password Security**: Implement bcrypt on backend
 5. **Enhanced RLS**: User-specific policies
@@ -387,7 +387,7 @@ npm run build
 ## 🎓 Subject Matter
 
 ### Exam Content
-- **Focus**: DMLT (Diploma in Medical Laboratory Technology) Academy
+- **Focus**: Government Exam (Diploma in Medical Laboratory Technology) Academy
 - **Subjects**: Mathematics, Physics, Chemistry, Biology, General Knowledge
 - **Question Format**: Multiple Choice Questions (MCQs)
 - **Bilingual**: English and Marathi support

@@ -10,14 +10,14 @@ const Footer = () => {
           <div>
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
-                src="/dmlt-logo.jpg"
-                alt="DMLT Academy logo"
+                src="/logo.png"
+                alt="GovExams logo"
                 className="w-12 h-12 object-contain drop-shadow"
               />
-              <span className="text-2xl font-bold gradient-text">DMLT Academy</span>
+              <span className="text-2xl font-bold gradient-text">GovExams</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Learn. Practice. Succeed. A dedicated portal for DMLT aspirants with proctored exams and analytics.
+              Learn. Practice. Succeed. A dedicated portal for government exam aspirants with proctored exams and analytics.
             </p>
           </div>
 
@@ -76,14 +76,14 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="w-4 h-4 text-primary" />
-                <a href="mailto:dmltadamany23@gmail.com" className="hover:text-primary transition-colors">
-                  dmltadamany23@gmail.com
+                <a href="mailto:kirkanbalasaheb4@gmail.com" className="hover:text-primary transition-colors">
+                  kirkanbalasaheb4@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="w-4 h-4 text-primary" />
-                <a href="tel:+919834100959" className="hover:text-primary transition-colors">
-                  +91 9834100959
+                <a href="tel:+918275437940" className="hover:text-primary transition-colors">
+                  +91 82754 37940
                 </a>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -116,7 +116,7 @@ const Footer = () => {
 
           {/* Copyright */}
           <p className="text-sm text-muted-foreground text-center">
-            © {new Date().getFullYear()} DMLT Academy. All rights reserved.
+            © {new Date().getFullYear()} GovExams. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground mt-2 text-center">
             Developed by <span className="font-semibold gradient-text">Sulesh Waghmare</span>

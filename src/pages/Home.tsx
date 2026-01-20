@@ -8,8 +8,10 @@ import { ExamCardSkeleton } from "@/components/skeletons/ExamCardSkeleton";
 import { PlanCardSkeleton } from "@/components/skeletons/PlanCardSkeleton";
 import { adminService } from "@/admin/lib/adminService";
 import YouTubeSection from "@/components/YouTubeSection";
-import WhatsAppSection from "@/components/WhatsAppSection";
+import TelegramSection from "@/components/TelegramSection";
 import AcademyJourney from "@/components/AcademyJourney";
+import MotivationSection from "@/components/MotivationSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
 import logger from "@/lib/logger";
 
 interface PlanTemplate {
@@ -31,12 +33,49 @@ interface Subject {
   created_at: string;
 }
 
+// Hero slideshow data with unique taglines
+const heroSlides = [
+  {
+    id: 1,
+    image: '/hero-bg1.jpg',
+    tagline: 'Ace Your DMLT Exams with|GovExams',
+    description: 'Professional government exam MCQs with bilingual support, instant results, and comprehensive analytics.',
+  },
+  {
+    id: 2,
+    image: '/hero-bg2.jpg',
+    tagline: 'Practice Like a|Pro',
+    description: 'Master every topic with our curated question sets designed by DMLT experts.',
+  },
+  {
+    id: 3,
+    image: '/hero-bg3.jpg',
+    tagline: 'Track Your Progress|Every Step',
+    description: 'Detailed analytics and performance reports to identify your strengths and weaknesses.',
+  },
+  {
+    id: 4,
+    image: '/hero-bg4.jpg',
+    tagline: 'Join 500+ Successful|Students',
+    description: 'Be part of our growing community of exam aspirants achieving their goals.',
+  },
+];
+
 const Home = () => {
   const { auth } = useAuth();
   const [examsLoading, setExamsLoading] = useState(true);
   const [plansLoading, setPlansLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [planTemplates, setPlanTemplates] = useState<PlanTemplate[]>([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-advance slideshow every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Load subjects from database
   useEffect(() => {
@@ -78,17 +117,30 @@ const Home = () => {
 
   return (
     <div className="flex-1">
-      {/* Hero Section */}
-      <section
-        className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/5"
-        style={{
-          backgroundImage: 'url(/final-hero-bg.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      >
-        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+      {/* Hero Section with Dynamic Slideshow */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Slideshow Background Images */}
+        {heroSlides.map((slide, index) => (
+          <motion.div
+            key={slide.id}
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: currentSlide === index ? 1 : 0 }}
+            transition={{ duration: 1, ease: "easeInOut" }}
+            style={{
+              backgroundImage: `url(${slide.image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              zIndex: currentSlide === index ? 1 : 0,
+            }}
+          />
+        ))}
+
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/80 z-[2]" />
+
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 z-[3]" />
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
             <motion.div
@@ -97,30 +149,41 @@ const Home = () => {
               transition={{ duration: 0.5 }}
               className="mb-6"
             >
-              <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary/10 backdrop-blur-sm border border-primary/20">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span className="text-sm font-bold text-primary">Next Generation Examination Platform</span>
+              <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-lg">
+                <Sparkles className="w-5 h-5 text-accent" />
+                <span className="text-sm font-bold text-white">Next Generation Examination Platform</span>
               </span>
             </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6 leading-tight px-4"
-            >
-              Ace Your Exams with{" "}
-              <span className="gradient-text">DMLT Academy</span>
-            </motion.h1>
+            {/* Dynamic Tagline based on current slide */}
+            <AnimatePresence mode="wait">
+              <motion.h1
+                key={currentSlide}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5 }}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6 leading-tight px-4 text-white drop-shadow-lg"
+              >
+                {heroSlides[currentSlide].tagline.split('|')[0]}{" "}
+                <span className="bg-gradient-to-r from-accent via-yellow-400 to-orange-500 text-transparent bg-clip-text">
+                  {heroSlides[currentSlide].tagline.split('|')[1]}
+                </span>
+              </motion.h1>
+            </AnimatePresence>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-base sm:text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto px-4"
-            >
-              Choose from 5 subjects, 5 question sets each. Professional DMLT-focused MCQ exams with bilingual support, instant results, and comprehensive analytics.
-            </motion.p>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={`desc-${currentSlide}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="text-base sm:text-lg md:text-xl text-white/90 mb-12 max-w-2xl mx-auto px-4 drop-shadow-md"
+              >
+                {heroSlides[currentSlide].description}
+              </motion.p>
+            </AnimatePresence>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -130,14 +193,30 @@ const Home = () => {
             >
               <button
                 onClick={scrollToExams}
-                className="group px-8 py-4 rounded-full gradient-primary text-white font-bold text-lg hover:scale-105 transition-transform neon-glow"
+                className="group px-8 py-4 rounded-full bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-lg hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-primary/50"
               >
                 <div className="flex items-center gap-3">
                   <GraduationCap className="w-6 h-6" />
                   Start Learning
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             </motion.div>
+
+            {/* Slide Indicators */}
+            <div className="flex justify-center gap-3 mb-8">
+              {heroSlides.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${currentSlide === index
+                    ? 'bg-accent w-8 shadow-lg shadow-accent/50'
+                    : 'bg-white/50 hover:bg-white/80'
+                    }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
 
             {/* Stats */}
             <motion.div
@@ -146,25 +225,28 @@ const Home = () => {
               transition={{ delay: 0.5 }}
               className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto px-4"
             >
-              <div className="text-center">
-                <Trophy className="w-8 h-8 text-primary mx-auto mb-2" />
-                <div className="text-3xl font-bold text-foreground">5</div>
-                <div className="text-sm text-muted-foreground">Subjects</div>
+              <div className="text-center bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
+                <Trophy className="w-8 h-8 text-accent mx-auto mb-2" />
+                <div className="text-3xl font-bold text-white">5</div>
+                <div className="text-sm text-white/80">Subjects</div>
               </div>
-              <div className="text-center">
-                <Shield className="w-8 h-8 text-primary mx-auto mb-2" />
-                <div className="text-3xl font-bold text-foreground">25</div>
-                <div className="text-sm text-muted-foreground">Question Sets</div>
+              <div className="text-center bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
+                <Shield className="w-8 h-8 text-accent mx-auto mb-2" />
+                <div className="text-3xl font-bold text-white">25</div>
+                <div className="text-sm text-white/80">Question Sets</div>
               </div>
-              <div className="text-center">
-                <Clock className="w-8 h-8 text-primary mx-auto mb-2" />
-                <div className="text-3xl font-bold text-foreground">20</div>
-                <div className="text-sm text-muted-foreground">MCQs per Set</div>
+              <div className="text-center bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
+                <Clock className="w-8 h-8 text-accent mx-auto mb-2" />
+                <div className="text-3xl font-bold text-white">20</div>
+                <div className="text-sm text-white/80">MCQs per Set</div>
               </div>
             </motion.div>
           </div>
         </div>
       </section>
+
+      {/* Motivational Section */}
+      <MotivationSection />
 
       {/* Academy Journey Timeline */}
       <AcademyJourney />
@@ -228,8 +310,8 @@ const Home = () => {
                           id: subject.id,
                           title: subject.name,
                           description: subject.description || 'Subject exam',
-                          duration: 60,
-                          totalQuestions: 100,
+                          timeAllowed: 60,
+
                           difficulty: 'medium' as const,
                           topics: [],
                           passingScore: 85
@@ -247,18 +329,18 @@ const Home = () => {
 
       {/* YouTube Section */}
       <YouTubeSection
-        channelUrl="https://youtube.com/@dmltacademy"
-        channelName="DMLT Academy"
-        subscriberCount="10K+"
-        videoCount="100+"
-        featuredVideoId="Ifo1IPNy3YY"
+        channelUrl="https://youtube.com/@marathi_mahiti_kendra?si=5i3EFbq1Gavk8gNc"
+        channelName="Marathi Mahiti Kendra"
+        subscriberCount="50K+"
+        videoCount="500+"
+        featuredVideoId="-acucIxddUw"
       />
 
-      {/* WhatsApp Community Section */}
-      <WhatsAppSection
-        communityUrl="https://chat.whatsapp.com/BjTBURbfavl6LQdSMikNze"
-        communityName="DMLT Academy Community"
-        memberCount="500+"
+      {/* Telegram Community Section */}
+      <TelegramSection
+        channelUrl="https://t.me/marathi_mahiti_kendra"
+        channelName="Marathi Mahiti Kendra"
+        memberCount="10K+"
       />
 
       {/* Plans Section */}
@@ -433,7 +515,7 @@ const Home = () => {
               Platform <span className="gradient-text">Statistics</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join thousands of successful DMLT students who have trusted our platform for their exam preparation
+              Join thousands of successful students who have trusted our platform for their exam preparation
             </p>
           </motion.div>
 
@@ -498,6 +580,9 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <TestimonialsSection />
+
       {/* FAQ Section */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-6">
@@ -545,7 +630,7 @@ const Home = () => {
               },
               {
                 question: "Is there a refund policy?",
-                answer: "We offer a 7-day money-back guarantee if you're not satisfied with our platform. Contact our support team at dmltadamany23@gmail.com for assistance with refunds or any other concerns."
+                answer: "We offer a 7-day money-back guarantee if you're not satisfied with our platform. Contact our support team at support@govexams.info for assistance with refunds or any other concerns."
               },
               {
                 question: "How are the rankings calculated?",
@@ -553,7 +638,7 @@ const Home = () => {
               },
               {
                 question: "Do I need to install any software?",
-                answer: "No installation required! DMLT Academy is a web-based platform. Simply visit our website, create an account, and start practicing. All you need is a web browser and internet connection."
+                answer: "No installation required! GovExams is a web-based platform. Simply visit our website, create an account, and start practicing. All you need is a web browser and internet connection."
               }
             ].map((faq, index) => (
               <motion.details
@@ -586,7 +671,7 @@ const Home = () => {
               Still have questions? We're here to help!
             </p>
             <a
-              href="https://wa.me/919834100959?text=Hello!%20I%20have%20a%20question%20about%20DMLT%20Academy"
+              href="https://wa.me/918275437940?text=Hello!%20I%20have%20a%20question%20about%20GovExams"
               target="_blank"
               rel="noopener noreferrer"
             >

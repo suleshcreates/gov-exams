@@ -2,16 +2,20 @@ import React, { useEffect, useState } from 'react';
 import logger from '@/lib/logger';
 import { useParams, Link } from 'react-router-dom';
 import { adminService } from '../lib/adminService';
-import { ArrowLeft, Plus, Edit, Trash2, Eye, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Eye, Upload, Settings } from 'lucide-react';
 
 interface QuestionSet {
   id: string;
-  exam_id: string;
+  exam_id?: string;
+  topic_id?: string;
   set_number: number;
   time_limit_minutes: number;
   subject?: {
     id: string;
     name: string;
+  };
+  topic?: {
+    title: string;
   };
 }
 
@@ -117,20 +121,22 @@ const QuestionManager = () => {
     );
   }
 
+  const isTopicSet = !!questionSet.topic_id;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            to={questionSet.subject ? `/admin/subjects/${questionSet.subject.id}` : '/admin/subjects'}
+            to={questionSet.subject ? (isTopicSet ? `/admin/subjects/${questionSet.subject.id}/topics` : `/admin/subjects/${questionSet.subject.id}`) : '/admin/subjects'}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {questionSet.exam_id} - Set {questionSet.set_number}
+              {isTopicSet ? (questionSet.topic?.title || 'Topic Questions') : `${questionSet.exam_id} - Set ${questionSet.set_number}`}
             </h1>
             <p className="text-gray-600 mt-1">
               {questionSet.subject?.name} • {questionSet.time_limit_minutes} minutes • {questions.length} questions
@@ -139,13 +145,22 @@ const QuestionManager = () => {
         </div>
         <div className="flex gap-3">
           {questionSet.subject?.id && (
-            <Link
-              to={`/admin/subjects/${questionSet.subject.id}/question-sets/${setId}/bulk-import`}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Upload size={20} />
-              Bulk Import
-            </Link>
+            <>
+              <Link
+                to={`/admin/subjects/${questionSet.subject.id}/question-sets/${setId}`}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                <Settings size={20} />
+                Settings
+              </Link>
+              <Link
+                to={`/admin/subjects/${questionSet.subject.id}/question-sets/${setId}/bulk-import`}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <Upload size={20} />
+                Bulk Import
+              </Link>
+            </>
           )}
           <button
             onClick={handleAddQuestion}

@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-This guide will help you migrate from phone-based to email-based authentication for the DMLT Academy Exam Portal.
+This guide will help you migrate from phone-based to email-based authentication for the GovExams Exam Portal.
 
 ## ✅ What's Been Completed
 
@@ -62,7 +62,7 @@ This guide will help you migrate from phone-based to email-based authentication 
    - Go to "Authentication" → "Email Templates"
    - Customize "Confirm signup" template:
      ```html
-     <h2>Welcome to DMLT Academy!</h2>
+     <h2>Welcome to GovExams!</h2>
      <p>Hi {{ .Data.name }},</p>
      <p>Thanks for signing up! Click the link below to verify your email address:</p>
      <p><a href="{{ .ConfirmationURL }}">Verify Email Address</a></p>

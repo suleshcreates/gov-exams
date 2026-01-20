@@ -13,6 +13,9 @@ export interface Exam {
   timeAllowed: number; // minutes for 20 questions
   questionSets: QuestionSet[];
   isPaid: boolean;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  topics?: string[];
+  passingScore?: number;
 }
 
 export interface Question {

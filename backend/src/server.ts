@@ -13,6 +13,8 @@ import adminRoutes from './routes/admin.routes';
 import paymentRoutes from './routes/payment.routes';
 import plansRoutes from './routes/plans.routes';
 import profileRoutes from './routes/profile.routes';
+import studentRoutes from './routes/student.routes';
+import publicRoutes from './routes/public.routes';
 
 /**
  * Create and configure Express application
@@ -63,6 +65,8 @@ function createApp(): Application {
     app.use('/api/payments', paymentRoutes);
     app.use('/api/plans', plansRoutes);
     app.use('/api/profile', profileRoutes);
+    app.use('/api/student', studentRoutes);
+    app.use('/api/public', publicRoutes);
     // Add more routes here as needed:
     // app.use('/api/exam', examRoutes);
 

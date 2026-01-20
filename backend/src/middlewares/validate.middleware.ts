@@ -60,6 +60,24 @@ export const validateLogin = [
 ];
 
 /**
+ * Validation rules for admin login (uses email field)
+ */
+export const validateAdminLogin = [
+    body('email')
+        .trim()
+        .notEmpty()
+        .withMessage('Email is required')
+        .isEmail()
+        .withMessage('Invalid email format'),
+
+    body('password')
+        .notEmpty()
+        .withMessage('Password is required'),
+
+    handleValidationErrors,
+];
+
+/**
  * Validation rules for profile update
  */
 export const validateProfileUpdate = [
@@ -111,5 +129,6 @@ function handleValidationErrors(
 export default {
     validateSignup,
     validateLogin,
+    validateAdminLogin,
     validateProfileUpdate,
 };

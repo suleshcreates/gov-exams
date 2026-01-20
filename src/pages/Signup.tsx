@@ -174,7 +174,7 @@ const Signup = () => {
         >
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-            <p className="text-gray-600">Join DMLT Academy today</p>
+            <p className="text-gray-600">Join GovExams today</p>
           </div>
 
           {error && (
@@ -196,7 +196,7 @@ const Signup = () => {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Enter your full name"
                   disabled={loading || otpSending}
                   required
@@ -216,7 +216,7 @@ const Signup = () => {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Choose a username"
                   disabled={loading || otpSending}
                   required
@@ -239,7 +239,7 @@ const Signup = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="10-digit phone number"
                   maxLength={10}
                   disabled={loading || otpSending}
@@ -260,7 +260,7 @@ const Signup = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="your.email@example.com"
                   disabled={loading || otpSending}
                   required
@@ -280,7 +280,7 @@ const Signup = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Create a strong password"
                   disabled={loading || otpSending}
                   required
@@ -310,7 +310,7 @@ const Signup = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Confirm your password"
                   disabled={loading || otpSending}
                   required
@@ -328,7 +328,7 @@ const Signup = () => {
             <button
               type="submit"
               disabled={loading || otpSending}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {otpSending ? 'Sending OTP...' : 'Send Verification Code'}
             </button>
@@ -337,7 +337,7 @@ const Signup = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+              <Link to="/login" className="text-primary font-semibold hover:underline">
                 Log In
               </Link>
             </p>
@@ -381,7 +381,7 @@ const Signup = () => {
                 setOtp(value);
                 setError('');
               }}
-              className="w-full px-4 py-3 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-6 tracking-widest"
+              className="w-full px-4 py-3 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent mb-6 tracking-widest"
               placeholder="000000"
               maxLength={6}
               disabled={loading}
@@ -390,7 +390,7 @@ const Signup = () => {
             <button
               onClick={handleVerifyOTP}
               disabled={loading || otp.length !== 6}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Verifying...' : 'Verify & Create Account'}
             </button>
@@ -399,7 +399,7 @@ const Signup = () => {
               Didn't receive the code?{' '}
               <button
                 onClick={handleSubmit}
-                className="text-blue-600 font-semibold hover:underline"
+                className="text-primary font-semibold hover:underline"
                 disabled={otpSending}
               >
                 {otpSending ? 'Sending...' : 'Resend'}

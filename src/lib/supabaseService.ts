@@ -343,15 +343,36 @@ export const supabaseService = {
   },
 
   async getStudentPlans(phone: string) {
-    const { data, error } = await supabase
-      .from('user_plans')
-      .select('*')
-      .eq('student_phone', phone)
-      .eq('is_active', true)
-      .order('purchased_at', { ascending: false });
+    logger.debug('[getStudentPlans] Fetching plans via backend API for phone:', phone);
 
-    if (error) throw error;
-    return data || [];
+    // Use backend API for secure plan access
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      logger.warn('[getStudentPlans] No auth token, returning empty array');
+      return [];
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/plans/my-plans`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      logger.debug('[getStudentPlans] Plans retrieved via API:', data);
+
+      return data.plans || [];
+    } catch (error) {
+      logger.error('[getStudentPlans] Error fetching from backend:', error);
+      return [];
+    }
   },
 
   async getActiveStudentPlans(phone: string) {

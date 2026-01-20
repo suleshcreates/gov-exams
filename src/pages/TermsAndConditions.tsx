@@ -18,17 +18,17 @@ const TermsAndConditions = () => {
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
                             <p className="text-muted-foreground">
-                                By accessing and using DMLT Academy ("the Platform"), you accept and agree to be bound by these Terms and  Conditions. If you do not agree to these terms, please do not use our services.
+                                By accessing and using GovExams ("the Platform"), you accept and agree to be bound by these Terms and  Conditions. If you do not agree to these terms, please do not use our services.
                             </p>
                         </section>
 
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">2. Services Provided</h2>
                             <p className="text-muted-foreground mb-4">
-                                DMLT Academy provides:
+                                GovExams provides:
                             </p>
                             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                                <li>Online practice exams for DMLT (Diploma in Medical Laboratory Technology) students</li>
+                                <li>Online practice exams for government exam students</li>
                                 <li>500+ Multiple Choice Questions across 5 subjects</li>
                                 <li>Bilingual support (English and Marathi)</li>
                                 <li>Instant results and comprehensive analytics</li>
@@ -68,7 +68,7 @@ const TermsAndConditions = () => {
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">5. Intellectual Property</h2>
                             <p className="text-muted-foreground">
-                                All content on DMLT Academy, including questions, study materials, design, logos, and software, is the property of DMLT Academy and protected by copyright laws. You may not reproduce, distribute, or create derivative works without explicit written permission.
+                                All content on GovExams, including questions, study materials, design, logos, and software, is the property of GovExams and protected by copyright laws. You may not reproduce, distribute, or create derivative works without explicit written permission.
                             </p>
                         </section>
 
@@ -97,7 +97,7 @@ const TermsAndConditions = () => {
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">8. Limitation of Liability</h2>
                             <p className="text-muted-foreground">
-                                DMLT Academy provides educational content and practice materials. We make no guarantees regarding exam success or job placement. Our platform is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages.
+                                GovExams provides educational content and practice materials. We make no guarantees regarding exam success or job placement. Our platform is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages.
                             </p>
                         </section>
 
@@ -128,7 +128,7 @@ const TermsAndConditions = () => {
                                 For questions about these Terms and Conditions, contact us:
                             </p>
                             <div className="bg-primary/5 rounded-lg p-4 mt-4">
-                                <p className="text-muted-foreground"><strong>Email:</strong> dmltadamany23@gmail.com</p>
+                                <p className="text-muted-foreground"><strong>Email:</strong> support@govexams.info</p>
                                 <p className="text-muted-foreground"><strong>Phone:</strong> +91 9834100959</p>
                                 <p className="text-muted-foreground"><strong>Address:</strong> Udgir, Maharashtra, India</p>
                             </div>

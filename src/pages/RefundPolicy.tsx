@@ -18,7 +18,7 @@ const RefundPolicy = () => {
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">1. Refund Eligibility</h2>
                             <p className="text-muted-foreground mb-4">
-                                At DMLT Academy, we want you to be completely satisfied with your purchase. We offer a <strong>7-day money-back guarantee</strong> for all our plans under the following conditions:
+                                At GovExams, we want you to be completely satisfied with your purchase. We offer a <strong>7-day money-back guarantee</strong> for all our plans under the following conditions:
                             </p>
                             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                                 <li>Refund request must be made within 7 days of purchase</li>
@@ -49,7 +49,7 @@ const RefundPolicy = () => {
                                 To request a refund:
                             </p>
                             <ol className="list-decimal pl-6 text-muted-foreground space-y-2">
-                                <li>Email us at <strong>dmltadamany23@gmail.com</strong></li>
+                                <li>Email us at <strong>support@govexams.info</strong></li>
                                 <li>Include your order/transaction ID</li>
                                 <li>Provide registered email and phone number</li>
                                 <li>Explain the reason for your refund request</li>
@@ -94,7 +94,7 @@ const RefundPolicy = () => {
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">7. Technical Issues</h2>
                             <p className="text-muted-foreground">
-                                If you experience technical problems preventing you from using our services, please contact us immediately at dmltadamany23@gmail.com. We will work to resolve the issue promptly. Refunds for technical issues will be considered on a case-by-case basis.
+                                If you experience technical problems preventing you from using our services, please contact us immediately at support@govexams.info. We will work to resolve the issue promptly. Refunds for technical issues will be considered on a case-by-case basis.
                             </p>
                         </section>
 
@@ -108,7 +108,7 @@ const RefundPolicy = () => {
                         <section>
                             <h2 className="text-2xl font-semibold mb-4">9. Dispute Resolution</h2>
                             <p className="text-muted-foreground">
-                                If you're not satisfied with our refund decision, you may escalate the matter by contacting us at dmltadamany23@gmail.com. We are committed to resolving all disputes fairly and promptly.
+                                If you're not satisfied with our refund decision, you may escalate the matter by contacting us at support@govexams.info. We are committed to resolving all disputes fairly and promptly.
                             </p>
                         </section>
 
@@ -118,7 +118,7 @@ const RefundPolicy = () => {
                                 For refund requests or questions about this policy:
                             </p>
                             <div className="bg-primary/5 rounded-lg p-4 mt-4">
-                                <p className="text-muted-foreground"><strong>Email:</strong> dmltadamany23@gmail.com</p>
+                                <p className="text-muted-foreground"><strong>Email:</strong> support@govexams.info</p>
                                 <p className="text-muted-foreground"><strong>Phone:</strong> +91 9834100959</p>
                                 <p className="text-muted-foreground"><strong>WhatsApp:</strong> +91 9834100959</p>
                                 <p className="text-muted-foreground"><strong>Address:</strong> Udgir, Maharashtra, India</p>

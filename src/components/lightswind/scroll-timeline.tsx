@@ -18,6 +18,7 @@ export interface TimelineEvent {
   description: string;
   icon?: React.ReactNode;
   color?: string;
+  image?: string;
 }
 
 export interface ScrollTimelineProps {
@@ -123,8 +124,8 @@ export const ScrollTimeline = ({
       animationOrder === "simultaneous"
         ? 0
         : animationOrder === "staggered"
-        ? index * 0.2
-        : index * 0.3;
+          ? index * 0.2
+          : index * 0.3;
 
     const initialStates = {
       fade: { opacity: 0, y: 20 },
@@ -133,10 +134,10 @@ export const ScrollTimeline = ({
           cardAlignment === "left"
             ? -100
             : cardAlignment === "right"
-            ? 100
-            : index % 2 === 0
-            ? -100
-            : 100,
+              ? 100
+              : index % 2 === 0
+                ? -100
+                : 100,
         opacity: 0,
       },
       scale: { scale: 0.8, opacity: 0 },
@@ -203,8 +204,8 @@ export const ScrollTimeline = ({
           ? "lg:mr-[calc(50%+20px)]"
           : "lg:ml-[calc(50%+20px)]"
         : cardAlignment === "left"
-        ? "lg:mr-auto lg:ml-0"
-        : "lg:ml-auto lg:mr-0";
+          ? "lg:mr-auto lg:ml-0"
+          : "lg:ml-auto lg:mr-0";
     const perspectiveClass = perspective
       ? "transform transition-transform hover:rotate-y-1 hover:rotate-x-1"
       : "";
@@ -319,8 +320,8 @@ export const ScrollTimeline = ({
                         ? "lg:justify-start"
                         : "lg:flex-row-reverse lg:justify-start"
                       : cardAlignment === "left"
-                      ? "lg:justify-start"
-                      : "lg:flex-row-reverse lg:justify-start"
+                        ? "lg:justify-start"
+                        : "lg:flex-row-reverse lg:justify-start"
                   )}
                 >
                   <div
@@ -339,13 +340,13 @@ export const ScrollTimeline = ({
                       animate={
                         index <= activeIndex
                           ? {
-                              scale: [1, 1.3, 1],
-                              boxShadow: [
-                                "0 0 0px rgba(99,102,241,0)",
-                                "0 0 12px rgba(99,102,241,0.6)",
-                                "0 0 0px rgba(99,102,241,0)",
-                              ],
-                            }
+                            scale: [1, 1.3, 1],
+                            boxShadow: [
+                              "0 0 0px rgba(99,102,241,0)",
+                              "0 0 12px rgba(99,102,241,0.6)",
+                              "0 0 0px rgba(99,102,241,0)",
+                            ],
+                          }
                           : {}
                       }
                       transition={{
@@ -367,7 +368,25 @@ export const ScrollTimeline = ({
                     viewport={{ once: false, margin: "-100px" }}
                     style={parallaxIntensity > 0 ? { y: yOffset } : undefined}
                   >
-                    <Card className="bg-background border">
+                    <Card className="bg-background border overflow-hidden">
+                      {/* Image with hover animation */}
+                      {event.image && (
+                        <motion.div
+                          className="relative h-48 overflow-hidden"
+                          whileHover={{ scale: 1.02 }}
+                        >
+                          <motion.img
+                            src={event.image}
+                            alt={event.title}
+                            className="w-full h-full object-cover"
+                            initial={{ scale: 1.1 }}
+                            whileInView={{ scale: 1 }}
+                            transition={{ duration: 0.8 }}
+                            whileHover={{ scale: 1.1 }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                        </motion.div>
+                      )}
                       <CardContent className="p-6">
                         {dateFormat === "badge" ? (
                           <div className="flex items-center mb-2">

@@ -34,10 +34,10 @@ const ContactUs = () => {
                                 <div>
                                     <h3 className="font-semibold mb-1">Email</h3>
                                     <a
-                                        href="mailto:dmltadamany23@gmail.com"
+                                        href="mailto:kirkanbalasaheb4@gmail.com"
                                         className="text-muted-foreground hover:text-primary transition-colors"
                                     >
-                                        dmltadamany23@gmail.com
+                                        kirkanbalasaheb4@gmail.com
                                     </a>
                                     <p className="text-sm text-muted-foreground mt-1">
                                         We'll respond within 24 hours
@@ -52,10 +52,10 @@ const ContactUs = () => {
                                 <div>
                                     <h3 className="font-semibold mb-1">Phone</h3>
                                     <a
-                                        href="tel:+919834100959"
+                                        href="tel:+918275437940"
                                         className="text-muted-foreground hover:text-primary transition-colors"
                                     >
-                                        +91 9834100959
+                                        +91 82754 37940
                                     </a>
                                     <p className="text-sm text-muted-foreground mt-1">
                                         Mon-Sat, 9:00 AM - 6:00 PM IST
@@ -70,12 +70,12 @@ const ContactUs = () => {
                                 <div>
                                     <h3 className="font-semibold mb-1">WhatsApp</h3>
                                     <a
-                                        href="https://wa.me/919834100959?text=Hello!%20I%20have%20a%20question%20about%20DMLT%20Academy"
+                                        href="https://wa.me/918275437940?text=Hello!%20I%20have%20a%20question%20about%20GovExams"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-muted-foreground hover:text-primary transition-colors"
                                     >
-                                        +91 9834100959
+                                        +91 82754 37940
                                     </a>
                                     <p className="text-sm text-muted-foreground mt-1">
                                         Get instant support

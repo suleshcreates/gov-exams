@@ -15,7 +15,7 @@ const teamMembers: TeamMember[] = [
     id: 1,
     name: "Dr. Rajesh Kumar",
     role: "Founder & Chief Educator",
-    description: "15+ years of experience in DMLT education with a passion for making quality education accessible to all students.",
+    description: "15+ years of experience in government exam education with a passion for making quality education accessible to all students.",
     image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop",
     expertise: ["Clinical Pathology", "Microbiology", "Biochemistry"]
   },
@@ -23,7 +23,7 @@ const teamMembers: TeamMember[] = [
     id: 2,
     name: "Prof. Priya Sharma",
     role: "Head of Curriculum",
-    description: "Expert in developing comprehensive DMLT curricula with focus on practical knowledge and exam preparation.",
+    description: "Expert in developing comprehensive government exam curricula with focus on practical knowledge and exam preparation.",
     image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop",
     expertise: ["Hematology", "Immunology", "Quality Control"]
   },
@@ -76,7 +76,7 @@ export const TeamSection = () => {
             Expert <span className="gradient-text">Educators</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Our dedicated team of experienced professionals is committed to your success in DMLT education
+            Our dedicated team of experienced professionals is committed to your success in government exam education
           </p>
         </motion.div>
 
@@ -156,7 +156,7 @@ export const TeamSection = () => {
             </div>
             <h3 className="text-xl font-bold mb-2">Results</h3>
             <p className="text-sm text-muted-foreground">
-              Focused on helping you achieve your DMLT career goals
+              Focused on helping you achieve your government exam career goals
             </p>
           </div>
         </motion.div>

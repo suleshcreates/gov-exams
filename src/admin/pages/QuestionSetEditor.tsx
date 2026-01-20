@@ -28,6 +28,7 @@ const QuestionSetEditor = () => {
   const [formData, setFormData] = useState({
     subject_id: subjectId || '',
     exam_id: '',
+    topic_id: '',
     set_number: 1,
     time_limit_minutes: 60,
   });
@@ -51,6 +52,7 @@ const QuestionSetEditor = () => {
           setFormData({
             subject_id: existingSet.subject_id,
             exam_id: existingSet.exam_id,
+            topic_id: existingSet.topic_id || '',
             set_number: existingSet.set_number,
             time_limit_minutes: existingSet.time_limit_minutes,
           });
@@ -182,8 +184,9 @@ const QuestionSetEditor = () => {
               value={formData.subject_id}
               onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.subject_id ? 'border-red-500' : 'border-gray-300'
-                }`}
+                } ${formData.topic_id ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               required
+              disabled={!!formData.topic_id}
             >
               <option value="">Select a subject</option>
               {subjects.map((subject) => (
@@ -197,49 +200,57 @@ const QuestionSetEditor = () => {
             )}
           </div>
 
-          {/* Exam ID */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Exam ID *
-            </label>
-            <input
-              type="text"
-              value={formData.exam_id}
-              onChange={(e) => setFormData({ ...formData, exam_id: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.exam_id ? 'border-red-500' : 'border-gray-300'
-                }`}
-              placeholder="e.g., MPSC-2024"
-              required
-            />
-            {errors.exam_id && (
-              <p className="mt-1 text-sm text-red-600">{errors.exam_id}</p>
-            )}
-            <p className="mt-1 text-sm text-gray-500">
-              Unique identifier for the exam (e.g., MPSC-2024, UPSC-GS1)
-            </p>
-          </div>
+          {!formData.topic_id ? (
+            <>
+              {/* Exam ID */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Exam ID *
+                </label>
+                <input
+                  type="text"
+                  value={formData.exam_id}
+                  onChange={(e) => setFormData({ ...formData, exam_id: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.exam_id ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  placeholder="e.g., MPSC-2024"
+                  required
+                />
+                {errors.exam_id && (
+                  <p className="mt-1 text-sm text-red-600">{errors.exam_id}</p>
+                )}
+                <p className="mt-1 text-sm text-gray-500">
+                  Unique identifier for the exam (e.g., MPSC-2024, UPSC-GS1)
+                </p>
+              </div>
 
-          {/* Set Number */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Set Number *
-            </label>
-            <input
-              type="number"
-              value={formData.set_number}
-              onChange={(e) => setFormData({ ...formData, set_number: parseInt(e.target.value) || 1 })}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.set_number ? 'border-red-500' : 'border-gray-300'
-                }`}
-              min="1"
-              required
-            />
-            {errors.set_number && (
-              <p className="mt-1 text-sm text-red-600">{errors.set_number}</p>
-            )}
-            <p className="mt-1 text-sm text-gray-500">
-              Set number must be unique within the exam (e.g., 1, 2, 3)
-            </p>
-          </div>
+              {/* Set Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Set Number *
+                </label>
+                <input
+                  type="number"
+                  value={formData.set_number}
+                  onChange={(e) => setFormData({ ...formData, set_number: parseInt(e.target.value) || 1 })}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.set_number ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  min="1"
+                  required
+                />
+                {errors.set_number && (
+                  <p className="mt-1 text-sm text-red-600">{errors.set_number}</p>
+                )}
+                <p className="mt-1 text-sm text-gray-500">
+                  Set number must be unique within the exam (e.g., 1, 2, 3)
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="p-4 bg-blue-50 text-blue-800 rounded-lg">
+              This is a specialized Question Set associated with a Topic Video.
+            </div>
+          )}
 
           {/* Time Limit */}
           <div>

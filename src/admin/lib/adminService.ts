@@ -6,68 +6,26 @@ export const adminService = {
   // Dashboard Metrics
   async getDashboardMetrics() {
     try {
-      // Get total students count
-      const { count: studentsCount, error: studentsError } = await supabase
-        .from('students')
-        .select('*', { count: 'exact', head: true });
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-
-
-      if (studentsError) {
-        logger.error('[adminService] Error counting students:', studentsError);
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard metrics');
       }
 
-      // Get active plans count
-      const now = new Date().toISOString();
-      const { count: activePlansCount, error: plansError } = await supabase
-        .from('user_plans')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
-        .or(`expires_at.is.null,expires_at.gt.${now}`);
-
-      if (plansError) {
-        logger.error('[adminService] Error counting plans:', plansError);
-      }
-
-      // Get total exam results count
-      const { count: resultsCount, error: resultsError } = await supabase
-        .from('exam_results')
-        .select('*', { count: 'exact', head: true });
-
-      if (resultsError) {
-        logger.error('[adminService] Error counting results:', resultsError);
-      }
-
-      // Get total revenue
-      const { data: revenueData, error: revenueError } = await supabase
-        .from('user_plans')
-        .select('price_paid');
-
-      if (revenueError) {
-        logger.error('[adminService] Error fetching revenue:', revenueError);
-      }
-
-      const totalRevenue = revenueData?.reduce((sum, plan) => sum + plan.price_paid, 0) || 0;
-
-      // Get average score
-      const { data: scoresData, error: scoresError } = await supabase
-        .from('exam_results')
-        .select('accuracy');
-
-      if (scoresError) {
-        logger.error('[adminService] Error fetching scores:', scoresError);
-      }
-
-      const averageScore = scoresData && scoresData.length > 0
-        ? scoresData.reduce((sum, result) => sum + result.accuracy, 0) / scoresData.length
-        : 0;
-
+      const result = await response.json();
       return {
-        totalStudents: studentsCount || 0,
-        activePlans: activePlansCount || 0,
-        totalExamResults: resultsCount || 0,
-        totalRevenue,
-        averageScore: Number(averageScore.toFixed(1)),
+        totalStudents: result.stats?.totalStudents || 0,
+        activePlans: result.stats?.activePlans || 0,
+        totalExamResults: result.stats?.totalResults || 0,
+        totalRevenue: result.stats?.totalRevenue || 0,
+        averageScore: result.stats?.averageScore || 0,
+        revenueByPlan: result.stats?.revenueByPlan || {},
       };
     } catch (error) {
       logger.error('[adminService] Error fetching dashboard metrics:', error);
@@ -77,6 +35,7 @@ export const adminService = {
         totalExamResults: 0,
         totalRevenue: 0,
         averageScore: 0,
+        revenueByPlan: {},
       };
     }
   },
@@ -84,78 +43,93 @@ export const adminService = {
   // Recent Activity
   async getRecentRegistrations(limit = 5) {
     try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('email, username, name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/recent-registrations?limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
-      return data || [];
+      if (!response.ok) {
+        throw new Error('Failed to fetch recent registrations');
+      }
+
+      const result = await response.json();
+      return result.data || [];
     } catch (error) {
       logger.error('[adminService] Error fetching recent registrations:', error);
-      throw error;
+      return [];
     }
   },
 
   async getRecentExamCompletions(limit = 10) {
     try {
-      const { data, error } = await supabase
-        .from('exam_results')
-        .select('id, student_name, exam_title, score, total_questions, accuracy, created_at')
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/recent-exam-completions?limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
-      return data || [];
+      if (!response.ok) {
+        throw new Error('Failed to fetch recent exam completions');
+      }
+
+      const result = await response.json();
+      return result.data || [];
     } catch (error) {
       logger.error('[adminService] Error fetching recent exam completions:', error);
-      throw error;
+      return [];
     }
   },
 
   async getRecentPlanPurchases(limit = 5) {
     try {
-      const { data, error } = await supabase
-        .from('user_plans')
-        .select('id, student_name, plan_name, price_paid, purchased_at')
-        .order('purchased_at', { ascending: false })
-        .limit(limit);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/recent-plan-purchases?limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
-      return data || [];
+      if (!response.ok) {
+        throw new Error('Failed to fetch recent plan purchases');
+      }
+
+      const result = await response.json();
+      return result.data || [];
     } catch (error) {
       logger.error('[adminService] Error fetching recent plan purchases:', error);
-      throw error;
+      return [];
     }
   },
 
   // Students Management
   async getStudents(page = 1, limit = 20, search = '') {
     try {
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
+      const token = localStorage.getItem('admin_access_token');
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(search && { search }),
+      });
 
-      let query = supabase
-        .from('students')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/students?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (search) {
-        query = query.or(`email.ilike.%${search}%,username.ilike.%${search}%,name.ilike.%${search}%`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch students');
       }
 
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      return {
-        students: data || [],
-        total: count || 0,
-        page,
-        totalPages: Math.ceil((count || 0) / limit),
-      };
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error fetching students:', error);
       throw error;
@@ -286,7 +260,7 @@ export const adminService = {
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
-        .order('name', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -314,14 +288,23 @@ export const adminService = {
 
   async createSubject(name: string, description: string) {
     try {
-      const { data, error } = await supabase
-        .from('subjects')
-        .insert([{ name, description }])
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/subjects`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, description }),
+      });
 
-      if (error) throw error;
-      return data;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create subject');
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       logger.error('[adminService] Error creating subject:', error);
       throw error;
@@ -330,15 +313,23 @@ export const adminService = {
 
   async updateSubject(id: string, name: string, description: string) {
     try {
-      const { data, error } = await supabase
-        .from('subjects')
-        .update({ name, description })
-        .eq('id', id)
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/subjects/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, description }),
+      });
 
-      if (error) throw error;
-      return data;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update subject');
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       logger.error('[adminService] Error updating subject:', error);
       throw error;
@@ -347,15 +338,161 @@ export const adminService = {
 
   async deleteSubject(id: string) {
     try {
-      const { error } = await supabase
-        .from('subjects')
-        .delete()
-        .eq('id', id);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/subjects/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete subject');
+      }
+
       return true;
     } catch (error) {
       logger.error('[adminService] Error deleting subject:', error);
+      throw error;
+    }
+  },
+
+  // Topics Management
+  async getTopics(subjectId: string) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/subjects/${subjectId}/topics`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch topics');
+      }
+
+      const data = await response.json();
+      return data || [];
+    } catch (error) {
+      logger.error('[adminService] Error fetching topics:', error);
+      throw error;
+    }
+  },
+
+  async createTopic(data: {
+    subject_id: string;
+    title: string;
+    description: string;
+    video_url: string;
+    video_duration: number;
+    order_index: number;
+  }) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/topics`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create topic');
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      logger.error('[adminService] Error creating topic:', error);
+      throw error;
+    }
+  },
+
+  async updateTopic(id: string, data: Partial<{
+    title: string;
+    description: string;
+    video_url: string;
+    video_duration: number;
+    order_index: number;
+    is_active: boolean;
+  }>) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/topics/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update topic');
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      logger.error('[adminService] Error updating topic:', error);
+      throw error;
+    }
+  },
+
+  async deleteTopic(id: string) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/topics/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete topic');
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('[adminService] Error deleting topic:', error);
+      throw error;
+    }
+  },
+
+  async uploadTopicVideo(file: File) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/upload-video`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Content-Type is automatically set by browser for FormData
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload video');
+      }
+
+      const result = await response.json();
+      return result.publicUrl;
+    } catch (error) {
+      logger.error('[adminService] Error uploading video:', error);
       throw error;
     }
   },
@@ -367,7 +504,8 @@ export const adminService = {
         .from('question_sets')
         .select(`
           *,
-          subject:subjects(id, name)
+          subject:subjects(id, name),
+          topic:topics(title)
         `)
         .order('created_at', { ascending: false });
 
@@ -387,26 +525,29 @@ export const adminService = {
 
   async createQuestionSet(data: {
     subject_id: string;
-    exam_id: string;
+    exam_id?: string;
+    topic_id?: string;
     set_number: number;
     time_limit_minutes: number;
   }) {
     try {
-      const { data: questionSet, error } = await supabase
-        .from('question_sets')
-        .insert([data])
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/question-sets`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
 
-      if (error) {
-        logger.error('[adminService] Supabase error creating question set:', error);
-        // Check if it's a table doesn't exist error
-        if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
-          throw new Error('Database tables not set up. Please run the SQL migration script first. See ADMIN_PANEL_SETUP.md for instructions.');
-        }
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create question set');
       }
-      return questionSet;
+
+      const result = await response.json();
+      return result;
     } catch (error) {
       logger.error('[adminService] Error creating question set:', error);
       throw error;
@@ -420,15 +561,23 @@ export const adminService = {
     time_limit_minutes?: number;
   }) {
     try {
-      const { data: questionSet, error } = await supabase
-        .from('question_sets')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/question-sets/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
 
-      if (error) throw error;
-      return questionSet;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update question set');
+      }
+
+      const result = await response.json();
+      return result;
     } catch (error) {
       logger.error('[adminService] Error updating question set:', error);
       throw error;
@@ -587,16 +736,25 @@ export const adminService = {
         };
       });
 
-      // Insert in batch
-      const { data, error } = await supabase
-        .from('questions')
-        .insert(questionsToInsert)
-        .select();
+      // Insert in batch via backend API (bypass RLS)
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/questions/bulk`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ questions: questionsToInsert })
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to bulk import questions');
+      }
 
-      logger.info(`[adminService] Bulk imported ${data?.length || 0} questions`);
-      return data || [];
+      const result = await response.json();
+      logger.info(`[adminService] Bulk imported ${result?.length || 0} questions`);
+      return result || [];
     } catch (error) {
       logger.error('[adminService] Error bulk creating questions:', error);
       throw error;
@@ -611,41 +769,29 @@ export const adminService = {
     dateTo?: string;
   }) {
     try {
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
+      const token = localStorage.getItem('admin_access_token');
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(filters?.examId && { examId: filters.examId }),
+        ...(filters?.studentSearch && { studentSearch: filters.studentSearch }),
+        ...(filters?.dateFrom && { dateFrom: filters.dateFrom }),
+        ...(filters?.dateTo && { dateTo: filters.dateTo }),
+      });
 
-      let query = supabase
-        .from('exam_results')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/exam-results?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (filters?.examId) {
-        query = query.eq('exam_id', filters.examId);
+      if (!response.ok) {
+        throw new Error('Failed to fetch exam results');
       }
 
-      if (filters?.studentSearch) {
-        query = query.or(`student_name.ilike.%${filters.studentSearch}%,student_phone.ilike.%${filters.studentSearch}%`);
-      }
-
-      if (filters?.dateFrom) {
-        query = query.gte('created_at', filters.dateFrom);
-      }
-
-      if (filters?.dateTo) {
-        query = query.lte('created_at', filters.dateTo);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      return {
-        results: data || [],
-        total: count || 0,
-        page,
-        totalPages: Math.ceil((count || 0) / limit),
-      };
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error fetching exam results:', error);
       throw error;
@@ -658,37 +804,27 @@ export const adminService = {
     studentSearch?: string;
   }) {
     try {
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
+      const token = localStorage.getItem('admin_access_token');
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(filters?.status && { status: filters.status }),
+        ...(filters?.studentSearch && { studentSearch: filters.studentSearch }),
+      });
 
-      let query = supabase
-        .from('user_plans')
-        .select('*', { count: 'exact' })
-        .order('purchased_at', { ascending: false })
-        .range(from, to);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/plans?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (filters?.status === 'active') {
-        const now = new Date().toISOString();
-        query = query.eq('is_active', true).or(`expires_at.is.null,expires_at.gt.${now}`);
-      } else if (filters?.status === 'expired') {
-        const now = new Date().toISOString();
-        query = query.or(`is_active.eq.false,expires_at.lt.${now}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch user plans');
       }
 
-      if (filters?.studentSearch) {
-        query = query.or(`student_name.ilike.%${filters.studentSearch}%,student_phone.ilike.%${filters.studentSearch}%`);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      return {
-        plans: data || [],
-        total: count || 0,
-        page,
-        totalPages: Math.ceil((count || 0) / limit),
-      };
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error fetching user plans:', error);
       throw error;
@@ -697,13 +833,9 @@ export const adminService = {
 
   async deactivateUserPlan(id: string) {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No auth token found');
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/plans/deactivate/${id}`, {
-        method: 'PATCH',
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/plans/${id}/deactivate`, {
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -711,11 +843,11 @@ export const adminService = {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error('Failed to deactivate user plan');
       }
 
-      const data = await response.json();
-      return data.plan;
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error deactivating user plan:', error);
       throw error;
@@ -730,27 +862,23 @@ export const adminService = {
     expires_at: string | null;
   }) {
     try {
-      // Get student info
-      const student = await this.getStudentById(planData.student_id);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/plans`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(planData),
+      });
 
-      const { data, error } = await supabase
-        .from('user_plans')
-        .insert([{
-          student_id: planData.student_id,
-          student_name: student.name,
-          student_phone: student.phone || student.email,
-          plan_name: planData.plan_name,
-          price_paid: planData.price_paid,
-          exam_access: planData.exam_access,
-          purchased_at: new Date().toISOString(),
-          expires_at: planData.expires_at,
-          is_active: true,
-        }])
-        .select()
-        .single();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create manual plan');
+      }
 
-      if (error) throw error;
-      return data;
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error creating manual plan:', error);
       throw error;
@@ -833,118 +961,73 @@ export const adminService = {
     }
   },
 
-  async toggleSubjectPricingStatus(subjectId: string, isActive: boolean) {
+  // Plan Templates Management
+  async getPlanTemplates() {
     try {
-      const { data, error } = await supabase
-        .from('subject_pricing')
-        .update({ is_active: isActive })
-        .eq('subject_id', subjectId)
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/plan-templates`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      logger.error('[adminService] Error toggling subject pricing status:', error);
-      throw error;
-    }
-  },
-
-  // Plan Template Methods
-  async getPlanTemplates(includeInactive = false) {
-    try {
-      let query = supabase
-        .from('plan_templates')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (!includeInactive) {
-        query = query.eq('is_active', true);
+      if (!response.ok) {
+        throw new Error('Failed to fetch plan templates');
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data || [];
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error fetching plan templates:', error);
       throw error;
     }
   },
 
-  async createPlanTemplate(data: {
-    name: string;
-    description: string;
-    price: number;
-    validity_days: number | null;
-    subjects: string[];
-    badge?: string;
-    display_order?: number;
-  }) {
+  async createPlanTemplate(data: any) {
     try {
-      const { data: plan, error } = await supabase
-        .from('plan_templates')
-        .insert([{
-          ...data,
-          subjects: JSON.stringify(data.subjects),
-          is_active: true,
-        }])
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/plan-templates`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      if (error) throw error;
-      return plan;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create plan template');
+      }
+
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error creating plan template:', error);
       throw error;
     }
   },
 
-  async updatePlanTemplate(id: string, data: {
-    name?: string;
-    description?: string;
-    price?: number;
-    validity_days?: number | null;
-    subjects?: string[];
-    badge?: string;
-    display_order?: number;
-    is_active?: boolean;
-  }) {
+  async updatePlanTemplate(id: string, data: any) {
     try {
-      logger.debug('[adminService] Updating plan template:', id, data);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/plan-templates/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      const updateData = { ...data };
-      if (data.subjects) {
-        updateData.subjects = JSON.stringify(data.subjects) as any;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update plan template');
       }
 
-      const { data: plan, error } = await supabase
-        .from('plan_templates')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        logger.error('[adminService] Supabase error updating plan template:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-
-        // Provide more specific error messages
-        if (error.code === '42501') {
-          throw new Error('Permission denied. Please ensure you are logged in as an admin.');
-        } else if (error.code === '23505') {
-          throw new Error('A plan with this name already exists.');
-        } else {
-          throw new Error(`Failed to update plan: ${error.message}`);
-        }
-      }
-
-      logger.debug('[adminService] Plan template updated successfully:', plan);
-      return plan;
+      const result = await response.json();
+      return result.data;
     } catch (error) {
       logger.error('[adminService] Error updating plan template:', error);
       throw error;
@@ -953,122 +1036,23 @@ export const adminService = {
 
   async deletePlanTemplate(id: string) {
     try {
-      const { error } = await supabase
-        .from('plan_templates')
-        .delete()
-        .eq('id', id);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/plan-templates/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete plan template');
+      }
+
       return true;
     } catch (error) {
       logger.error('[adminService] Error deleting plan template:', error);
-      throw error;
-    }
-  },
-
-  // Discount Methods
-  async createDiscount(data: {
-    code: string;
-    discount_type: 'percentage' | 'fixed';
-    discount_value: number;
-    applicable_to?: string[] | null;
-    start_date: string;
-    end_date: string;
-    usage_limit?: number | null;
-  }) {
-    try {
-      const { data: discount, error } = await supabase
-        .from('plan_discounts')
-        .insert([{
-          ...data,
-          applicable_to: data.applicable_to ? JSON.stringify(data.applicable_to) : null,
-          is_active: true,
-          usage_count: 0,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return discount;
-    } catch (error) {
-      logger.error('[adminService] Error creating discount:', error);
-      throw error;
-    }
-  },
-
-  async applyDiscountCode(code: string, planId: string, originalPrice: number) {
-    try {
-      const { data: discount, error } = await supabase
-        .from('plan_discounts')
-        .select('*')
-        .eq('code', code.toUpperCase())
-        .eq('is_active', true)
-        .single();
-
-      if (error || !discount) {
-        throw new Error('Invalid or expired discount code');
-      }
-
-      // Check if discount is valid for this plan
-      if (discount.applicable_to) {
-        const applicablePlans = JSON.parse(discount.applicable_to);
-        if (!applicablePlans.includes(planId)) {
-          throw new Error('Discount code not applicable to this plan');
-        }
-      }
-
-      // Check date validity
-      const now = new Date();
-      const startDate = new Date(discount.start_date);
-      const endDate = new Date(discount.end_date);
-
-      if (now < startDate || now > endDate) {
-        throw new Error('Discount code has expired');
-      }
-
-      // Check usage limit
-      if (discount.usage_limit && discount.usage_count >= discount.usage_limit) {
-        throw new Error('Discount code usage limit reached');
-      }
-
-      // Calculate discount amount
-      let discountAmount = 0;
-      if (discount.discount_type === 'percentage') {
-        discountAmount = (originalPrice * discount.discount_value) / 100;
-      } else {
-        discountAmount = discount.discount_value;
-      }
-
-      // Ensure discount doesn't exceed original price
-      discountAmount = Math.min(discountAmount, originalPrice);
-
-      return {
-        isValid: true,
-        discountAmount,
-        finalPrice: originalPrice - discountAmount,
-        discountCode: code.toUpperCase(),
-      };
-    } catch (error: any) {
-      logger.error('[adminService] Error applying discount code:', error);
-      throw error;
-    }
-  },
-
-  async getActiveDiscounts() {
-    try {
-      const now = new Date().toISOString();
-      const { data, error } = await supabase
-        .from('plan_discounts')
-        .select('*')
-        .eq('is_active', true)
-        .lte('start_date', now)
-        .gte('end_date', now)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      logger.error('[adminService] Error fetching active discounts:', error);
       throw error;
     }
   },

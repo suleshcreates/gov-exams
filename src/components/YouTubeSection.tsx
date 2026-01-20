@@ -11,7 +11,7 @@ interface YouTubeSectionProps {
 
 export const YouTubeSection = ({
   channelUrl,
-  channelName = "DMLT Academy",
+  channelName = "GovExams",
   subscriberCount = "10K+",
   videoCount = "100+",
   featuredVideoId,
@@ -43,10 +43,10 @@ export const YouTubeSection = ({
           </motion.div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4">
-            Learn with <span className="text-red-500">DMLT Academy</span>
+            Learn with <span className="text-red-500">GovExams</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Subscribe to our YouTube channel for free tutorials, exam tips, and comprehensive DMLT preparation content
+            Subscribe to our YouTube channel for free tutorials, exam tips, and comprehensive exam preparation content
           </p>
         </motion.div>
 
@@ -117,7 +117,7 @@ export const YouTubeSection = ({
                   <span className="text-red-500 text-sm">✓</span>
                 </div>
                 <div>
-                  <p className="font-semibold">Free DMLT Tutorials</p>
+                  <p className="font-semibold">Free Exam Tutorials</p>
                   <p className="text-sm text-muted-foreground">Comprehensive video lessons on all subjects</p>
                 </div>
               </div>

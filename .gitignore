@@ -6,8 +6,8 @@ node_modules
 dist
 dist/
 build
-lib
-*/lib
+# lib
+# */lib
 functions/lib
 
 # Environment variables

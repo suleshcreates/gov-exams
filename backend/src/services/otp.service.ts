@@ -3,15 +3,25 @@ import logger from '../utils/logger';
 import nodemailer from 'nodemailer';
 import env from '../config/env';
 
-// Create Nodemailer transporter
+// Create Nodemailer transporter with optimized settings
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,      // Use port 587 (STARTTLS) - often faster than 465
+  secure: false,  // Use STARTTLS instead of SSL
   auth: {
     user: env.EMAIL_USER,
     pass: env.EMAIL_PASS,
   },
+  // Force IPv4 to avoid DNS resolution issues
+  family: 4,
+  // Connection pooling for faster subsequent emails
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+  // Shorter timeouts
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 10000,
 });
 
 // Verify transporter on startup
@@ -217,9 +227,9 @@ export async function sendOTPEmail(
 ): Promise<boolean> {
   try {
     const mailOptions = {
-      from: `"DMLT Academy" <${env.EMAIL_USER}>`,
+      from: `"GovExams" <${env.EMAIL_USER}>`,
       to: email,
-      subject: 'Your Verification Code - DMLT Academy',
+      subject: 'Your Verification Code - GovExams',
       html: `
   <div style="margin:0;padding:0;background:#f4f5f7;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" 
@@ -235,25 +245,23 @@ export async function sendOTPEmail(
             <tr>
               <td style="padding:0;margin:0;">
                 <div style="
-                  background:url('https://i.ibb.co/yBXrWc3H/final-hero-bg.jpg');
-                  background-size:cover;
-                  background-position:center;
+                  background: linear-gradient(135deg, #0A2647 0%, #144272 100%);
                   padding:40px 20px;
                   text-align:center;
                   color:white;">
                   
                   <img 
-                    src="https://i.ibb.co/W4jLJpcz/dmlt-logo.jpg" 
-                    alt="DMLT Academy" 
+                    src="https://govexam.info/logo.png" 
+                    alt="GovExams" 
                     style="width:180px;margin-bottom:20px;border-radius:6px;"
                   />
 
-                  <h1 style="margin:0;font-size:26px;letter-spacing:0.5px;font-weight:700;color:#063056;">
+                  <h1 style="margin:0;font-size:26px;letter-spacing:0.5px;font-weight:700;color:#ffffff;">
                     Verification Code
                   </h1>
 
-                  <p style="margin-top:10px;font-size:15px;color:#063056;">
-                    Secure login for DMLT Academy
+                  <p style="margin-top:10px;font-size:15px;color:#e2e8f0;">
+                    Secure login for GovExams
                   </p>
 
                 </div>
@@ -269,7 +277,7 @@ export async function sendOTPEmail(
                 </p>
 
                 <p style="font-size:15px;line-height:1.6;margin:0 0 25px;">
-                  Your verification code for <strong>DMLT Academy</strong> is:
+                  Your verification code for <strong>GovExams</strong> is:
                 </p>
 
                 <!-- OTP Box -->
@@ -296,7 +304,7 @@ export async function sendOTPEmail(
 
                 <p style="font-size:15px;margin:0;">
                   Best regards,<br/>
-                  <strong>DMLT Academy Team</strong>
+                  <strong>GovExams Team</strong>
                 </p>
 
               </td>
@@ -305,7 +313,7 @@ export async function sendOTPEmail(
             <!-- Footer -->
             <tr>
               <td style="background:#f8fafc;padding:18px;text-align:center;color:#94a3b8;font-size:12px;">
-                © ${new Date().getFullYear()} DMLT Academy. All rights reserved.
+                © ${new Date().getFullYear()} GovExams. All rights reserved.
               </td>
             </tr>
 

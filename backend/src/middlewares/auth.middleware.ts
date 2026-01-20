@@ -37,15 +37,36 @@ export const requireAuth = async (
             return;
         }
 
-        // Fetch user from database
-        const { data: user, error } = await supabaseAdmin
-            .from('students')
+        // Fetch user from database - try students first, then admins
+        let user = null;
+        let isAdmin = false;
+
+        // Try admins table first (by id, since admin JWT uses admin.id as userId)
+        const { data: adminUser, error: adminError } = await supabaseAdmin
+            .from('admins')
             .select('*')
-            .eq('auth_user_id', decoded.userId)
+            .eq('id', decoded.userId)
             .single();
 
-        if (error || !user) {
-            logger.warn(`User not found for auth_user_id: ${decoded.userId}`);
+        if (adminUser && !adminError) {
+            user = adminUser;
+            isAdmin = true;
+            logger.debug(`[Auth] Admin user found: ${adminUser.email}`);
+        } else {
+            // Try students table (by auth_user_id)
+            const { data: studentUser, error: studentError } = await supabaseAdmin
+                .from('students')
+                .select('*')
+                .eq('auth_user_id', decoded.userId)
+                .single();
+
+            if (studentUser && !studentError) {
+                user = studentUser;
+            }
+        }
+
+        if (!user) {
+            logger.warn(`User not found for userId: ${decoded.userId}`);
             res.status(401).json({
                 success: false,
                 error: 'User not found',
@@ -94,8 +115,8 @@ export const requireAuth = async (
             logger.info(`[Auth] Legacy token (no sessionId) for user: ${decoded.userId} - allowing access`);
         }
 
-        // Attach user to request object
-        req.user = user as Student;
+        // Attach user to request object (with role indicator if admin)
+        req.user = isAdmin ? { ...user, role: 'admin' } : user as Student;
         next();
     } catch (error: any) {
         if (error.name === 'TokenExpiredError') {

@@ -34,6 +34,7 @@ import Students from "./admin/pages/Students";
 import StudentDetail from "./admin/pages/StudentDetail";
 import Subjects from "./admin/pages/Subjects";
 import SubjectDetail from "./admin/pages/SubjectDetail";
+import AdminTopics from "./admin/pages/AdminTopics";
 import QuestionSetEditor from "./admin/pages/QuestionSetEditor";
 import QuestionManager from "./admin/pages/QuestionManager";
 import ExamResults from "./admin/pages/ExamResults";
@@ -88,6 +89,7 @@ const AppContent = () => {
           <Route path="/admin/students/:email" element={<AdminLayout><StudentDetail /></AdminLayout>} />
           <Route path="/admin/subjects" element={<AdminLayout><Subjects /></AdminLayout>} />
           <Route path="/admin/subjects/:subjectId" element={<AdminLayout><SubjectDetail /></AdminLayout>} />
+          <Route path="/admin/subjects/:subjectId/topics" element={<AdminLayout><AdminTopics /></AdminLayout>} />
           <Route path="/admin/subjects/:subjectId/question-sets/:setId" element={<AdminLayout><QuestionSetEditor /></AdminLayout>} />
           <Route path="/admin/subjects/:subjectId/question-sets/:setId/bulk-import" element={<AdminLayout><BulkImportQuestions /></AdminLayout>} />
           <Route path="/admin/question-sets/:setId/questions" element={<AdminLayout><QuestionManager /></AdminLayout>} />

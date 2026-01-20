@@ -10,7 +10,7 @@ interface WhatsAppSectionProps {
 export const WhatsAppSection = ({
   communityUrl,
   memberCount = "500+",
-  communityName = "DMLT Academy Community",
+  communityName = "GovExams Community",
 }: WhatsAppSectionProps) => {
   return (
     <section className="py-20 bg-gradient-to-br from-green-500/5 via-background to-green-600/5 relative overflow-hidden">
@@ -100,7 +100,7 @@ export const WhatsAppSection = ({
                   <div>
                     <h4 className="font-semibold mb-1">Peer Learning</h4>
                     <p className="text-sm text-muted-foreground">
-                      Discuss topics, clear doubts, and learn from fellow DMLT students
+                      Discuss topics, clear doubts, and learn from fellow students
                     </p>
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export const WhatsAppSection = ({
                   </div>
                   <h3 className="text-2xl font-bold mb-2">{communityName}</h3>
                   <p className="text-muted-foreground">
-                    Be part of our growing community of DMLT aspirants
+                    Be part of our growing community of exam aspirants
                   </p>
                 </div>
 

@@ -451,7 +451,7 @@ const ExamStart = () => {
 
 
   // Generate user-specific watermark text
-  const watermarkText = auth.user ? `${auth.user.name} - ${auth.user.phone}` : "DMLT Academy";
+  const watermarkText = auth.user ? `${auth.user.name} - ${auth.user.phone}` : "GovExams";
   const watermarkTimestamp = new Date().toISOString();
 
   // Add exam-mode class to body to disable text selection globally
@@ -528,7 +528,7 @@ const ExamStart = () => {
           {watermarkTimestamp}
         </div>
         <div className="absolute bottom-10 left-10 text-sm font-semibold text-primary opacity-60">
-          DMLT Academy - Confidential
+          GovExams - Confidential
         </div>
         <div className="absolute bottom-10 right-10 text-sm font-semibold text-primary opacity-60">
           {watermarkText}
@@ -543,7 +543,7 @@ const ExamStart = () => {
               key={index}
               className="text-sm font-extrabold uppercase tracking-[0.6em] text-primary/80 m-10"
             >
-              DMLT Academy
+              GovExams
             </span>
           ))}
         </div>
