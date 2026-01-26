@@ -11,6 +11,7 @@ interface Topic {
     video_duration: number;
     order_index: number;
     is_active: boolean;
+    pdf_url?: string;
 }
 
 interface TopicProgress {
@@ -65,5 +66,123 @@ export const studentService = {
         if (!response.ok) {
             throw new Error('Failed to mark video as completed');
         }
+    },
+
+    getTopicPdfUrl: async (topicId: string): Promise<string> => {
+        const response = await fetch(`${API_URL}/api/student/topics/${topicId}/pdf`, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch PDF URL');
+        }
+
+        const data = await response.json();
+        return data.downloadUrl;
+    },
+
+    getQuestions: async (setId: string): Promise<any[]> => {
+        const response = await fetch(`${API_URL}/api/student/question-sets/${setId}/questions`, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch questions');
+        }
+
+        return response.json();
+    },
+
+    submitExamResult: async (setId: string, resultData: any): Promise<any> => {
+        const response = await fetch(`${API_URL}/api/student/question-sets/${setId}/submit`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(resultData),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to submit exam result');
+        }
+
+        return response.json();
+    },
+
+    getQuestionSetDetails: async (setId: string): Promise<any> => {
+        const response = await fetch(`${API_URL}/api/student/question-sets/${setId}/details`, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch question set details');
+        }
+
+        return response.json();
+    },
+
+    getExamHistory: async (): Promise<any[]> => {
+        const response = await fetch(`${API_URL}/api/student/history`, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch exam history');
+        }
+
+        return response.json();
+    },
+
+    getExamResultDetail: async (resultId: string): Promise<any> => {
+        const response = await fetch(`${API_URL}/api/student/history/${resultId}`, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch exam result details');
+        }
+
+        return response.json();
+    },
+
+    getTopicMaterials: async (topicId: string): Promise<any[]> => {
+        try {
+            const response = await fetch(`${API_URL}/api/student/topics/${topicId}/materials`, {
+                headers: getHeaders()
+            });
+            if (!response.ok) return [];
+            return await response.json();
+        } catch (error) {
+            return [];
+        }
+    },
+
+    submitSpecialExamResult: async (examId: string, setNumber: number, resultData: any): Promise<any> => {
+        const response = await fetch(`${API_URL}/api/student/special-exams/${examId}/sets/${setNumber}/result`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(resultData),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to submit special exam result');
+        }
+
+        return response.json();
+    },
+
+    getSpecialExamResults: async (examId: string): Promise<any[]> => {
+        const response = await fetch(`${API_URL}/api/student/special-exams/${examId}/results`, {
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch special exam results');
+        }
+
+        return response.json();
     }
 };

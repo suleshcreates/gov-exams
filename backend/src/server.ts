@@ -46,6 +46,12 @@ function createApp(): Application {
     // Apply general rate limiting to all API routes
     app.use('/api', apiLimiter);
 
+    // DEBUG: Log all requests
+    app.use((req, res, next) => {
+        console.log(`[Request] ${req.method} ${req.url}`);
+        next();
+    });
+
     // ==================== ROUTES ====================
 
     // Health check endpoint (no rate limit, no auth)

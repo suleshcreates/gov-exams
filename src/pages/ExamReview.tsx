@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, XCircle, Circle } from "lucide-react";
-import { supabaseService } from "@/lib/supabaseService";
-import { mockExams } from "@/data/mockData";
+import { studentService } from "@/lib/studentService";
+import { convertDBQuestions } from "@/lib/questionAdapter";
 import { useAuth } from "@/context/AuthContext";
 
 const ExamReview = () => {
@@ -24,9 +24,14 @@ const ExamReview = () => {
 
       try {
         setLoading(true);
-        const result = await supabaseService.getExamResultById(resultId);
-        
-        // Verify this result belongs to the logged-in user
+        // Use studentService to get result details
+        const result = await studentService.getExamResultDetail(resultId);
+
+        if (!result) {
+          throw new Error("Result not found");
+        }
+
+        // Ownership check is redundant if backend handles it, but kept for safety
         if (result.student_phone !== auth.user?.phone) {
           navigate("/history");
           return;
@@ -34,15 +39,17 @@ const ExamReview = () => {
 
         setExamResult(result);
 
-        // Load questions from mockData
-        const exam = mockExams.find((e) => e.id === result.exam_id);
-        if (exam) {
-          const questionSet = exam.questionSets.find(
-            (set) => set.id === result.set_id || set.setNumber === result.set_number
-          );
-          if (questionSet) {
-            setQuestions(questionSet.questions);
-          }
+        // Load questions for this set from backend
+        // Try identifying the set via set_id (preferred) or exam_id
+        if (result.set_id) {
+          const fetchedQuestions = await studentService.getQuestions(result.set_id);
+          setQuestions(Array.isArray(fetchedQuestions) ? convertDBQuestions(fetchedQuestions) : []);
+        } else if (result.exam_id) {
+          // Fallback for older records
+          const fetchedQuestions = await studentService.getQuestions(result.exam_id);
+          setQuestions(Array.isArray(fetchedQuestions) ? convertDBQuestions(fetchedQuestions) : []);
+        } else {
+          console.warn("No identifier found to load questions");
         }
       } catch (error) {
         console.error("Error loading review data:", error);
@@ -83,7 +90,7 @@ const ExamReview = () => {
   }
 
   const userAnswers = examResult.user_answers || [];
-  const correctAnswers = questions.map((q) => q.correctAnswer);
+  const correctAnswers = (questions || []).map((q) => q.correctAnswer);
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 pb-16">
@@ -168,25 +175,23 @@ const ExamReview = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`glass-card rounded-2xl p-4 sm:p-6 ${
-                    isCorrect
-                      ? "border-2 border-accent"
-                      : isAnswered
+                  className={`glass-card rounded-2xl p-4 sm:p-6 ${isCorrect
+                    ? "border-2 border-accent"
+                    : isAnswered
                       ? "border-2 border-destructive"
                       : "border border-border"
-                  }`}
+                    }`}
                 >
                   {/* Question Header */}
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${
-                          isCorrect
-                            ? "bg-accent/20 text-accent"
-                            : isAnswered
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${isCorrect
+                          ? "bg-accent/20 text-accent"
+                          : isAnswered
                             ? "bg-destructive/20 text-destructive"
                             : "bg-muted text-muted-foreground"
-                        }`}
+                          }`}
                       >
                         {index + 1}
                       </div>
@@ -209,7 +214,7 @@ const ExamReview = () => {
 
                   {/* Options */}
                   <div className="space-y-2 sm:space-y-3">
-                    {(isMarathi ? question.optionsMarathi : question.options).map(
+                    {(isMarathi ? (question.optionsMarathi || []) : (question.options || [])).map(
                       (option: string, optionIndex: number) => {
                         const isUserAnswer = userAnswer === optionIndex;
                         const isCorrectOption = correctAnswer === optionIndex;
@@ -219,23 +224,21 @@ const ExamReview = () => {
                         return (
                           <div
                             key={optionIndex}
-                            className={`p-3 sm:p-4 rounded-xl transition-all ${
-                              isCorrectOption
-                                ? "bg-accent/10 border-2 border-accent"
-                                : isUserAnswer && !isCorrectOption
+                            className={`p-3 sm:p-4 rounded-xl transition-all ${isCorrectOption
+                              ? "bg-accent/10 border-2 border-accent"
+                              : isUserAnswer && !isCorrectOption
                                 ? "bg-destructive/10 border-2 border-destructive"
                                 : "bg-muted/50 border border-border"
-                            }`}
+                              }`}
                           >
                             <div className="flex items-start gap-3">
                               <div
-                                className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm flex-shrink-0 mt-0.5 ${
-                                  isCorrectOption
-                                    ? "bg-accent text-accent-foreground"
-                                    : isUserAnswer && !isCorrectOption
+                                className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm flex-shrink-0 mt-0.5 ${isCorrectOption
+                                  ? "bg-accent text-accent-foreground"
+                                  : isUserAnswer && !isCorrectOption
                                     ? "bg-destructive text-destructive-foreground"
                                     : "bg-background border-2 border-muted-foreground text-muted-foreground"
-                                }`}
+                                  }`}
                               >
                                 {String.fromCharCode(65 + optionIndex)}
                               </div>

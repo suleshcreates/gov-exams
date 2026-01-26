@@ -31,6 +31,8 @@ const Navbar = () => {
 
   const navItems = [
     { path: "/", label: "Home", icon: BookOpen },
+    { path: "/exams", label: "Exams", icon: BookOpen },
+    { path: "/pyq", label: "PYQ", icon: Crown },
     { path: "/plans", label: "Plans", icon: Crown },
     { path: "/history", label: "History", icon: History },
     { path: "/profile", label: "Profile", icon: User },

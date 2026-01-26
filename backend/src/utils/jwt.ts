@@ -8,9 +8,7 @@ interface JWTPayload {
     sessionId?: string; // Link token to specific session
 }
 
-/**
- * Generate access token (15 minutes)
- */
+
 export function generateAccessToken(userId: string, email: string, sessionId?: string): string {
     const payload: JWTPayload = {
         userId,
@@ -24,9 +22,6 @@ export function generateAccessToken(userId: string, email: string, sessionId?: s
     } as jwt.SignOptions) as string;
 }
 
-/**
- * Generate refresh token (30 days)
- */
 export function generateRefreshToken(userId: string, email: string, sessionId?: string): string {
     const payload: JWTPayload = {
         userId,
@@ -40,16 +35,12 @@ export function generateRefreshToken(userId: string, email: string, sessionId?: 
     } as jwt.SignOptions) as string;
 }
 
-/**
- * Verify any token and return decoded payload
- */
+
 export function verifyToken(token: string): JWTPayload {
     return jwt.verify(token, env.JWT_SECRET) as JWTPayload;
 }
 
-/**
- * Generate both access and refresh tokens
- */
+
 export function generateTokenPair(userId: string, email: string, sessionId?: string) {
     return {
         accessToken: generateAccessToken(userId, email, sessionId),

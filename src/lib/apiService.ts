@@ -245,6 +245,18 @@ export async function getUserPlans() {
     return response.json();
 }
 
+/**
+ * Get public plan templates (no auth required)
+ */
+export async function getPublicPlans() {
+    const response = await fetch(`${API_URL}/api/public/plans`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch public plans');
+    }
+    const result = await response.json();
+    return result.data;
+}
+
 export async function getActivePlans() {
     const response = await authenticatedFetch(`${API_URL}/api/user/plans/active`);
     return response.json();
@@ -290,6 +302,7 @@ export default {
     updateProfile,
     getUserPlans,
     getActivePlans,
+    getPublicPlans,
     getExamHistory,
     getExamProgress,
     isAuthenticated,

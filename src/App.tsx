@@ -17,6 +17,12 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import Plans from "./pages/Plans";
+import Exams from "./pages/Exams";
+import PYQ from "./pages/PYQ";
+import PYQDetail from "./pages/PYQDetail";
+import SecurePDFViewer from "./pages/SecurePDFViewer";
+import SpecialExamDetail from "./pages/SpecialExamDetail";
+import SpecialExamFinalResult from "./pages/SpecialExamFinalResult";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import RefundPolicy from "./pages/RefundPolicy";
@@ -43,6 +49,9 @@ import SubjectPricing from "./admin/pages/SubjectPricing";
 import PlanTemplates from "./admin/pages/PlanTemplates";
 import PlanTemplateEditor from "./admin/pages/PlanTemplateEditor";
 import BulkImportQuestions from "./admin/pages/BulkImportQuestions";
+import AdminSpecialExams from "./admin/pages/AdminSpecialExams";
+import AdminSpecialExamSets from "./admin/pages/AdminSpecialExamSets";
+import AdminPYQ from "./admin/pages/AdminPYQ";
 import SupabaseTest from "./admin/pages/SupabaseTest";
 
 // ✅ helper component to handle navbar & footer visibility based on route
@@ -50,7 +59,9 @@ const AppContent = () => {
   const location = useLocation();
 
   // Hide navbar & footer on exam start route and admin routes
-  const hideLayout = /^\/exam\/[^/]+\/start\/[^/]+$/.test(location.pathname) || location.pathname.startsWith('/admin');
+  const hideLayout = /^\/exam\/[^/]+\/start\/[^/]+$/.test(location.pathname) ||
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/secure-viewer');
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
@@ -80,6 +91,13 @@ const AppContent = () => {
           <Route path="/review/:resultId" element={<ProtectedRoute><ExamReview /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+          <Route path="/exams" element={<ProtectedRoute><Exams /></ProtectedRoute>} />
+          <Route path="/special-exam/:id" element={<ProtectedRoute><SpecialExamDetail /></ProtectedRoute>} />
+          <Route path="/special-exam/:examId/final-result" element={<ProtectedRoute><SpecialExamFinalResult /></ProtectedRoute>} />
+          <Route path="/pyq" element={<ProtectedRoute><PYQ /></ProtectedRoute>} />
+          <Route path="/pyq/:id" element={<ProtectedRoute><PYQDetail /></ProtectedRoute>} />
+          <Route path="/secure-viewer/:id" element={<ProtectedRoute><SecurePDFViewer /></ProtectedRoute>} />
+          <Route path="/secure-viewer/topic/:id" element={<ProtectedRoute><SecurePDFViewer type="topic" /></ProtectedRoute>} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -99,6 +117,9 @@ const AppContent = () => {
           <Route path="/admin/pricing/plans" element={<AdminLayout><PlanTemplates /></AdminLayout>} />
           <Route path="/admin/pricing/plans/new" element={<AdminLayout><PlanTemplateEditor /></AdminLayout>} />
           <Route path="/admin/pricing/plans/:planId/edit" element={<AdminLayout><PlanTemplateEditor /></AdminLayout>} />
+          <Route path="/admin/special-exams" element={<AdminLayout><AdminSpecialExams /></AdminLayout>} />
+          <Route path="/admin/special-exams/:examId/sets" element={<AdminLayout><AdminSpecialExamSets /></AdminLayout>} />
+          <Route path="/admin/pyq" element={<AdminLayout><AdminPYQ /></AdminLayout>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

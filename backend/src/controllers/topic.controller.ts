@@ -26,6 +26,13 @@ export const getTopicsBySubjectController = async (req: Request, res: Response) 
 /**
  * Upload Video (Admin Only)
  */
+import fs from 'fs';
+
+// ...
+
+/**
+ * Upload Video (Admin Only)
+ */
 export const uploadVideoController = async (req: Request, res: Response) => {
     try {
         if (!req.file) {
@@ -37,27 +44,36 @@ export const uploadVideoController = async (req: Request, res: Response) => {
         const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
-            .from('topic-videos')
-            .upload(filePath, file.buffer, {
-                contentType: file.mimetype,
-                upsert: false
+        try {
+            // Read stream from disk (better for large files)
+            const fileStream = fs.createReadStream(file.path);
+
+            // Upload to Supabase Storage
+            const { error } = await supabase.storage
+                .from('topic-videos')
+                .upload(filePath, fileStream, {
+                    contentType: file.mimetype,
+                    upsert: false,
+                    duplex: 'half'
+                });
+
+            if (error) throw error;
+
+            // Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('topic-videos')
+                .getPublicUrl(filePath);
+
+            return res.status(200).json({
+                success: true,
+                publicUrl: publicUrl
             });
-
-        if (error) {
-            throw error;
+        } finally {
+            // Cleanup temp file
+            if (file.path && fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+            }
         }
-
-        // Get Public URL
-        const { data: { publicUrl } } = supabase.storage
-            .from('topic-videos')
-            .getPublicUrl(filePath);
-
-        return res.status(200).json({
-            success: true,
-            publicUrl: publicUrl
-        });
 
     } catch (error: any) {
         console.error('Error uploading video:', error);
@@ -65,15 +81,73 @@ export const uploadVideoController = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * Upload Topic PDF (Admin Only)
+ */
+export const uploadTopicPDFController = async (req: Request, res: Response) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const file = req.file;
+        const fileExt = file.originalname.split('.').pop();
+
+        // Validate PDF by mimetype (Multer already checks, but double check)
+        if (file.mimetype !== 'application/pdf') {
+            // Cleanup if rejected
+            if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+            return res.status(400).json({ error: 'File must be a PDF' });
+        }
+
+        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        try {
+            const fileStream = fs.createReadStream(file.path);
+
+            // Upload to Supabase Storage
+            const { error } = await supabase.storage
+                .from('topic-pdfs')
+                .upload(filePath, fileStream, {
+                    contentType: file.mimetype,
+                    upsert: false,
+                    duplex: 'half'
+                });
+
+            if (error) throw error;
+
+            // Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('topic-pdfs')
+                .getPublicUrl(filePath);
+
+            return res.status(200).json({
+                success: true,
+                publicUrl: publicUrl
+            });
+        } finally {
+            // Cleanup temp file
+            if (file.path && fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+            }
+        }
+
+    } catch (error: any) {
+        console.error('Error uploading PDF:', error);
+        return res.status(500).json({ error: error.message || 'Failed to upload PDF' });
+    }
+};
+
 // Create Topic (Admin Only)
 export const createTopicController = async (req: Request, res: Response) => {
     try {
-        const { subject_id, title, description, video_url, video_duration, order_index } = req.body;
+        const { subject_id, title, description, video_url, video_duration, order_index, pdf_url } = req.body;
 
         const { data, error } = await supabase
             .from('topics')
             .insert([
-                { subject_id, title, description, video_url, video_duration, order_index }
+                { subject_id, title, description, video_url, video_duration, order_index, pdf_url }
             ])
             .select()
             .single();
@@ -190,6 +264,333 @@ export const markVideoCompletedController = async (req: Request, res: Response) 
         return res.status(200).json(data);
     } catch (err: any) {
         console.error('Server error marking video completed:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Get Topic PDF (Signed URL approach like PYQ)
+export const getTopicPDFController = async (req: Request, res: Response) => {
+    try {
+        const { topicId } = req.params;
+        console.log(`[SignedURL] Requesting PDF for topic: ${topicId}`);
+
+        // Get topic details to find the file path
+        const { data: topic, error: topicError } = await supabase
+            .from('topics')
+            .select('pdf_url')
+            .eq('id', topicId)
+            .single();
+
+        if (topicError || !topic || !topic.pdf_url) {
+            return res.status(404).json({ error: 'PDF not found' });
+        }
+
+        // Extract filename from public URL
+        const fileName = topic.pdf_url.split('/').pop();
+
+        if (!fileName) {
+            return res.status(500).json({ error: 'Invalid file path' });
+        }
+
+        // Generate signed URL
+        const { data: signedData, error: signedError } = await supabase.storage
+            .from('topic-pdfs')
+            .createSignedUrl(fileName, 3600); // 1 hour access
+
+        if (signedError) {
+            console.error('Error creating signed URL:', signedError);
+            return res.status(500).json({ error: 'Failed to generate secure link' });
+        }
+
+        return res.status(200).json({
+            downloadUrl: signedData.signedUrl
+        });
+
+    } catch (err: any) {
+        console.error('Server error getting topic PDF:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+// Get Questions for a Question Set (Student)
+export const getStudentQuestionsController = async (req: Request, res: Response) => {
+    try {
+        const { setId } = req.params;
+
+        // Fetch questions
+        const { data: questions, error } = await supabase
+            .from('questions')
+            .select('*')
+            .eq('question_set_id', setId)
+            .order('order_index', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching questions:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(200).json(questions || []);
+    } catch (err: any) {
+        console.error('Server error fetching questions:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Submit Exam Result (Regular Topic Exam)
+export const submitStudentExamResultController = async (req: Request, res: Response) => {
+    try {
+        const { setId } = req.params;
+        const { score, total_questions, accuracy, time_taken_seconds, exam_title, set_number, user_answers, exam_id } = req.body;
+
+        const user = (req as any).user;
+        const userName = user.name || user.email;
+        const userPhone = user.phone;
+
+        // Calculate time string (e.g. "5 min") for compatibility
+        const timeTakenStr = `${Math.ceil((time_taken_seconds || 0) / 60)} min`;
+
+        // Insert result
+        // Note: exam_results table uses student_phone as key, not student_id
+        const { data, error } = await supabase
+            .from('exam_results')
+            .insert([{
+                student_phone: userPhone,
+                student_name: userName,
+                exam_id: exam_id || setId,
+                set_id: setId,
+                exam_title: exam_title || 'Topic Exam',
+                set_number: set_number || 1,
+                score,
+                total_questions,
+                accuracy,
+                time_taken: timeTakenStr,
+                user_answers: user_answers || [],
+                created_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error saving exam result:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(201).json(data);
+    } catch (err: any) {
+        console.error('Server error submitting result:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Get Question Set Details (Student)
+export const getStudentQuestionSetDetailsController = async (req: Request, res: Response) => {
+    try {
+        const { setId } = req.params;
+
+        const { data: setDetails, error } = await supabase
+            .from('question_sets')
+            .select('*, subjects(name)')
+            .eq('id', setId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching question set details:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(200).json(setDetails);
+    } catch (err: any) {
+        console.error('Server error fetching set details:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Get Student Exam History
+export const getStudentExamHistoryController = async (req: Request, res: Response) => {
+    try {
+        const user = (req as any).user;
+        const userPhone = user.phone;
+        const userId = user.auth_user_id || user.id;
+
+        // 1. Fetch Regular Exam Results
+        const { data: regularHistory, error: regularError } = await supabase
+            .from('exam_results')
+            .select('*')
+            .eq('student_phone', userPhone)
+            .order('created_at', { ascending: false });
+
+        if (regularError) {
+            console.error('Error fetching regular exam history:', regularError);
+            // Don't fail completely, just log
+        }
+
+        // 2. Fetch Special Exam Results
+        const { data: specialHistory, error: specialError } = await supabase
+            .from('special_exam_results')
+            .select(`
+                *,
+                special_exam:special_exams(title)
+            `)
+            .eq('user_auth_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (specialError) {
+            console.error('Error fetching special exam history:', specialError);
+        }
+
+        // 3. Normalize and Combine
+        const normalizedSpecial = (specialHistory || []).map((item: any) => ({
+            id: item.id,
+            exam_id: item.special_exam_id,
+            exam_title: item.special_exam?.title || 'Special Exam',
+            set_number: item.set_number,
+            score: item.score,
+            total_questions: item.total_questions,
+            accuracy: item.accuracy,
+            time_taken: `${Math.ceil((item.time_taken_seconds || 0) / 60)} min`, // Normalize time format
+            created_at: item.created_at,
+            is_special: true // Flag to identify special exams
+        }));
+
+        const combinedHistory = [
+            ...(regularHistory || []),
+            ...normalizedSpecial
+        ];
+
+        // 4. Sort by Date (Descending)
+        combinedHistory.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        return res.status(200).json(combinedHistory);
+    } catch (err: any) {
+        console.error('Server error fetching history:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Get Single Exam Result (Student)
+export const getStudentExamResultDetailController = async (req: Request, res: Response) => {
+    try {
+        const { resultId } = req.params;
+        const user = (req as any).user;
+        const userPhone = user.phone;
+
+        const { data: result, error } = await supabase
+            .from('exam_results')
+            .select('*')
+            .eq('id', resultId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching exam result:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Verify ownership
+        if (result.student_phone !== userPhone) {
+            return res.status(403).json({ error: 'Unauthorized access to this result' });
+        }
+
+        return res.status(200).json(result);
+    } catch (err: any) {
+        console.error('Server error fetching exam result:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// ==========================================
+// Topic Materials (Multiple Videos/PDFs)
+// ==========================================
+
+export const getTopicMaterialsController = async (req: Request, res: Response) => {
+    try {
+        const { topicId } = req.params;
+        const { data, error } = await supabase
+            .from('topic_materials')
+            .select('*')
+            .eq('topic_id', topicId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching topic materials:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(200).json(data || []);
+    } catch (err: any) {
+        console.error('Server error fetching materials:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const createTopicMaterialController = async (req: Request, res: Response) => {
+    try {
+        const { topic_id, type, title, url, order_index } = req.body;
+
+        const { data, error } = await supabase
+            .from('topic_materials')
+            .insert([{ topic_id, type, title, url, order_index }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating topic material:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(201).json(data);
+    } catch (err: any) {
+        console.error('Server error creating material:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const deleteTopicMaterialController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const { error } = await supabase
+            .from('topic_materials')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting topic material:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(200).json({ message: 'Material deleted' });
+    } catch (err: any) {
+        console.error('Server error deleting material:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+/**
+ * Generate Signed Upload URL for direct-to-storage uploads
+ */
+export const generateUploadUrlController = async (req: Request, res: Response) => {
+    try {
+        const { bucket, fileName } = req.body;
+
+        if (!bucket || !fileName) {
+            return res.status(400).json({ error: 'Bucket and fileName are required' });
+        }
+
+        const { data, error } = await supabase.storage
+            .from(bucket)
+            .createSignedUploadUrl(fileName);
+
+        if (error) {
+            console.error('Error creating signed upload URL:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(200).json({
+            signedUrl: data.signedUrl,
+            token: data.token,
+            path: fileName
+        });
+    } catch (err: any) {
+        console.error('Server error generating upload URL:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 };

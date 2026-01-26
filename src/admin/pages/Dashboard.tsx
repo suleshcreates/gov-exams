@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [recentRegistrations, setRecentRegistrations] = useState<any[]>([]);
   const [recentExams, setRecentExams] = useState<any[]>([]);
   const [recentPurchases, setRecentPurchases] = useState<any[]>([]);
+  const [premiumPurchases, setPremiumPurchases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,17 +27,19 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [metricsData, registrations, exams, purchases] = await Promise.all([
+      const [metricsData, registrations, exams, purchases, premiums] = await Promise.all([
         adminService.getDashboardMetrics(),
         adminService.getRecentRegistrations(5),
         adminService.getRecentExamCompletions(10),
         adminService.getRecentPlanPurchases(5),
+        adminService.getRecentPremiumPurchases(10),
       ]);
 
       setMetrics(metricsData);
       setRecentRegistrations(registrations);
       setRecentExams(exams);
       setRecentPurchases(purchases);
+      setPremiumPurchases(premiums);
     } catch (error) {
       logger.error('Error loading dashboard:', error);
     } finally {
@@ -281,6 +284,42 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Recent Premium Purchases (Special Exams & PYQ) */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Premium Purchases (Exams & PYQ)</h2>
+          </div>
+          <div className="p-6">
+            {premiumPurchases.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No premium purchases yet</p>
+            ) : (
+              <div className="space-y-4">
+                {premiumPurchases.map((purchase, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">{purchase.user_email || 'Unknown'}</p>
+                      <p className="text-sm text-gray-500">
+                        <span className={`inline-flex px-2 py-0.5 text-xs rounded-full ${purchase.resource_type === 'special_exam'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
+                          }`}>
+                          {purchase.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ PDF'}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-green-600">₹{purchase.amount_paid || 0}</p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(purchase.purchased_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Recent Exam Completions */}
@@ -312,8 +351,8 @@ const Dashboard = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${exam.accuracy >= 85 ? 'bg-green-100 text-green-800' :
-                          exam.accuracy >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
+                        exam.accuracy >= 70 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
                         }`}>
                         {exam.accuracy}%
                       </span>

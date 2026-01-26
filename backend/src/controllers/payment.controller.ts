@@ -19,25 +19,28 @@ export const createOrderController = async (req: Request, res: Response) => {
     try {
         const { amount, planId, receipt } = req.body;
 
-        if (!amount || !planId) {
+        if (!amount) {
             return res.status(400).json({
                 success: false,
-                error: 'Amount and plan ID are required',
+                error: 'Amount is required',
             });
         }
 
         // --- SIMULATION MODE START ---
         // Mock order creation
         const mockOrderId = `order_mock_${Date.now()}`;
-        logger.info(`[PAYMENT SIMULATION] Mock order created: ${mockOrderId} for plan: ${planId}`);
+        logger.info(`[PAYMENT SIMULATION] Mock order created: ${mockOrderId} for amount: ${amount}`);
 
         return res.status(200).json({
             success: true,
             order: {
                 id: mockOrderId,
-                amount: amount * 100,
+                amount: Math.round(parseFloat(amount) * 100), // Ensure integer paise
                 currency: 'INR',
             },
+            id: mockOrderId, // Frontend expects top-level id
+            amount: Math.round(parseFloat(amount) * 100),
+            currency: 'INR'
         });
         // --- SIMULATION MODE END ---
 

@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Calendar, TrendingUp, Clock, Award } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { supabaseService } from "@/lib/supabaseService";
+import { studentService } from "@/lib/studentService";
 import { useState, useEffect } from "react";
 import { StatCardSkeleton } from "@/components/skeletons/StatCardSkeleton";
 import { HistoryCardSkeleton } from "@/components/skeletons/HistoryCardSkeleton";
@@ -14,39 +14,87 @@ const History = () => {
   const [loading, setLoading] = useState(true);
   const [averageAccuracy, setAverageAccuracy] = useState("0");
   const [avgTime, setAvgTime] = useState(0);
-  
-  useEffect(() => {
-    const loadHistory = async () => {
-      if (!auth.isAuthenticated || !auth.user) {
-        setLoading(false);
-        return;
-      }
 
-      try {
-        setLoading(true);
-        const results = await supabaseService.getStudentExamResults(auth.user.phone);
-        setHistory(results);
+  const loadHistory = async () => {
+    if (!auth.isAuthenticated || !auth.user) {
+      setLoading(false);
+      return;
+    }
 
-        if (results.length > 0) {
-          const avg = (results.reduce((acc: number, h: any) => acc + h.accuracy, 0) / results.length).toFixed(1);
-          setAverageAccuracy(avg);
-          
-          const avgT = Math.round(results.reduce((acc: number, h: any) => {
-            const timeStr = h.time_taken || "0";
-            const mins = parseInt(timeStr.toString().replace(/[^0-9]/g, "") || "0");
-            return acc + mins;
-          }, 0) / results.length);
-          setAvgTime(avgT);
+    try {
+      setLoading(true);
+      const results = await studentService.getExamHistory();
+
+      // Group Special Exam Results
+      const processedHistory: any[] = [];
+      const specialExamsMap = new Map<string, any>();
+
+      results.forEach((item: any) => {
+        if (item.is_special) {
+          const examId = item.exam_id;
+          if (!specialExamsMap.has(examId)) {
+            specialExamsMap.set(examId, {
+              id: `group_${examId}`,
+              exam_id: examId,
+              exam_title: item.exam_title, // Title from first found set
+              is_special_group: true,
+              score: 0,
+              total_questions: 0,
+              time_minutes: 0,
+              created_at: item.created_at, // Will update to latest
+              sets_count: 0
+            });
+          }
+
+          const group = specialExamsMap.get(examId);
+          group.score += (item.score || 0);
+          group.total_questions += (item.total_questions || 0);
+          // Parse time "X min" -> integer
+          const mins = parseInt((item.time_taken || "0").toString().replace(/[^0-9]/g, "") || "0");
+          group.time_minutes += mins;
+          group.sets_count += 1;
+
+          // Keep the latest date
+          if (new Date(item.created_at) > new Date(group.created_at)) {
+            group.created_at = item.created_at;
+          }
+        } else {
+          processedHistory.push(item);
         }
-      } catch (error) {
-        console.error("Error loading history:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      });
 
-    loadHistory();
-  }, [auth]);
+      // Finalize groups
+      specialExamsMap.forEach((group) => {
+        // Calculate accuracy
+        group.accuracy = group.total_questions > 0
+          ? Math.round((group.score / group.total_questions) * 100)
+          : 0;
+        group.time_taken = `${group.time_minutes} min`;
+        processedHistory.push(group);
+      });
+
+      // Sort Combined History
+      processedHistory.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setHistory(processedHistory);
+
+      if (processedHistory.length > 0) {
+        const avg = (processedHistory.reduce((acc: number, h: any) => acc + h.accuracy, 0) / processedHistory.length).toFixed(1);
+        setAverageAccuracy(avg);
+
+        const totalTime = processedHistory.reduce((acc: number, h: any) => {
+          const timeStr = h.time_taken || "0";
+          const mins = parseInt(timeStr.toString().replace(/[^0-9]/g, "") || "0");
+          return acc + mins;
+        }, 0);
+        setAvgTime(Math.round(totalTime / processedHistory.length));
+      }
+    } catch (error) {
+      console.error("Error loading history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!auth.isAuthenticated || !auth.user) {
     return (
@@ -173,91 +221,95 @@ const History = () => {
                   </div>
                 ) : (
                   history.map((item: any, index: number) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
-                whileHover={{ x: 8 }}
-                className="glass-card rounded-2xl p-4 sm:p-6 neon-border group cursor-pointer"
-              >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 sm:gap-6">
-                  <div className="flex-1 w-full">
-                    <h3 className="text-lg sm:text-xl font-semibold mb-2 group-hover:gradient-text transition-all">
-                      {item.exam_title || item.exam_id || "Exam"}
-                    </h3>
-                    <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(item.created_at).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {item.time_taken || "N/A"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between w-full sm:w-auto sm:gap-8">
-                    <div className="text-center">
-                      <div className="text-xs sm:text-sm text-muted-foreground mb-1">
-                        Score
-                      </div>
-                      <div className="text-xl sm:text-2xl font-bold gradient-text">
-                        {item.score}/{item.total_questions || item.total}
-                      </div>
-                    </div>
-
-                    <div className="text-center">
-                      <div className="text-xs sm:text-sm text-muted-foreground mb-1">
-                        Accuracy
-                      </div>
-                      <div
-                        className={`text-xl sm:text-2xl font-bold ${
-                          item.accuracy >= 85
-                            ? "text-accent"
-                            : item.accuracy >= 60
-                            ? "text-primary"
-                            : "text-destructive"
-                        }`}
-                      >
-                        {item.accuracy}%
-                      </div>
-                    </div>
-
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => navigate(`/review/${item.id}`)}
-                      className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-primary text-white font-medium text-sm sm:text-base hover:opacity-90 transition-opacity"
-                    >
-                      View
-                    </motion.button>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mt-4 pt-4 border-t border-border/50">
-                  <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                     <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.accuracy}%` }}
-                      transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
-                      className={`h-full rounded-full ${
-                        item.accuracy >= 85
-                          ? "gradient-accent"
-                          : item.accuracy >= 60
-                          ? "gradient-primary"
-                          : "bg-destructive"
-                      }`}
-                    />
-                  </div>
-                </div>
-              </motion.div>
+                      key={item.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + index * 0.1 }}
+                      whileHover={{ x: 8 }}
+                      className="glass-card rounded-2xl p-4 sm:p-6 neon-border group cursor-pointer"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 sm:gap-6">
+                        <div className="flex-1 w-full">
+                          <h3 className="text-lg sm:text-xl font-semibold mb-2 group-hover:gradient-text transition-all">
+                            {item.exam_title || "Topic Exam"}
+                          </h3>
+                          <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(item.created_at).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              {item.time_taken || "N/A"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between w-full sm:w-auto sm:gap-8">
+                          <div className="text-center">
+                            <div className="text-xs sm:text-sm text-muted-foreground mb-1">
+                              Score
+                            </div>
+                            <div className="text-xl sm:text-2xl font-bold gradient-text">
+                              {item.score}/{item.total_questions || item.total}
+                            </div>
+                          </div>
+
+                          <div className="text-center">
+                            <div className="text-xs sm:text-sm text-muted-foreground mb-1">
+                              Accuracy
+                            </div>
+                            <div
+                              className={`text-xl sm:text-2xl font-bold ${item.accuracy >= 85
+                                ? "text-accent"
+                                : item.accuracy >= 60
+                                  ? "text-primary"
+                                  : "text-destructive"
+                                }`}
+                            >
+                              {item.accuracy}%
+                            </div>
+                          </div>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              if (item.is_special_group) {
+                                navigate(`/special-exam/${item.exam_id}`);
+                              } else {
+                                navigate(`/review/${item.id}`);
+                              }
+                            }}
+                            className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-primary text-white font-medium text-sm sm:text-base hover:opacity-90 transition-opacity"
+                          >
+                            View
+                          </motion.button>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="mt-4 pt-4 border-t border-border/50">
+                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${item.accuracy}%` }}
+                            transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
+                            className={`h-full rounded-full ${item.accuracy >= 85
+                              ? "gradient-accent"
+                              : item.accuracy >= 60
+                                ? "gradient-primary"
+                                : "bg-destructive"
+                              }`}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
                   ))
                 )}
               </motion.div>

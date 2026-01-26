@@ -9,7 +9,9 @@ import {
     CreditCard,
     DollarSign,
     Menu,
-    X
+    X,
+    Award,
+    FileCheck
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -19,6 +21,8 @@ const AdminSidebar = () => {
         { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/admin/students', icon: Users, label: 'Students' },
         { path: '/admin/subjects', icon: BookOpen, label: 'Subjects' },
+        { path: '/admin/special-exams', icon: Award, label: 'Special Exams' },
+        { path: '/admin/pyq', icon: FileCheck, label: 'PYQ PDFs' },
         { path: '/admin/pricing/plans', icon: DollarSign, label: 'Pricing' },
         { path: '/admin/exam-results', icon: ClipboardList, label: 'Exam Results' },
         { path: '/admin/user-plans', icon: CreditCard, label: 'User Plans' },

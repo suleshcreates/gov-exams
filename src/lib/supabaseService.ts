@@ -419,6 +419,38 @@ export const supabaseService = {
   },
 
   // ============================================
+  // PREMIUM PURCHASES (Special Exams & PYQ)
+  // ============================================
+
+  async getUserPremiumPurchases() {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        logger.warn('[getUserPremiumPurchases] No auth token');
+        return [];
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/premium-access`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const purchases = await response.json();
+      return purchases || [];
+    } catch (error) {
+      logger.error('[getUserPremiumPurchases] Error:', error);
+      return [];
+    }
+  },
+
+  // ============================================
   // EMAIL AUTHENTICATION METHODS (NEW)
   // ============================================
 

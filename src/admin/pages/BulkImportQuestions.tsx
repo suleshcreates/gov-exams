@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { adminService } from '../lib/adminService';
@@ -24,6 +24,9 @@ interface ValidationError {
 const BulkImportQuestions = () => {
     const { subjectId, setId } = useParams<{ subjectId: string; setId: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const returnTo = queryParams.get('returnTo');
 
     const [file, setFile] = useState<File | null>(null);
     const [questions, setQuestions] = useState<ParsedQuestion[]>([]);
@@ -156,7 +159,11 @@ const BulkImportQuestions = () => {
 
             setSuccess(true);
             setTimeout(() => {
-                navigate(`/admin/subjects/${subjectId}/question-sets/${setId}`);
+                if (returnTo) {
+                    navigate(returnTo);
+                } else {
+                    navigate(`/admin/subjects/${subjectId}/question-sets/${setId}`);
+                }
             }, 2000);
         } catch (error: any) {
             logger.error('Error importing questions:', error);

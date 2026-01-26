@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { ExamCardSkeleton } from "@/components/skeletons/ExamCardSkeleton";
 import { PlanCardSkeleton } from "@/components/skeletons/PlanCardSkeleton";
 import { adminService } from "@/admin/lib/adminService";
+import apiService from "@/lib/apiService";
 import YouTubeSection from "@/components/YouTubeSection";
 import TelegramSection from "@/components/TelegramSection";
 import AcademyJourney from "@/components/AcademyJourney";
@@ -99,7 +100,7 @@ const Home = () => {
     const loadPlans = async () => {
       try {
         setPlansLoading(true);
-        const plans = await adminService.getPlanTemplates(false); // Only active plans
+        const plans = await apiService.getPublicPlans();
         setPlanTemplates(plans);
       } catch (error) {
         logger.error("Error loading plans:", error);
@@ -118,7 +119,7 @@ const Home = () => {
   return (
     <div className="flex-1">
       {/* Hero Section with Dynamic Slideshow */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen pt-20 sm:pt-0 flex items-center justify-center overflow-hidden">
         {/* Slideshow Background Images */}
         {heroSlides.map((slide, index) => (
           <motion.div

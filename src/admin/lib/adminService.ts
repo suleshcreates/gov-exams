@@ -107,6 +107,28 @@ export const adminService = {
     }
   },
 
+  async getRecentPremiumPurchases(limit = 10) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/premium-access?page=1&limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch premium purchases');
+      }
+
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      logger.error('[adminService] Error fetching premium purchases:', error);
+      return [];
+    }
+  },
+
   // Students Management
   async getStudents(page = 1, limit = 20, search = '') {
     try {
@@ -138,13 +160,19 @@ export const adminService = {
 
   async getStudentById(email: string) {
     try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('email', email)
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/students/${encodeURIComponent(email)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to fetch student details');
+      }
+
+      const data = await response.json();
       return data;
     } catch (error) {
       logger.error('[adminService] Error fetching student:', error);
@@ -186,52 +214,48 @@ export const adminService = {
     }
   },
 
-  async getStudentPlans(studentName: string) {
+  async getStudentPlans(email: string) {
     try {
-      const { data, error } = await supabase
-        .from('user_plans')
-        .select('*')
-        .eq('student_name', studentName)
-        .order('purchased_at', { ascending: false });
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/students/${encodeURIComponent(email)}/plans`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
-
-      return (data || []).map((plan: any) => ({
-        ...plan,
-        exam_access: plan.exam_ids || plan.subjects || [],
-      }));
+      if (!response.ok) throw new Error('Failed to fetch student plans');
+      return await response.json();
     } catch (error) {
       logger.error('[adminService] Error fetching student plans:', error);
       throw error;
     }
   },
 
-  async getStudentExamHistory(studentName: string) {
+  async getStudentExamHistory(email: string) {
     try {
-      const { data, error } = await supabase
-        .from('exam_results')
-        .select('*')
-        .eq('student_name', studentName)
-        .order('created_at', { ascending: false });
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/students/${encodeURIComponent(email)}/history`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
-      return data || [];
+      if (!response.ok) throw new Error('Failed to fetch student history');
+      return await response.json();
     } catch (error) {
       logger.error('[adminService] Error fetching student exam history:', error);
       throw error;
     }
   },
 
-  async getStudentAnalytics(studentName: string) {
+  async getStudentAnalytics(email: string) {
     try {
-      const { data, error } = await supabase
-        .from('exam_results')
-        .select('accuracy, score, total_questions')
-        .eq('student_name', studentName);
+      // Fetch history first
+      const history = await this.getStudentExamHistory(email);
 
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
+      if (!history || history.length === 0) {
         return {
           totalExams: 0,
           averageScore: 0,
@@ -239,9 +263,9 @@ export const adminService = {
         };
       }
 
-      const totalExams = data.length;
-      const averageScore = data.reduce((sum, r) => sum + r.accuracy, 0) / totalExams;
-      const passRate = (data.filter(r => r.accuracy >= 85).length / totalExams) * 100;
+      const totalExams = history.length;
+      const averageScore = history.reduce((sum: number, r: any) => sum + (r.accuracy || 0), 0) / totalExams;
+      const passRate = (history.filter((r: any) => (r.accuracy || 0) >= 85).length / totalExams) * 100;
 
       return {
         totalExams,
@@ -389,6 +413,7 @@ export const adminService = {
     video_url: string;
     video_duration: number;
     order_index: number;
+    pdf_url?: string;
   }) {
     try {
       const token = localStorage.getItem('admin_access_token');
@@ -421,6 +446,7 @@ export const adminService = {
     video_duration: number;
     order_index: number;
     is_active: boolean;
+    pdf_url?: string;
   }>) {
     try {
       const token = localStorage.getItem('admin_access_token');
@@ -469,30 +495,205 @@ export const adminService = {
     }
   },
 
-  async uploadTopicVideo(file: File) {
+  // Topic Materials (Multiple Content)
+  async getTopicMaterials(topicId: string) {
     try {
       const token = localStorage.getItem('admin_access_token');
-      const formData = new FormData();
-      formData.append('video', file);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/topics/${topicId}/materials`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch materials');
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error fetching materials:', error);
+      return [];
+    }
+  },
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/upload-video`, {
+  async createTopicMaterial(data: { topic_id: string; type: 'video' | 'pdf'; title: string; url: string; order_index?: number }) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/topic-materials`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-          // Content-Type is automatically set by browser for FormData
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: formData
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to create material');
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error creating material:', error);
+      throw error;
+    }
+  },
+
+  async deleteTopicMaterial(id: string) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/topic-materials/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to delete material');
+      return true;
+    } catch (error) {
+      logger.error('[adminService] Error deleting material:', error);
+      throw error;
+    }
+  },
+
+  async getSignedUploadUrl(bucket: string, fileName: string) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/generate-upload-url`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ bucket, fileName })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload video');
+        throw new Error(errorData.error || 'Failed to generate signed URL');
       }
 
-      const result = await response.json();
-      return result.publicUrl;
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error generating signed URL:', error);
+      throw error;
+    }
+  },
+
+  async uploadToSignedUrl(signedUrl: string, file: File, onProgress?: (progress: number) => void) {
+    return new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', signedUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            onProgress(percentComplete);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.send(file);
+    });
+  },
+
+  async uploadTopicVideo(file: File, onProgress?: (progress: number) => void) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const bucket = 'topic-videos';
+
+      // 1. Get Signed URL
+      const { signedUrl } = await this.getSignedUploadUrl(bucket, fileName);
+
+      // 2. Upload Direct to Supabase
+      await this.uploadToSignedUrl(signedUrl, file, onProgress);
+
+      // 3. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return publicUrl;
     } catch (error) {
       logger.error('[adminService] Error uploading video:', error);
+      throw error;
+    }
+  },
+
+  async uploadTopicPDF(file: File, onProgress?: (progress: number) => void) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const bucket = 'topic-pdfs';
+
+      // 1. Get Signed URL
+      const { signedUrl } = await this.getSignedUploadUrl(bucket, fileName);
+
+      // 2. Upload Direct to Supabase
+      await this.uploadToSignedUrl(signedUrl, file, onProgress);
+
+      // 3. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      logger.error('[adminService] Error uploading PDF:', error);
+      throw error;
+    }
+  },
+
+  async uploadPYQ(file: File, onProgress?: (progress: number) => void) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const bucket = 'pyq-pdfs'; // Matches Supabase bucket name in pyq.controller.ts
+
+      // 1. Get Signed URL
+      const { signedUrl } = await this.getSignedUploadUrl(bucket, fileName);
+
+      // 2. Upload Direct to Supabase
+      await this.uploadToSignedUrl(signedUrl, file, onProgress);
+
+      // 3. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      logger.error('[adminService] Error uploading PYQ:', error);
+      throw error;
+    }
+  },
+
+  async uploadSpecialExamThumbnail(file: File, onProgress?: (progress: number) => void) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const bucket = 'special-exam-thumbnails'; // Ensure this matches Supabase bucket name
+
+      // 1. Get Signed URL
+      const { signedUrl } = await this.getSignedUploadUrl(bucket, fileName);
+
+      // 2. Upload Direct to Supabase
+      await this.uploadToSignedUrl(signedUrl, file, onProgress);
+
+      // 3. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      logger.error('[adminService] Error uploading thumbnail:', error);
       throw error;
     }
   },
@@ -1053,6 +1254,72 @@ export const adminService = {
       return true;
     } catch (error) {
       logger.error('[adminService] Error deleting plan template:', error);
+      throw error;
+    }
+  },
+
+  // Special Exams Set Management
+  async getSpecialExamSets(examId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('special_exam_sets')
+        .select(`
+          *,
+          question_set:question_sets(id, exam_id, set_number)
+        `)
+        .eq('special_exam_id', examId)
+        .order('set_number', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      logger.error('[adminService] Error fetching special exam sets:', error);
+      throw error;
+    }
+  },
+
+  async getSpecialExamDetails(id: string) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/special-exams/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch special exam details');
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      logger.error('[adminService] Error fetching special exam details:', error);
+      throw error;
+    }
+  },
+
+  async assignQuestionSetToSpecialExam(examId: string, setNumber: number, questionSetId: string | null) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/special-exams/${examId}/sets/${setNumber}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question_set_id: questionSetId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to assign question set');
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error assigning question set:', error);
       throw error;
     }
   },

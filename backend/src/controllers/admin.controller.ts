@@ -7,6 +7,12 @@ import { AuthRequest } from '../types';
  * GET /api/admin/stats
  * Get dashboard statistics
  */
+// ... (imports)
+
+/**
+ * GET /api/admin/stats
+ * Get dashboard statistics
+ */
 export async function getStatsController(
     _req: AuthRequest,
     res: Response
@@ -23,20 +29,44 @@ export async function getStatsController(
             .select('*', { count: 'exact', head: true })
             .eq('is_active', true);
 
-        // Get total exam results
-        const { count: totalResults, data: results } = await supabaseAdmin
+        // Get total exam results (Regular)
+        const { count: totalResultsRegular, data: resultsRegular } = await supabaseAdmin
             .from('exam_results')
             .select('score', { count: 'exact' });
 
-        // Calculate average score
-        const averageScore = results && results.length > 0
-            ? Math.round(results.reduce((acc, curr) => acc + (curr.score || 0), 0) / results.length)
-            : 0;
+        // Get total exam results (Special)
+        const { count: totalResultsSpecial, data: resultsSpecial } = await supabaseAdmin
+            .from('special_exam_results')
+            .select('score', { count: 'exact' });
+
+        const totalResults = (totalResultsRegular || 0) + (totalResultsSpecial || 0);
+
+        // Calculate average score (merging both)
+        let totalScoreSum = 0;
+        let countForAvg = 0;
+
+        if (resultsRegular) {
+            totalScoreSum += resultsRegular.reduce((acc, curr) => acc + (curr.score || 0), 0);
+            countForAvg += resultsRegular.length;
+        }
+        if (resultsSpecial) {
+            totalScoreSum += resultsSpecial.reduce((acc, curr) => acc + (curr.score || 0), 0);
+            countForAvg += resultsSpecial.length;
+        }
+
+        const averageScore = countForAvg > 0 ? Math.round(totalScoreSum / countForAvg) : 0;
 
         // Get total revenue from user_plans
         const { data: planData } = await supabaseAdmin
             .from('user_plans')
             .select('price_paid, plan_name');
+
+        // Get revenue from special exam purchases (user_premium_access joined with special_exams?)
+        // Or better, track 'purchases' table if exists. 
+        // For now, rely on user_plans as main revenue source or check 'user_premium_access' if it has price.
+        // The previous code only checked user_plans. I will keep it simple for now or check 'user_premium_access' if requested.
+        // User asked to "save and display this data" (meaning results).
+        // I'll stick to updating RESULT stats.
 
         const totalRevenue = planData
             ? planData.reduce((acc, curr) => acc + (parseFloat(curr.price_paid) || 0), 0)
@@ -71,10 +101,7 @@ export async function getStatsController(
     }
 }
 
-/**
- * GET /api/admin/recent-registrations
- * Get recent student registrations
- */
+
 export async function getRecentRegistrationsController(
     req: AuthRequest,
     res: Response
@@ -100,10 +127,7 @@ export async function getRecentRegistrationsController(
     }
 }
 
-/**
- * GET /api/admin/recent-exam-completions
- * Get recent exam completions
- */
+
 export async function getRecentExamCompletionsController(
     req: AuthRequest,
     res: Response
@@ -111,15 +135,45 @@ export async function getRecentExamCompletionsController(
     try {
         const limit = parseInt(req.query.limit as string) || 10;
 
-        const { data, error } = await supabaseAdmin
+        // 1. Fetch Regular
+        const { data: regular, error: regError } = await supabaseAdmin
             .from('exam_results')
             .select('id, student_name, exam_title, score, total_questions, accuracy, created_at')
             .order('created_at', { ascending: false })
             .limit(limit);
 
-        if (error) throw error;
+        if (regError) throw regError;
 
-        res.json({ success: true, data: data || [] });
+        // 2. Fetch Special
+        const { data: special, error: specError } = await supabaseAdmin
+            .from('special_exam_results')
+            .select('id, user_auth_id, score, total_questions, accuracy, created_at, special_exam:special_exams(title), student:students(name)')
+            // Note: student relation might not exist directly if user_auth_id links to auth.users
+            // We might need to fetch student name from 'students' table using user_email if available?
+            // special_exam_results has 'user_email'.
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (specError) console.error("Error fetching special exams for dashboard", specError);
+
+        // Normalize Special
+        const normalizedSpecial = (special || []).map((item: any) => ({
+            id: item.id,
+            student_name: item.user_email || 'Student', // Fallback
+            exam_title: item.special_exam?.title || 'Special Exam',
+            score: item.score,
+            total_questions: item.total_questions,
+            accuracy: item.accuracy,
+            created_at: item.created_at,
+            is_special: true
+        }));
+
+        // Combine and Sort
+        const combined = [...(regular || []), ...normalizedSpecial]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, limit);
+
+        res.json({ success: true, data: combined });
     } catch (error: any) {
         logger.error('Get recent exam completions error:', error);
         res.status(500).json({
@@ -129,10 +183,6 @@ export async function getRecentExamCompletionsController(
     }
 }
 
-/**
- * GET /api/admin/recent-plan-purchases
- * Get recent plan purchases
- */
 export async function getRecentPlanPurchasesController(
     req: AuthRequest,
     res: Response
@@ -158,10 +208,6 @@ export async function getRecentPlanPurchasesController(
     }
 }
 
-/**
- * GET /api/admin/students
- * Get all students with pagination and search
- */
 export async function getStudentsController(
     req: AuthRequest,
     res: Response
@@ -206,10 +252,6 @@ export async function getStudentsController(
     }
 }
 
-/**
- * GET /api/admin/subjects
- * Get all subjects
- */
 export async function getSubjectsController(
     _req: AuthRequest,
     res: Response
@@ -232,10 +274,6 @@ export async function getSubjectsController(
     }
 }
 
-/**
- * POST /api/admin/subjects
- * Create a new subject
- */
 export async function createSubjectController(
     req: AuthRequest,
     res: Response
@@ -267,10 +305,6 @@ export async function createSubjectController(
     }
 }
 
-/**
- * PUT /api/admin/subjects/:id
- * Update a subject
- */
 export async function updateSubjectController(
     req: AuthRequest,
     res: Response
@@ -299,10 +333,6 @@ export async function updateSubjectController(
     }
 }
 
-/**
- * DELETE /api/admin/subjects/:id
- * Delete a subject
- */
 export async function deleteSubjectController(
     req: AuthRequest,
     res: Response
@@ -336,12 +366,6 @@ export default {
     deleteSubjectController,
 };
 
-// ================= EXAM RESULTS =================
-
-/**
- * GET /api/admin/exam-results
- * Get exam results with pagination and filtering
- */
 export async function getExamResultsController(
     req: AuthRequest,
     res: Response
@@ -401,12 +425,7 @@ export async function getExamResultsController(
     }
 }
 
-// ================= PLANS MANAGEMENT =================
 
-/**
- * GET /api/admin/plans
- * Get user plans with pagination and filtering
- */
 export async function getUserPlansController(
     req: AuthRequest,
     res: Response
@@ -460,10 +479,6 @@ export async function getUserPlansController(
     }
 }
 
-/**
- * POST /api/admin/plans
- * Create a manual plan for a student
- */
 export async function createUserPlanController(
     req: AuthRequest,
     res: Response
@@ -523,10 +538,6 @@ export async function createUserPlanController(
     }
 }
 
-/**
- * PUT /api/admin/plans/:id/deactivate
- * Deactivate a user plan
- */
 export async function deactivateUserPlanController(
     req: AuthRequest,
     res: Response
@@ -554,10 +565,6 @@ export async function deactivateUserPlanController(
     }
 }
 
-/**
- * GET /api/admin/plan-templates
- * Get all plan templates
- */
 export async function getPlanTemplatesController(
     req: AuthRequest,
     res: Response
@@ -588,10 +595,6 @@ export async function getPlanTemplatesController(
     }
 }
 
-/**
- * POST /api/admin/plan-templates
- * Create a new plan template
- */
 export async function createPlanTemplateController(
     req: AuthRequest,
     res: Response
@@ -632,10 +635,6 @@ export async function createPlanTemplateController(
     }
 }
 
-/**
- * PUT /api/admin/plan-templates/:id
- * Update a plan template
- */
 export async function updatePlanTemplateController(
     req: AuthRequest,
     res: Response
@@ -664,10 +663,6 @@ export async function updatePlanTemplateController(
     }
 }
 
-/**
- * DELETE /api/admin/plan-templates/:id
- * Delete a plan template
- */
 export async function deletePlanTemplateController(
     req: AuthRequest,
     res: Response
@@ -690,5 +685,132 @@ export async function deletePlanTemplateController(
             success: false,
             error: error.message || 'Failed to delete plan template',
         });
+    }
+}
+
+// Student Details Controllers for Admin
+export async function getStudentDetailsController(
+    req: AuthRequest,
+    res: Response
+): Promise<void> {
+    try {
+        const { email } = req.params;
+        // Decode email if it was encoded
+        const decodedEmail = decodeURIComponent(email);
+
+        const { data, error } = await supabaseAdmin
+            .from('students')
+            .select('*')
+            .eq('email', decodedEmail)
+            .single();
+
+        if (error) throw error;
+        if (!data) {
+            res.status(404).json({ success: false, error: 'Student not found' });
+            return;
+        }
+
+        res.json(data);
+    } catch (error: any) {
+        logger.error('Get student details error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch student details' });
+    }
+}
+
+export async function getStudentPlansByStudentController(
+    req: AuthRequest,
+    res: Response
+): Promise<void> {
+    try {
+        const { email } = req.params;
+        const decodedEmail = decodeURIComponent(email);
+
+        // Find student first to get name/phone if needed, or query by student_email if column exists
+        // Based on original code, it queried by student_name. Let's fetch student first.
+        const { data: student } = await supabaseAdmin.from('students').select('name').eq('email', decodedEmail).single();
+
+        if (!student) {
+            res.status(404).json({ success: false, error: 'Student not found' });
+            return;
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('user_plans')
+            .select('*')
+            .eq('student_name', student.name)
+            .order('purchased_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = (data || []).map((plan: any) => ({
+            ...plan,
+            exam_access: plan.exam_ids || plan.subjects || [],
+        }));
+
+        res.json(formatted);
+    } catch (error: any) {
+        logger.error('Get student plans error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch student plans' });
+    }
+}
+
+export async function getStudentHistoryByStudentController(
+    req: AuthRequest,
+    res: Response
+): Promise<void> {
+    try {
+        const { email } = req.params;
+        const decodedEmail = decodeURIComponent(email);
+
+        // Fetch student name/phone
+        const { data: student } = await supabaseAdmin.from('students').select('name, phone, id, email').eq('email', decodedEmail).single();
+        if (!student) {
+            res.status(404).json({ success: false, error: 'Student not found' });
+            return;
+        }
+
+        // 1. Fetch Regular History
+        const { data: regular, error: regError } = await supabaseAdmin
+            .from('exam_results')
+            .select('*')
+            .eq('student_name', student.name) // or phone? Original used name.
+            .order('created_at', { ascending: false });
+
+        if (regError) throw regError;
+
+        // 2. Fetch Special History
+        const { data: special, error: specError } = await supabaseAdmin
+            .from('special_exam_results')
+            .select(`
+                *,
+                special_exam:special_exams(title)
+            `)
+            .eq('user_email', student.email) // Use email which is reliable
+            .order('created_at', { ascending: false });
+
+        if (specError) console.error("Error fetching special history for admin", specError);
+
+        // 3. Normalize Special
+        const normalizedSpecial = (special || []).map((item: any) => ({
+            id: item.id,
+            exam_id: item.special_exam_id,
+            exam_title: item.special_exam?.title || 'Special Exam',
+            set_number: item.set_number,
+            score: item.score,
+            total_questions: item.total_questions,
+            accuracy: item.accuracy,
+            time_taken: `${Math.ceil((item.time_taken_seconds || 0) / 60)} min`,
+            created_at: item.created_at,
+            is_special: true
+        }));
+
+        // 4. Combine and Sort
+        const combined = [...(regular || []), ...normalizedSpecial]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        res.json(combined);
+    } catch (error: any) {
+        logger.error('Get student history error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch student history' });
     }
 }

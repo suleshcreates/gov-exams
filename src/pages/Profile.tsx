@@ -11,6 +11,8 @@ import {
   Target,
   Crown,
   CheckCircle,
+  FileText,
+  BookOpen,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { subscriptionPlans } from "@/data/mockData";
@@ -28,6 +30,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [purchasedPlans, setPurchasedPlans] = useState<any[]>([]);
+  const [premiumPurchases, setPremiumPurchases] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [globalRank, setGlobalRank] = useState<number>(1);
 
@@ -78,6 +81,10 @@ const Profile = () => {
         // Load purchased plans (already using API)
         const plans = await supabaseService.getStudentPlans(user.phone);
         setPurchasedPlans(plans);
+
+        // Load premium purchases (Special Exams & PYQ)
+        const premiums = await supabaseService.getUserPremiumPurchases();
+        setPremiumPurchases(premiums);
 
         // Load subjects for plan display
         const allSubjects = await adminService.getSubjects();
@@ -395,6 +402,78 @@ const Profile = () => {
                               No subjects selected
                             </span>
                           )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Premium Purchases (Special Exams & PYQ) */}
+          {premiumPurchases.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="glass-card rounded-2xl p-4 sm:p-8 mt-8"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-secondary" />
+                <h2 className="text-xl sm:text-2xl font-bold gradient-text">
+                  Premium Purchases
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {premiumPurchases.map((purchase) => {
+                  const purchasedDate = new Date(purchase.purchased_at);
+                  const isSpecialExam = purchase.resource_type === 'special_exam';
+
+                  return (
+                    <motion.div
+                      key={purchase.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className={`glass-card rounded-xl p-4 sm:p-6 border-2 ${isSpecialExam ? 'border-purple-500/50' : 'border-blue-500/50'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          {isSpecialExam ? (
+                            <BookOpen className="w-8 h-8 text-purple-500" />
+                          ) : (
+                            <FileText className="w-8 h-8 text-blue-500" />
+                          )}
+                          <div>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${isSpecialExam
+                                ? 'bg-purple-500/20 text-purple-600'
+                                : 'bg-blue-500/20 text-blue-600'
+                              }`}>
+                              {isSpecialExam ? 'Special Exam' : 'PYQ PDF'}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-600 text-xs font-semibold flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Purchased
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Price Paid</span>
+                          <span className="font-bold gradient-text">₹{purchase.amount_paid || 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Purchased</span>
+                          <span className="font-semibold">
+                            {purchasedDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Access</span>
+                          <span className="font-semibold text-green-600">Lifetime</span>
                         </div>
                       </div>
                     </motion.div>

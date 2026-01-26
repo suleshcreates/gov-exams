@@ -85,11 +85,11 @@ const StudentDetail = () => {
       const studentData = await adminService.getStudentById(email);
       console.log('✅ Student data:', studentData);
 
-      // Then use student name to fetch related data
+      // Then use student email to fetch related data
       const [plansData, historyData, analyticsData] = await Promise.all([
-        adminService.getStudentPlans(studentData.name),
-        adminService.getStudentExamHistory(studentData.name),
-        adminService.getStudentAnalytics(studentData.name),
+        adminService.getStudentPlans(email),
+        adminService.getStudentExamHistory(email),
+        adminService.getStudentAnalytics(email),
       ]);
 
       console.log('📋 Plans data:', plansData);
