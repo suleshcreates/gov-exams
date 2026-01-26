@@ -26,6 +26,7 @@ export const createOrderController = async (req: Request, res: Response) => {
             });
         }
 
+        /*
         // --- SIMULATION MODE START ---
         // Mock order creation
         const mockOrderId = `order_mock_${Date.now()}`;
@@ -43,12 +44,12 @@ export const createOrderController = async (req: Request, res: Response) => {
             currency: 'INR'
         });
         // --- SIMULATION MODE END ---
+        */
 
-        /* 
-        // REAL RAZORPAY LOGIC (COMMENTED OUT)
+        // REAL RAZORPAY LOGIC
         // Create Razorpay order
         const options = {
-            amount: amount * 100, // Amount in paise
+            amount: Math.round(parseFloat(amount) * 100), // Amount in paise
             currency: 'INR',
             receipt: receipt || `receipt_${Date.now()}`,
             notes: {
@@ -67,8 +68,11 @@ export const createOrderController = async (req: Request, res: Response) => {
                 amount: order.amount,
                 currency: order.currency,
             },
+            id: order.id, // Frontend expects top-level id as well sometimes
+            amount: order.amount,
+            currency: order.currency
         });
-        */
+
     } catch (error: any) {
         logger.error('[PAYMENT] Error creating order:', error);
         return res.status(500).json({
@@ -92,10 +96,13 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             pricePaid,
             examIds,
             validityDays,
+            // For single resource purchases (PYQ/Special Exam)
+            resource_type,
+            resource_id,
+            amount_paid
         } = req.body;
 
-        /*
-        // REAL VERIFICATION LOGIC (COMMENTED OUT)
+        // REAL VERIFICATION LOGIC
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
             return res.status(400).json({
                 success: false,
@@ -117,16 +124,17 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
                 error: 'Invalid payment signature',
             });
         }
-        */
 
+
+        /*
         // --- SIMULATION MODE START ---
         logger.info(`[PAYMENT SIMULATION] Verifying mock payment: ${razorpay_payment_id}`);
         // --- SIMULATION MODE END ---
-
+        */
 
         // Ensure examIds is an array
         const normalizedExamIds = Array.isArray(examIds) ? examIds : (examIds ? [examIds] : []);
-        logger.info(`[PAYMENT] Exam IDs received:`, normalizedExamIds);
+        logger.info(`[PAYMENT] Purchase Request:`, { planId, resource_type, resource_id, amount: pricePaid || amount_paid });
 
         // Get student from authenticated user
         const authUserId = (req as any).user?.auth_user_id;
@@ -144,6 +152,23 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
         const expiresAt = validityDays
             ? new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString()
             : null;
+
+        // Handle differnet purchase types
+        // 1. Plan Purchase (Multiple exams) -> user_plans
+        // 2. Single Resource Purchase (PYQ/Special Exam) -> user_premium_access (or user_plans with specific type?)
+
+        // IMPORTANT: The system seems to use 'user_plans' for PLANS and 'user_premium_access' (or similar logic) for individual items?
+        // Checking schema via previous context...
+        // Actually, previous context showed 'user_plans' saving.
+        // Let's stick to saving to 'user_plans' for plans, but for single items we might need to check if we have a table for that 
+        // OR simply reuse user_plans with a different structure?
+        // Wait, 'premiumAccess.controller.ts' handles single item purchases usually?
+        // 'verifyPaymentController' here seems to be designed for PLANS primarily based on 'planId' param.
+        // BUT, SpecialExamDetail calls '/api/student/premium-access/purchase' which maps to 'premiumAccess.controller.ts'.
+        // THIS controller is '/api/payments/verify' which is used by PaymentModal (Plans).
+
+        // SO THIS FILE IS ONLY FOR PLANS.
+        // Special Exmas use 'premiumAccess.controller.ts'.
 
         // Save purchase to user_plans table
         const { data, error } = await supabaseAdmin
@@ -164,7 +189,7 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
                 is_active: true,
                 payment_id: razorpay_payment_id,
                 order_id: razorpay_order_id,
-                payment_signature: razorpay_signature || 'mock_signature',
+                payment_signature: razorpay_signature,
                 payment_status: 'completed',
             });
 

@@ -166,27 +166,81 @@ const SpecialExamDetail: React.FC = () => {
             navigate('/login');
             return;
         }
+
+        if (!exam) return;
+
         setPurchasing(true);
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`${API_URL}/api/student/premium-access/purchase`, {
+
+            // 1. Create Order
+            const orderRes = await fetch(`${API_URL}/api/payments/create-order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
-                    resource_type: 'special_exam',
-                    resource_id: id,
-                    amount_paid: exam?.price || 0,
-                    payment_id: `sim_${Date.now()}`,
-                    order_id: `order_sim_${Date.now()}`
+                    amount: exam.price,
+                    planId: `special_exam_${id}`, // Use a unique ID for the "plan"
+                    receipt: `receipt_${id}_${Date.now()}`
                 })
             });
-            if (response.ok) {
-                setHasAccess(true);
-                await checkAccessAndProgress();
-            } else throw new Error('Purchase failed');
+
+            if (!orderRes.ok) throw new Error('Failed to create order');
+            const orderData = await orderRes.json();
+
+            // 2. Open Razorpay
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "GovExams",
+                description: `Special Exam: ${exam.title}`,
+                order_id: orderData.id,
+                prefill: {
+                    name: auth.user?.name,
+                    email: auth.user?.email,
+                    contact: auth.user?.phone
+                },
+                theme: {
+                    color: "#f97316" // Orange-500
+                },
+                handler: async function (response: any) {
+                    try {
+                        // 3. Verify Payment
+                        const verifyRes = await fetch(`${API_URL}/api/student/premium-access/purchase`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({
+                                resource_type: 'special_exam',
+                                resource_id: id,
+                                amount_paid: exam.price,
+                                payment_id: response.razorpay_payment_id,
+                                order_id: response.razorpay_order_id,
+                                signature: response.razorpay_signature
+                            })
+                        });
+
+                        if (verifyRes.ok) {
+                            setHasAccess(true);
+                            await checkAccessAndProgress();
+                        } else {
+                            throw new Error('Payment verification failed');
+                        }
+                    } catch (verifyError) {
+                        console.error('Verification Error:', verifyError);
+                        alert('Payment successful but verification failed. Please contact support.');
+                    }
+                }
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                alert(`Payment Failed: ${response.error.description}`);
+            });
+            rzp.open();
+
         } catch (error) {
             console.error('Purchase error:', error);
-            alert('Purchase failed. Please try again.');
+            alert('Failed to initiate purchase. Please try again.');
         } finally {
             setPurchasing(false);
         }

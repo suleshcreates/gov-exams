@@ -32,16 +32,13 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
         setError(null);
 
         try {
-            // --- SIMULATION MODE ---
-            // 1. (Skipped) Load Razorpay SDK 
-            /*
+            // 1. Load Razorpay SDK
             const isLoaded = await loadRazorpay();
             if (!isLoaded) {
                 throw new Error('Razorpay SDK failed to load. Are you online?');
             }
-            */
 
-            // 2. Create Order on Backend (Now Mocked)
+            // 2. Create Order on Backend
             const orderResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-order`, {
                 method: 'POST',
                 headers: {
@@ -67,76 +64,81 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
                 throw new Error('Failed to create payment order. Please try again.');
             }
 
-            // 3. (Skipped) Initialize Razorpay Checkout
-            // Simulate Payment Success Handling directly
-            const simulateSuccess = async () => {
-                try {
-                    // Simulate delay
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-
-                    // 4. Verify Payment and Save Purchase to Database
-                    const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-                        },
-                        body: JSON.stringify({
-                            razorpay_order_id: orderData.order.id,
-                            razorpay_payment_id: `pay_mock_${Date.now()}`, // Mock Payment ID
-                            razorpay_signature: 'mock_signature', // Mock Signature
-                            planId: plan.id,
-                            planName: plan.name,
-                            pricePaid: plan.price,
-                            examIds: plan.subjects,
-                            validityDays: plan.validity_days
-                        })
-                    });
-
-                    const verifyData = await verifyResponse.json();
-
-                    if (!verifyResponse.ok || !verifyData.success) {
-                        throw new Error(verifyData.error || 'Payment verification failed');
-                    }
-
-                    toast({
-                        title: "Simulation Successful! 🎉",
-                        description: `[TEST MODE] You have successfully purchased the ${plan.name}.`,
-                    });
-
-                    // Call onSuccess and close modal
-                    setProcessing(false);
-                    onSuccess();
-                    onClose();
-                } catch (err: any) {
-                    logger.error('Post-payment verification failed:', err);
-                    toast({
-                        title: "Payment Error",
-                        description: err.message || "Payment successful but there was an issue activating the plan.",
-                        variant: "destructive"
-                    });
-                    setProcessing(false);
-                }
-            };
-
-            await simulateSuccess();
-
-            /* REAL RAZORPAY LOGIC (COMMENTED OUT)
+            // 3. Initialize Razorpay Checkout
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID,
                 amount: orderData.order.amount,
                 currency: orderData.order.currency,
-                name: "Ethereal Exam Quest",
+                name: "GovExams",
                 description: `Purchase ${plan.name}`,
                 order_id: orderData.order.id,
-                handler: async function (response: any) {
-                   // ... existing verification logic ...
+                prefill: {
+                    name: auth.user?.name,
+                    email: auth.user?.email,
+                    contact: auth.user?.phone
                 },
-                // ...
+                theme: {
+                    color: "#f97316" // Orange-500
+                },
+                handler: async function (response: any) {
+                    try {
+                        // 4. Verify Payment and Save Purchase to Database
+                        const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                planId: plan.id,
+                                planName: plan.name,
+                                pricePaid: plan.price,
+                                examIds: plan.subjects,
+                                validityDays: plan.validity_days
+                            })
+                        });
+
+                        const verifyData = await verifyResponse.json();
+
+                        if (!verifyResponse.ok || !verifyData.success) {
+                            throw new Error(verifyData.error || 'Payment verification failed');
+                        }
+
+                        toast({
+                            title: "Purchase Successful! 🎉",
+                            description: `You have successfully purchased the ${plan.name}.`,
+                        });
+
+                        // Call onSuccess and close modal
+                        onSuccess();
+                        onClose();
+
+                    } catch (err: any) {
+                        logger.error('Post-payment verification failed:', err);
+                        toast({
+                            title: "Payment Verification Failed",
+                            description: "Payment was deducted but we couldn't verify it. Please contact support with your Payment ID.",
+                            variant: "destructive"
+                        });
+                        setError("Payment successful but verification failed. Please contact support.");
+                    } finally {
+                        setProcessing(false);
+                    }
+                }
             };
+
             const rzp1 = new (window as any).Razorpay(options);
+
+            rzp1.on('payment.failed', function (response: any) {
+                logger.error('Payment failed:', response.error);
+                setError(response.error.description || "Payment failed");
+                setProcessing(false);
+            });
+
             rzp1.open();
-            */
 
         } catch (err: any) {
             logger.error('Payment flow error:', err);
@@ -147,12 +149,7 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border-4 border-yellow-400">
-                {/* Header - Simulated Mode Warning */}
-                <div className="bg-yellow-100 px-6 py-2 flex items-center justify-center text-xs font-bold text-yellow-800 uppercase tracking-wider">
-                    <TestTube className="w-3 h-3 mr-1" /> Payment Simulation Mode
-                </div>
-
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <div className="flex items-center gap-2">
                         <div className="bg-primary/10 p-2 rounded-lg">
@@ -191,24 +188,24 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
                     <button
                         onClick={handlePayment}
                         disabled={processing}
-                        className="w-full py-3 px-4 bg-yellow-500 text-black rounded-lg font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-yellow-500/20"
+                        className="w-full py-3 px-4 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
                     >
                         {processing ? (
                             <>
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
-                                Processing (Simulated)...
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                Processing...
                             </>
                         ) : (
                             <>
-                                <TestTube size={18} />
-                                Simulate Payment Success
+                                <Lock size={18} />
+                                Pay Securely
                             </>
                         )}
                     </button>
 
                     <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
                         <Lock size={12} />
-                        <span>Secured by Razorpay. (Simulation Active)</span>
+                        <span>Secured by Razorpay</span>
                     </div>
                 </div>
             </div>

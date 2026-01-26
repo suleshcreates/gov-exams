@@ -111,41 +111,22 @@ const PYQDetail = () => {
 
             const orderData = await orderResponse.json();
 
-            // Check if it's a simulation (mock order)
-            if (orderData.id.startsWith('order_mock_')) {
-                // Simulate successful payment immediately
-                const verifyResponse = await fetch(`${API_URL}/api/student/premium-access/purchase`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        resource_type: 'pyq',
-                        resource_id: pyq.id,
-                        payment_id: `pay_mock_${Date.now()}`,
-                        order_id: orderData.id,
-                        amount_paid: pyq.price
-                    })
-                });
-
-                if (verifyResponse.ok) {
-                    setHasAccess(true);
-                    alert('Simulation Purchase successful!');
-                } else {
-                    throw new Error('Failed to verify simulation payment');
-                }
-                return;
-            }
-
             // Real Razorpay flow
             const options = {
                 key: RAZORPAY_KEY,
-                amount: orderData.amount,
+                amount: orderData.amount, // Amount in paise
                 currency: orderData.currency,
                 name: 'GovExams',
                 description: `PYQ: ${pyq.title}`,
                 order_id: orderData.id,
+                prefill: {
+                    name: auth.user?.name,
+                    email: auth.user?.email,
+                    contact: auth.user?.phone
+                },
+                theme: {
+                    color: '#3B82F6'
+                },
                 handler: async function (response: any) {
                     // Verify payment and grant access
                     try {
@@ -160,6 +141,7 @@ const PYQDetail = () => {
                                 resource_id: pyq.id,
                                 payment_id: response.razorpay_payment_id,
                                 order_id: response.razorpay_order_id,
+                                signature: response.razorpay_signature,
                                 amount_paid: pyq.price
                             })
                         });
@@ -174,17 +156,13 @@ const PYQDetail = () => {
                         console.error('Payment verification error:', err);
                         alert('Payment received but verification failed. Please contact support.');
                     }
-                },
-                prefill: {
-                    email: auth.user?.email || '',
-                    contact: auth.user?.phone || ''
-                },
-                theme: {
-                    color: '#3B82F6'
                 }
             };
 
             const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                alert(`Payment Failed: ${response.error.description}`);
+            });
             rzp.open();
 
         } catch (error) {
