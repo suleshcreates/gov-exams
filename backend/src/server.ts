@@ -64,6 +64,15 @@ function createApp(): Application {
         });
     });
 
+    // Root endpoint - Friendly message instead of 404
+    app.get('/', (_req: Request, res: Response) => {
+        res.status(200).json({
+            success: true,
+            message: 'GovExams API is running! 🚀',
+            docs: 'https://github.com/suleshcreates/gov-exams'
+        });
+    });
+
     // API Routes
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
