@@ -18,6 +18,10 @@ interface EnvironmentConfig {
     ALLOWED_ORIGINS: string;
     EMAIL_USER: string;
     EMAIL_PASS: string;
+    EMAILJS_SERVICE_ID: string;
+    EMAILJS_TEMPLATE_ID: string;
+    EMAILJS_PUBLIC_KEY: string;
+    EMAILJS_PRIVATE_KEY: string;
 }
 
 // Validate required environment variables
@@ -28,8 +32,12 @@ const requiredEnvVars = [
     'RAZORPAY_KEY_ID',
     'RAZORPAY_KEY_SECRET',
     'ALLOWED_ORIGINS',
-    'EMAIL_USER',
-    'EMAIL_PASS',
+    // 'EMAIL_USER', // Optional now
+    // 'EMAIL_PASS', // Optional now
+    'EMAILJS_SERVICE_ID',
+    'EMAILJS_TEMPLATE_ID',
+    'EMAILJS_PUBLIC_KEY',
+    'EMAILJS_PRIVATE_KEY',
 ];
 
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
@@ -52,8 +60,12 @@ export const env: EnvironmentConfig = {
     RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID!,
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET!,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS!,
-    EMAIL_USER: process.env.EMAIL_USER!,
-    EMAIL_PASS: process.env.EMAIL_PASS!,
+    EMAIL_USER: process.env.EMAIL_USER || '',
+    EMAIL_PASS: process.env.EMAIL_PASS || '',
+    EMAILJS_SERVICE_ID: process.env.EMAILJS_SERVICE_ID!,
+    EMAILJS_TEMPLATE_ID: process.env.EMAILJS_TEMPLATE_ID!,
+    EMAILJS_PUBLIC_KEY: process.env.EMAILJS_PUBLIC_KEY!,
+    EMAILJS_PRIVATE_KEY: process.env.EMAILJS_PRIVATE_KEY!,
 };
 
 export default env;

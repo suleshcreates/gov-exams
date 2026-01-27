@@ -15,6 +15,7 @@ interface ExamSet {
     started_at?: string;
     score?: number;
     time_remaining?: number; // seconds until unlock
+    result_id?: string; // Add result_id to interface
 }
 
 interface SpecialExam {
@@ -91,13 +92,27 @@ const SpecialExamDetail: React.FC = () => {
                     const setInfo = exam?.sets?.find((s: any) => s.set_number === i);
                     const qSetId = setInfo?.question_set_id || null;
 
-                    if (result?.completed_at) {
+                    // Check for completion using either completed_at or created_at
+                    const completionTime = result?.completed_at || result?.created_at;
+
+                    if (completionTime) {
                         sets.push({
                             set_number: i,
                             question_set_id: qSetId,
                             status: 'completed',
-                            completed_at: result.completed_at,
-                            score: result.score
+                            completed_at: completionTime,
+                            status: 'completed',
+                            completed_at: completionTime,
+                            score: result.score,
+                            result_id: result.id // Capture result ID from backend
+                        });
+                    } else if (accessData.hasAccess) {
+                        // UNLOCK ALL IF PURCHASED/ACCESSED
+                        // The user requested: "once the exam is attempted... keep all set of that exam unlocked"
+                        sets.push({
+                            set_number: i,
+                            question_set_id: qSetId,
+                            status: 'unlocked'
                         });
                     } else if (i === 1) {
                         sets.push({
@@ -105,25 +120,6 @@ const SpecialExamDetail: React.FC = () => {
                             question_set_id: qSetId,
                             status: 'unlocked'
                         });
-                    } else if (prevResult?.completed_at) {
-                        const completedTime = new Date(prevResult.completed_at).getTime();
-                        const unlockTime = completedTime + (exam?.time_limit_minutes || 20) * 60 * 1000;
-                        const now = Date.now();
-
-                        if (now >= unlockTime) {
-                            sets.push({
-                                set_number: i,
-                                question_set_id: qSetId,
-                                status: 'unlocked'
-                            });
-                        } else {
-                            sets.push({
-                                set_number: i,
-                                question_set_id: qSetId,
-                                status: 'waiting',
-                                time_remaining: Math.ceil((unlockTime - now) / 1000)
-                            });
-                        }
                     } else {
                         sets.push({
                             set_number: i,
@@ -277,6 +273,14 @@ const SpecialExamDetail: React.FC = () => {
         });
     };
 
+    const handleReviewSet = (resultId?: string) => {
+        if (!resultId) {
+            alert("No result found to review");
+            return;
+        }
+        navigate(`/review/${resultId}`);
+    };
+
     const formatTime = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -308,7 +312,7 @@ const SpecialExamDetail: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 pt-20">
             {/* NEW HERO SECTION */}
             <div className="relative h-[45vh] min-h-[400px] overflow-hidden flex items-end">
                 {/* Background with Blur & Overlay */}
@@ -389,7 +393,37 @@ const SpecialExamDetail: React.FC = () => {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 max-w-7xl -mt-8 relative z-20 pb-20">
+            {/* PERFORMANCE SUMMARY SECTION (Visible if any set is completed) */}
+            {hasAccess && examSets.some(s => s.status === 'completed') && (
+                <div className="container mx-auto px-4 max-w-7xl -mt-20 relative z-30 mb-8">
+                    <div className="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-800 mb-2">Performance Report</h2>
+                            <p className="text-slate-500 font-medium">Here is your progress across all sets in this special exam.</p>
+                        </div>
+                        <div className="flex gap-8">
+                            <div className="text-center">
+                                <div className="text-sm text-slate-400 font-bold uppercase tracking-wider mb-1">Avg Score</div>
+                                <div className="text-3xl font-black text-slate-900">
+                                    {Math.round(
+                                        examSets.filter(s => s.score !== undefined).reduce((acc, curr) => acc + (curr.score || 0), 0) /
+                                        (examSets.filter(s => s.score !== undefined).length || 1)
+                                    )}%
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-sm text-slate-400 font-bold uppercase tracking-wider mb-1">Completed</div>
+                                <div className="text-3xl font-black text-green-600">
+                                    {examSets.filter(s => s.status === 'completed').length}
+                                    <span className="text-lg text-slate-400 font-bold">/{exam.sets_count}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="container mx-auto px-4 max-w-7xl relative z-20 pb-20">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* LEFT COLUMN: Sets & Progress */}
                     <div className="lg:col-span-2 space-y-6">
@@ -492,12 +526,20 @@ const SpecialExamDetail: React.FC = () => {
                                                             Start Attempt
                                                         </button>
                                                     ) : set.status === 'completed' ? (
-                                                        <button
-                                                            onClick={() => handleStartSet(set.set_number)}
-                                                            className="w-full sm:w-auto px-6 py-3 border-2 border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors"
-                                                        >
-                                                            Review results
-                                                        </button>
+                                                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                                            <button
+                                                                onClick={() => handleReviewSet(set.result_id)}
+                                                                className="flex-1 sm:flex-none px-6 py-3 border-2 border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors"
+                                                            >
+                                                                Review results
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleStartSet(set.set_number)}
+                                                                className="flex-1 sm:flex-none px-4 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-colors"
+                                                            >
+                                                                Re-attempt
+                                                            </button>
+                                                        </div>
                                                     ) : set.status === 'waiting' ? (
                                                         <div className="text-center sm:text-right px-4">
                                                             <div className="text-lg font-black text-slate-800 tabular-nums">
@@ -592,13 +634,13 @@ const SpecialExamDetail: React.FC = () => {
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-500 font-bold uppercase tracking-wider">Overall Progress</span>
                                         <span className="text-lg font-black text-slate-900">
-                                            {Math.round((examSets.filter(s => s.status === 'completed').length / exam.sets_count) * 100)}%
+                                            {Math.round((examSets.filter(s => s.status === 'completed').length / (exam.sets_count || 5)) * 100)}%
                                         </span>
                                     </div>
                                     <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                                         <motion.div
                                             initial={{ width: 0 }}
-                                            animate={{ width: `${(examSets.filter(s => s.status === 'completed').length / exam.sets_count) * 100}%` }}
+                                            animate={{ width: `${Math.round((examSets.filter(s => s.status === 'completed').length / (exam.sets_count || 5)) * 100)}%` }}
                                             className="h-full bg-slate-900"
                                         />
                                     </div>
@@ -640,7 +682,7 @@ const SpecialExamDetail: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -21,55 +21,83 @@ const History = () => {
       return;
     }
 
+    // Safety timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.error("[History] Loading timed out");
+        setLoading(false);
+      }
+    }, 10000);
+
     try {
       setLoading(true);
+      console.log("[History] Fetching history...");
+
       const results = await studentService.getExamHistory();
+      console.log("[History] Raw results:", results);
 
       // Group Special Exam Results
       const processedHistory: any[] = [];
       const specialExamsMap = new Map<string, any>();
 
-
       // Ensure results is an array
       if (!Array.isArray(results)) {
         console.error('[History] Results is not an array:', results);
+        setHistory([]);
         setLoading(false);
+        clearTimeout(timeoutId);
         return;
       }
 
       results.forEach((item: any) => {
-        if (!item) return;
+        try {
+          if (!item) return;
 
-        if (item.is_special) {
-          const examId = item.exam_id;
-          if (!specialExamsMap.has(examId)) {
-            specialExamsMap.set(examId, {
-              id: `group_${examId}`,
-              exam_id: examId,
-              exam_title: item.exam_title, // Title from first found set
-              is_special_group: true,
-              score: 0,
-              total_questions: 0,
-              time_minutes: 0,
-              created_at: item.created_at, // Will update to latest
-              sets_count: 0
-            });
+          // SPECIAL EXAM HANDLING
+          if (item.is_special || item.special_exam_id || item.exam_title?.startsWith("Special")) {
+            // Fallback ID if exam_id is missing but it's a special exam result
+            const examId = item.exam_id || item.special_exam_id || item.set_id || "unknown_special";
+
+            if (!specialExamsMap.has(examId)) {
+              specialExamsMap.set(examId, {
+                id: `group_${examId}`,
+                exam_id: examId,
+                exam_title: item.exam_title || item.special_exam?.title || "Special Exam",
+                is_special_group: true,
+                score: 0,
+                total_questions: 0,
+                time_minutes: 0,
+                created_at: item.created_at || new Date().toISOString(),
+                sets_count: 0
+              });
+            }
+
+            const group = specialExamsMap.get(examId);
+            group.score += (Number(item.score) || 0);
+            group.total_questions += (Number(item.total_questions) || 0);
+
+            // Parse time "X min" -> integer safely
+            let mins = 0;
+            if (typeof item.time_taken === 'number') {
+              mins = Math.ceil(item.time_taken / 60);
+            } else {
+              mins = parseInt((item.time_taken || "0").toString().replace(/[^0-9]/g, "") || "0");
+            }
+            group.time_minutes += mins;
+            group.sets_count += 1;
+
+            // Keep the latest date
+            const itemDate = new Date(item.created_at).getTime();
+            const groupDate = new Date(group.created_at).getTime();
+            if (!isNaN(itemDate) && (isNaN(groupDate) || itemDate > groupDate)) {
+              group.created_at = item.created_at;
+            }
+          } else {
+            // REGULAR EXAM HANDLING
+            processedHistory.push(item);
           }
-
-          const group = specialExamsMap.get(examId);
-          group.score += (item.score || 0);
-          group.total_questions += (item.total_questions || 0);
-          // Parse time "X min" -> integer
-          const mins = parseInt((item.time_taken || "0").toString().replace(/[^0-9]/g, "") || "0");
-          group.time_minutes += mins;
-          group.sets_count += 1;
-
-          // Keep the latest date
-          if (new Date(item.created_at) > new Date(group.created_at)) {
-            group.created_at = item.created_at;
-          }
-        } else {
-          processedHistory.push(item);
+        } catch (err) {
+          console.error("[History] Error processing item:", item, err);
         }
       });
 
@@ -84,12 +112,17 @@ const History = () => {
       });
 
       // Sort Combined History
-      processedHistory.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      processedHistory.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return (isNaN(dateB) ? 0 : dateB) - (isNaN(dateA) ? 0 : dateA);
+      });
 
+      console.log("[History] Processed:", processedHistory);
       setHistory(processedHistory);
 
       if (processedHistory.length > 0) {
-        const avg = (processedHistory.reduce((acc: number, h: any) => acc + h.accuracy, 0) / processedHistory.length).toFixed(1);
+        const avg = (processedHistory.reduce((acc: number, h: any) => acc + (Number(h.accuracy) || 0), 0) / processedHistory.length).toFixed(1);
         setAverageAccuracy(avg);
 
         const totalTime = processedHistory.reduce((acc: number, h: any) => {
@@ -100,11 +133,16 @@ const History = () => {
         setAvgTime(Math.round(totalTime / processedHistory.length));
       }
     } catch (error) {
-      console.error("Error loading history:", error);
+      console.error("[History] Error loading history:", error);
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadHistory();
+  }, [auth.isAuthenticated, auth.user]);
 
   if (!auth.isAuthenticated || !auth.user) {
     return (

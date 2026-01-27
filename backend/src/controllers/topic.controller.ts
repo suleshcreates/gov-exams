@@ -35,11 +35,11 @@ import fs from 'fs';
  */
 export const uploadVideoController = async (req: Request, res: Response) => {
     try {
-        if (!req.file) {
+        if (!(req as any).file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        const file = req.file;
+        const file = (req as any).file;
         const fileExt = file.originalname.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
@@ -86,11 +86,11 @@ export const uploadVideoController = async (req: Request, res: Response) => {
  */
 export const uploadTopicPDFController = async (req: Request, res: Response) => {
     try {
-        if (!req.file) {
+        if (!(req as any).file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        const file = req.file;
+        const file = (req as any).file;
         const fileExt = file.originalname.split('.').pop();
 
         // Validate PDF by mimetype (Multer already checks, but double check)
@@ -441,50 +441,22 @@ export const getStudentExamHistoryController = async (req: Request, res: Respons
         }
 
         // 2. Fetch Special Exam Results
-        // 2. Fetch Special Exam Results
+        // [MODIFIED] User requested to separate history. Special exams are now only visible on their specific detail pages.
+        // We no longer merge them here.
+
+        /*
         let specialHistory: any[] = [];
         try {
-            // Use Auth ID (preferred) or fallback to Email
-            let query = supabase
-                .from('special_exam_results')
-                .select('*, special_exam:special_exams(title)')
-                .order('created_at', { ascending: false });
-
-            if (userId) {
-                query = query.eq('user_auth_id', userId);
-            } else {
-                query = query.eq('user_email', userPhone); // Fallback if user_auth_id missing from req.user
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error('[History] Special Exam Fetch Error:', error);
-            } else {
-                specialHistory = data || [];
-                console.log(`[History] Fetched ${specialHistory.length} special results`);
-            }
+            // ... (Removed special exam fetch)
         } catch (e) {
             console.error('[History] Unexpected error fetching special results:', e);
         }
+        */
 
         // 3. Normalize and Combine
-        const normalizedSpecial = specialHistory.map((item: any) => ({
-            id: item.id,
-            exam_id: item.special_exam_id,
-            exam_title: item.special_exam?.title || 'Special Exam',
-            set_number: item.set_number,
-            score: item.score,
-            total_questions: item.total_questions,
-            accuracy: item.accuracy,
-            time_taken: `${Math.ceil((item.time_taken_seconds || 0) / 60)} min`, // Normalize time format
-            created_at: item.created_at,
-            is_special: true // Flag to identify special exams
-        }));
-
+        // Only return regular history now
         const combinedHistory = [
-            ...(regularHistory || []),
-            ...normalizedSpecial
+            ...(regularHistory || [])
         ];
 
         // 4. Sort by Date (Descending)
@@ -498,29 +470,86 @@ export const getStudentExamHistoryController = async (req: Request, res: Respons
 };
 
 // Get Single Exam Result (Student)
+// Get Single Exam Result (Student)
 export const getStudentExamResultDetailController = async (req: Request, res: Response) => {
     try {
         const { resultId } = req.params;
         const user = (req as any).user;
         const userPhone = user.phone;
+        const userId = user.auth_user_id || user.id;
 
+        // 1. Try fetching from regular exam_results
         const { data: result, error } = await supabase
             .from('exam_results')
             .select('*')
             .eq('id', resultId)
             .single();
 
-        if (error) {
-            console.error('Error fetching exam result:', error);
-            return res.status(500).json({ error: error.message });
+        if (!error && result) {
+            // Verify ownership
+            if (result.student_phone !== userPhone) {
+                return res.status(403).json({ error: 'Unauthorized access to this result' });
+            }
+            return res.status(200).json(result);
         }
 
-        // Verify ownership
-        if (result.student_phone !== userPhone) {
-            return res.status(403).json({ error: 'Unauthorized access to this result' });
+        // 2. Fallback: Try fetching from special_exam_results
+        console.log(`[Debug] Checking special_exam_results for ID: ${resultId}`);
+        const { data: specialResult, error: specialError } = await supabase
+            .from('special_exam_results')
+            .select(`
+                *,
+                special_exam:special_exams(title)
+            `)
+            .eq('id', resultId)
+            .single();
+
+        if (specialError || !specialResult) {
+            console.log('[Debug] Special exam fetch error/empty:', specialError);
+            // Only log if it's a real error, not just 'not found'
+            if (specialError && specialError.code !== 'PGRST116') {
+                console.error('Error fetching special exam result:', specialError);
+            }
+            return res.status(404).json({ error: 'Result not found' });
         }
 
-        return res.status(200).json(result);
+        console.log(`[Debug] Found special result. ExamID: ${specialResult.special_exam_id}, Set#: ${specialResult.set_number}`);
+
+        // Verify ownership for special result
+        if (specialResult.user_auth_id && specialResult.user_auth_id !== userId) {
+            // Fallback to email check if auth_id mismatch (legacy support)
+            if (specialResult.user_email !== userPhone) {
+                return res.status(403).json({ error: 'Unauthorized access to this result' });
+            }
+        }
+
+        // 2.5 Manually fetch the question_set_id from special_exam_sets
+        const { data: setInfo } = await supabase
+            .from('special_exam_sets')
+            .select('question_set_id')
+            .eq('special_exam_id', specialResult.special_exam_id)
+            .eq('set_number', specialResult.set_number)
+            .single();
+
+        // 3. Normalize Special Result to match ExamResult interface
+        // This ensures the frontend ExamReview page works without modification
+        const normalizedResult = {
+            id: specialResult.id,
+            exam_id: specialResult.special_exam_id,
+            set_id: setInfo?.question_set_id || null,
+            exam_title: specialResult.special_exam?.title || 'Special Exam',
+            set_number: specialResult.set_number,
+            score: specialResult.score,
+            total_questions: specialResult.total_questions,
+            accuracy: specialResult.accuracy,
+            time_taken: `${Math.ceil((specialResult.time_taken_seconds || 0) / 60)} min`,
+            user_answers: specialResult.user_answers,
+            created_at: specialResult.created_at,
+            student_phone: specialResult.user_email // Map email to phone field for ownership check in frontend
+        };
+
+        return res.status(200).json(normalizedResult);
+
     } catch (err: any) {
         console.error('Server error fetching exam result:', err);
         return res.status(500).json({ error: 'Internal server error' });

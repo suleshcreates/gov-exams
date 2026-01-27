@@ -10,7 +10,7 @@ const storage = multer.diskStorage({
 });
 
 // Filter for video files only
-const videoFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const videoFileFilter = (_req: any, file: any, cb: any) => {
     if (file.mimetype.startsWith('video/')) {
         cb(null, true);
     } else {
@@ -19,7 +19,7 @@ const videoFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFil
 };
 
 // Filter for PDF files only
-const pdfFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const pdfFileFilter = (_req: any, file: any, cb: any) => {
     if (file.mimetype === 'application/pdf') {
         cb(null, true);
     } else {

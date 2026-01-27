@@ -204,11 +204,11 @@ export const deletePYQController = async (req: Request, res: Response) => {
 // ============================================
 export const uploadPYQFileController = async (req: Request, res: Response) => {
     try {
-        if (!req.file) {
+        if (!(req as any).file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        const file = req.file;
+        const file = (req as any).file;
         const fileName = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
         logger.info(`Uploading PYQ file: ${fileName}, size: ${file.size}, type: ${file.mimetype}`);

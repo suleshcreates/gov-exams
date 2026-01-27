@@ -47,7 +47,7 @@ function createApp(): Application {
     app.use('/api', apiLimiter);
 
     // DEBUG: Log all requests
-    app.use((req, res, next) => {
+    app.use((req, _res, next) => {
         console.log(`[Request] ${req.method} ${req.url}`);
         next();
     });

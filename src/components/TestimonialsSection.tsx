@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
-import { Star, Quote, User } from "lucide-react";
+import { Star } from "lucide-react";
+import { TestimonialsColumn } from "./TestimonialsColumn";
 
 const testimonials = [
     {
         id: 1,
         name: "Priya Sharma",
         role: "DMLT Student",
-        image: null, // Placeholder for valid image if available, else fallback to icon
+        image: null,
         content: "GovExams was a game-changer for my DMLT preparation. The bilingual questions helped me understand complex concepts easily. Highly recommended!",
         rating: 5,
         exam: "DMLT 2023",
@@ -28,8 +29,66 @@ const testimonials = [
         content: "The question sets are very similar to the actual exam pattern. Practicing here gave me the confidence I needed to score high.",
         rating: 4,
         exam: "Pharmacy Entrance",
+    },
+    {
+        id: 4,
+        name: "Suresh Reddy",
+        role: "Banking Aspirant",
+        image: null,
+        content: "The variety of questions in the bank exams section is unmatched. It covered everything from reasoning to aptitude perfectly.",
+        rating: 5,
+        exam: "IBPS PO",
+    },
+    {
+        id: 5,
+        name: "Neha Gupta",
+        role: "SSC Aspirant",
+        image: null,
+        content: "I loved the timed mock tests. They really helped me manage my time better during the actual exam day.",
+        rating: 5,
+        exam: "SSC CGL",
+    },
+    {
+        id: 6,
+        name: "Vikram Singh",
+        role: "Railway Aspirant",
+        image: null,
+        content: "The special exams section is pure gold. It felt like I was sitting for the real paper. Great job team!",
+        rating: 4,
+        exam: "RRB NTPC",
+    },
+    {
+        id: 7,
+        name: "Sneha Kapoor",
+        role: "MPSC Aspirant",
+        image: null,
+        content: "The quality of Marathi questions is excellent. Usually, translations are bad on other sites, but here they are perfect.",
+        rating: 5,
+        exam: "MPSC State",
+    },
+    {
+        id: 8,
+        name: "Amit Verma",
+        role: "Police Bharti",
+        image: null,
+        content: "Simple interface, great questions. I practiced daily for 2 months and cleared my written test easily.",
+        rating: 5,
+        exam: "Police Constable",
+    },
+    {
+        id: 9,
+        name: "Pooja Mehta",
+        role: "Nursing Officer",
+        image: null,
+        content: "The nursing specific questions were very detailed. Helped me a lot with the technical part of the exam.",
+        rating: 5,
+        exam: "AIIMS Nursing",
     }
 ];
+
+const firstColumn = testimonials.slice(0, 3);
+const secondColumn = testimonials.slice(3, 6);
+const thirdColumn = testimonials.slice(6, 9);
 
 export const TestimonialsSection = () => {
     return (
@@ -57,52 +116,11 @@ export const TestimonialsSection = () => {
                     </p>
                 </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                    {testimonials.map((testimonial, index) => (
-                        <motion.div
-                            key={testimonial.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 }}
-                            className="glass-card p-8 rounded-2xl relative group hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 border-2 border-transparent hover:border-primary/20"
-                        >
-                            {/* Quote Icon */}
-                            <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-40 transition-opacity">
-                                <Quote className="w-10 h-10 text-primary" />
-                            </div>
-
-                            {/* Rating */}
-                            <div className="flex gap-1 mb-6">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star
-                                        key={i}
-                                        className={`w-4 h-4 ${i < testimonial.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-                                    />
-                                ))}
-                            </div>
-
-                            {/* Content */}
-                            <p className="text-muted-foreground mb-8 relative z-10 leading-relaxed">
-                                "{testimonial.content}"
-                            </p>
-
-                            {/* Author Info */}
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-white/20">
-                                    {testimonial.image ? (
-                                        <img src={testimonial.image} alt={testimonial.name} className="w-full h-full rounded-full object-cover" />
-                                    ) : (
-                                        <User className="w-6 h-6 text-primary" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-foreground">{testimonial.name}</h4>
-                                    <p className="text-xs text-primary font-medium">{testimonial.exam}</p>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
+                {/* Marquee Columns */}
+                <div className="flex justify-center gap-6 overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)] max-h-[700px]">
+                    <TestimonialsColumn testimonials={[...firstColumn, ...thirdColumn]} duration={25} />
+                    <TestimonialsColumn testimonials={[...secondColumn, ...firstColumn]} className="hidden md:block" duration={35} />
+                    <TestimonialsColumn testimonials={[...thirdColumn, ...secondColumn]} className="hidden lg:block" duration={28} />
                 </div>
             </div>
         </section>

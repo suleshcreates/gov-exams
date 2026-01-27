@@ -1,36 +1,14 @@
 import { supabaseAdmin } from '../config/supabase';
 import logger from '../utils/logger';
-import nodemailer from 'nodemailer';
+// import nodemailer from 'nodemailer'; // Removed for EmailJS
 import env from '../config/env';
 
-// Create Nodemailer transporter with optimized settings
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,      // Use port 587 (STARTTLS) - often faster than 465
-  secure: false,  // Use STARTTLS instead of SSL
-  auth: {
-    user: env.EMAIL_USER,
-    pass: env.EMAIL_PASS,
-  },
-  // Force IPv4 to avoid DNS resolution issues
-  family: 4,
-  // Connection pooling for faster subsequent emails
-  pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
-  // Shorter timeouts
-  connectionTimeout: 5000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
-});
-
-// Verify transporter on startup
-transporter.verify().then(() => {
-  logger.info('✅ SMTP ready — transporter verified.');
-}).catch((err) => {
-  logger.error('❌ SMTP verification failed. Check EMAIL_USER / EMAIL_PASS and 2FA/App Passwords.');
-  logger.error(err.message || err);
-});
+// EmailJS Configuration is loaded from env.ts
+if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_PUBLIC_KEY || !env.EMAILJS_PRIVATE_KEY) {
+  console.warn('⚠️ EmailJS credentials missing in .env. Email sending will fail.');
+} else {
+  logger.info('✅ EmailJS configured.');
+}
 
 /**
  * Generate 6-digit OTP
@@ -226,111 +204,42 @@ export async function sendOTPEmail(
   otp: string
 ): Promise<boolean> {
   try {
-    const mailOptions = {
-      from: `"GovExams" <${env.EMAIL_USER}>`,
-      to: email,
-      subject: 'Your Verification Code - GovExams',
-      html: `
-  <div style="margin:0;padding:0;background:#f4f5f7;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" 
-      style="background:#f4f5f7;padding:40px 0;font-family:Arial,Helvetica,sans-serif;">
-      <tr>
-        <td align="center">
-
-          <!-- Outer Card -->
-          <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" 
-            style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
-
-            <!-- Hero Section with Background -->
-            <tr>
-              <td style="padding:0;margin:0;">
-                <div style="
-                  background: linear-gradient(135deg, #0A2647 0%, #144272 100%);
-                  padding:40px 20px;
-                  text-align:center;
-                  color:white;">
-                  
-                  <img 
-                    src="https://govexam.info/logo.png" 
-                    alt="GovExams" 
-                    style="width:180px;margin-bottom:20px;border-radius:6px;"
-                  />
-
-                  <h1 style="margin:0;font-size:26px;letter-spacing:0.5px;font-weight:700;color:#ffffff;">
-                    Verification Code
-                  </h1>
-
-                  <p style="margin-top:10px;font-size:15px;color:#e2e8f0;">
-                    Secure login for GovExams
-                  </p>
-
-                </div>
-              </td>
-            </tr>
-
-            <!-- Body -->
-            <tr>
-              <td style="padding:30px 40px;color:#333333;">
-
-                <p style="font-size:16px;margin:0 0 20px 0;">
-                  Hi <strong>${name}</strong>,
-                </p>
-
-                <p style="font-size:15px;line-height:1.6;margin:0 0 25px;">
-                  Your verification code for <strong>GovExams</strong> is:
-                </p>
-
-                <!-- OTP Box -->
-                <div style="
-                  background:#f1f5f9;
-                  border:1px solid #dbe3eb;
-                  border-radius:8px;
-                  padding:18px;
-                  text-align:center;
-                  font-size:32px;
-                  font-weight:700;
-                  letter-spacing:4px;
-                  color:#111827;">
-                  ${otp}
-                </div>
-
-                <p style="font-size:15px;line-height:1.6;margin:25px 0 20px;">
-                  This code will expire in <strong>5 minutes</strong>.
-                </p>
-
-                <p style="font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:30px;">
-                  If you didn't request this code, simply ignore this email.
-                </p>
-
-                <p style="font-size:15px;margin:0;">
-                  Best regards,<br/>
-                  <strong>GovExams Team</strong>
-                </p>
-
-              </td>
-            </tr>
-
-            <!-- Footer -->
-            <tr>
-              <td style="background:#f8fafc;padding:18px;text-align:center;color:#94a3b8;font-size:12px;">
-                © ${new Date().getFullYear()} GovExams. All rights reserved.
-              </td>
-            </tr>
-
-          </table>
-
-        </td>
-      </tr>
-    </table>
-  </div>`,
+    const data = {
+      service_id: env.EMAILJS_SERVICE_ID,
+      template_id: env.EMAILJS_TEMPLATE_ID,
+      user_id: env.EMAILJS_PUBLIC_KEY,
+      accessToken: env.EMAILJS_PRIVATE_KEY,
+      template_params: {
+        email: email,       // Matches {{email}} in "To Email"
+        to_name: name,      // Use {{to_name}} in your template greeting (e.g. "Hi {{to_name}}")
+        otp: otp,           // Keeping generic {{otp}}
+        passcode: otp,      // Matches {{passcode}} in standard EmailJS templates
+        message: `Your verification code is ${otp}`,
+      }
     };
 
-    await transporter.sendMail(mailOptions);
-    logger.info(`📧 OTP sent to ${email}`);
+    logger.info(`[EmailJS] Sending OTP to ${email} via REST API...`);
 
-    return true;
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'http://localhost' // Some APIs require Origin header, EmailJS might be lenient
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      logger.info(`[EmailJS] Success! Status: ${response.status}`);
+      return true;
+    } else {
+      const errorText = await response.text();
+      logger.error(`[EmailJS] Failed. Status: ${response.status}, Response: ${errorText}`);
+      return false;
+    }
+
   } catch (error) {
-    logger.error('Error sending OTP email:', error);
+    logger.error('Error sending OTP email via EmailJS:', error);
     return false;
   }
 }

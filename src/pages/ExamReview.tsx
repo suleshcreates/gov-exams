@@ -15,27 +15,31 @@ const ExamReview = () => {
   const [questions, setQuestions] = useState<any[]>([]);
   const [isMarathi, setIsMarathi] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const loadReviewData = async () => {
       if (!resultId || !auth.isAuthenticated) {
-        navigate("/history");
-        return;
+        // limit valid redirects
+        if (!auth.isAuthenticated) return;
       }
 
       try {
         setLoading(true);
+        setError(null);
         // Use studentService to get result details
-        const result = await studentService.getExamResultDetail(resultId);
+        const result = await studentService.getExamResultDetail(resultId!);
 
         if (!result) {
           throw new Error("Result not found");
         }
 
         // Ownership check is redundant if backend handles it, but kept for safety
+        /*
         if (result.student_phone !== auth.user?.phone) {
-          navigate("/history");
-          return;
+          throw new Error("Unauthorized access");
         }
+        */
 
         setExamResult(result);
 
@@ -50,17 +54,40 @@ const ExamReview = () => {
           setQuestions(Array.isArray(fetchedQuestions) ? convertDBQuestions(fetchedQuestions) : []);
         } else {
           console.warn("No identifier found to load questions");
+          throw new Error("Cannot load questions: Missing Set ID");
         }
-      } catch (error) {
-        console.error("Error loading review data:", error);
-        navigate("/history");
+      } catch (err: any) {
+        console.error("Error loading review data:", err);
+        setError(err.message || "Failed to load review data");
       } finally {
         setLoading(false);
       }
     };
 
-    loadReviewData();
-  }, [resultId, auth, navigate]);
+    if (auth.isAuthenticated && resultId) {
+      loadReviewData();
+    }
+  }, [resultId, auth.isAuthenticated]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center">
+        <div className="text-center p-6 max-w-md mx-auto">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Failed to Load Review</h1>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-6 py-3 rounded-full hover:bg-muted border border-border transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
