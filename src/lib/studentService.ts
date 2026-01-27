@@ -1,4 +1,4 @@
-import { getAccessToken } from './apiService';
+import { authenticatedFetch } from './apiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -20,20 +20,11 @@ interface TopicProgress {
     last_watched_position: number;
 }
 
-const getHeaders = () => {
-    const token = getAccessToken();
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
-};
+
 
 export const studentService = {
     getTopicsBySubject: async (subjectId: string): Promise<Topic[]> => {
-        const response = await fetch(`${API_URL}/api/student/subjects/${subjectId}/topics`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/subjects/${subjectId}/topics`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch topics');
@@ -43,10 +34,7 @@ export const studentService = {
     },
 
     getTopicProgress: async (topicId: string): Promise<TopicProgress | null> => {
-        const response = await fetch(`${API_URL}/api/student/topics/${topicId}/progress`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/topics/${topicId}/progress`);
 
         if (!response.ok) {
             if (response.status === 404) return null;
@@ -57,9 +45,8 @@ export const studentService = {
     },
 
     markVideoCompleted: async (topicId: string): Promise<void> => {
-        const response = await fetch(`${API_URL}/api/student/topics/${topicId}/complete`, {
+        const response = await authenticatedFetch(`${API_URL}/api/student/topics/${topicId}/complete`, {
             method: 'POST',
-            headers: getHeaders(),
             body: JSON.stringify({}),
         });
 
@@ -69,10 +56,7 @@ export const studentService = {
     },
 
     getTopicPdfUrl: async (topicId: string): Promise<string> => {
-        const response = await fetch(`${API_URL}/api/student/topics/${topicId}/pdf`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/topics/${topicId}/pdf`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch PDF URL');
@@ -83,10 +67,7 @@ export const studentService = {
     },
 
     getQuestions: async (setId: string): Promise<any[]> => {
-        const response = await fetch(`${API_URL}/api/student/question-sets/${setId}/questions`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/question-sets/${setId}/questions`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch questions');
@@ -96,9 +77,8 @@ export const studentService = {
     },
 
     submitExamResult: async (setId: string, resultData: any): Promise<any> => {
-        const response = await fetch(`${API_URL}/api/student/question-sets/${setId}/submit`, {
+        const response = await authenticatedFetch(`${API_URL}/api/student/question-sets/${setId}/submit`, {
             method: 'POST',
-            headers: getHeaders(),
             body: JSON.stringify(resultData),
         });
 
@@ -110,10 +90,7 @@ export const studentService = {
     },
 
     getQuestionSetDetails: async (setId: string): Promise<any> => {
-        const response = await fetch(`${API_URL}/api/student/question-sets/${setId}/details`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/question-sets/${setId}/details`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch question set details');
@@ -123,23 +100,24 @@ export const studentService = {
     },
 
     getExamHistory: async (): Promise<any[]> => {
-        const response = await fetch(`${API_URL}/api/student/history`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/history`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch exam history');
         }
 
-        return response.json();
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+            console.error("History response is not an array:", data);
+            throw new Error('Invalid history response format');
+        }
+
+        return data;
     },
 
     getExamResultDetail: async (resultId: string): Promise<any> => {
-        const response = await fetch(`${API_URL}/api/student/history/${resultId}`, {
-            method: 'GET',
-            headers: getHeaders(),
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/history/${resultId}`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch exam result details');
@@ -150,9 +128,7 @@ export const studentService = {
 
     getTopicMaterials: async (topicId: string): Promise<any[]> => {
         try {
-            const response = await fetch(`${API_URL}/api/student/topics/${topicId}/materials`, {
-                headers: getHeaders()
-            });
+            const response = await authenticatedFetch(`${API_URL}/api/student/topics/${topicId}/materials`);
             if (!response.ok) return [];
             return await response.json();
         } catch (error) {
@@ -161,9 +137,8 @@ export const studentService = {
     },
 
     submitSpecialExamResult: async (examId: string, setNumber: number, resultData: any): Promise<any> => {
-        const response = await fetch(`${API_URL}/api/student/special-exams/${examId}/sets/${setNumber}/result`, {
+        const response = await authenticatedFetch(`${API_URL}/api/student/special-exams/${examId}/sets/${setNumber}/result`, {
             method: 'POST',
-            headers: getHeaders(),
             body: JSON.stringify(resultData),
         });
 
@@ -175,9 +150,7 @@ export const studentService = {
     },
 
     getSpecialExamResults: async (examId: string): Promise<any[]> => {
-        const response = await fetch(`${API_URL}/api/student/special-exams/${examId}/results`, {
-            headers: getHeaders()
-        });
+        const response = await authenticatedFetch(`${API_URL}/api/student/special-exams/${examId}/results`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch special exam results');

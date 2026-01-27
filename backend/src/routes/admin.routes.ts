@@ -46,7 +46,8 @@ import {
     createPYQController,
     updatePYQController,
     deletePYQController,
-    uploadPYQFileController
+    uploadPYQFileController,
+    getAdminPYQsController
 } from '../controllers/pyq.controller';
 import { getAllPremiumAccessController } from '../controllers/premiumAccess.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
@@ -123,6 +124,7 @@ router.get('/special-exams/:id', getAdminSpecialExamByIdController);
 router.put('/special-exams/:examId/sets/:setNumber', assignQuestionSetController);
 
 // PYQ Management
+router.get('/pyq', getAdminPYQsController);
 router.post('/pyq', createPYQController);
 router.put('/pyq/:id', updatePYQController);
 router.delete('/pyq/:id', deletePYQController);

@@ -381,39 +381,92 @@ export async function getExamResultsController(
         const from = (page - 1) * limit;
         const to = from + limit - 1;
 
-        let query = supabaseAdmin
+        // 1. Query Regular Results
+        let queryRegular = supabaseAdmin
             .from('exam_results')
             .select('*', { count: 'exact' })
             .order('created_at', { ascending: false })
+            .range(from, to); // Limitation: pagination is per-table
+
+        if (examId) queryRegular = queryRegular.eq('exam_id', examId);
+        if (studentSearch) queryRegular = queryRegular.or(`student_name.ilike.%${studentSearch}%,student_phone.ilike.%${studentSearch}%`);
+        if (dateFrom) queryRegular = queryRegular.gte('created_at', dateFrom);
+        if (dateTo) queryRegular = queryRegular.lte('created_at', dateTo);
+
+        // 2. Query Special Results
+        let querySpecial = supabaseAdmin
+            .from('special_exam_results')
+            .select('*, special_exam:special_exams(title)', { count: 'exact' })
+            .order('created_at', { ascending: false })
             .range(from, to);
 
-        if (examId) {
-            query = query.eq('exam_id', examId);
-        }
+        if (examId) querySpecial = querySpecial.eq('special_exam_id', examId);
+        if (studentSearch) querySpecial = querySpecial.or(`user_email.ilike.%${studentSearch}%`); // Approximate search
+        if (dateFrom) querySpecial = querySpecial.gte('created_at', dateFrom);
+        if (dateTo) querySpecial = querySpecial.lte('created_at', dateTo);
 
-        if (studentSearch) {
-            query = query.or(`student_name.ilike.%${studentSearch}%,student_phone.ilike.%${studentSearch}%`);
-        }
+        const [regularRes, specialRes] = await Promise.all([queryRegular, querySpecial]);
 
-        if (dateFrom) {
-            query = query.gte('created_at', dateFrom);
-        }
+        if (regularRes.error) throw regularRes.error;
+        if (specialRes.error) console.error("Error fetching special results:", specialRes.error);
 
-        if (dateTo) {
-            query = query.lte('created_at', dateTo);
-        }
+        // 3. Normalize Special Results
+        const normalizedSpecial = (specialRes.data || []).map((item: any) => ({
+            id: item.id,
+            student_name: item.user_email?.split('@')[0] || 'Student', // Fallback name
+            student_phone: item.user_email || 'N/A', // Phone often not in this table, use email
+            exam_title: item.special_exam?.title || 'Special Exam',
+            exam_id: item.special_exam_id,
+            set_number: item.set_number,
+            score: item.score,
+            total_questions: item.total_questions,
+            accuracy: item.accuracy,
+            time_taken: item.time_taken_seconds, // Raw seconds, frontend handles formatting?
+            created_at: item.created_at,
+            user_answers: item.user_answers,
+            // Add flag if needed
+            is_special: true
+        }));
 
-        const { data, error, count } = await query;
+        // 4. Merge and Sort
+        // Note: This paging strategy (page X from A + page X from B) is imperfect but usable for administrative lists
+        const combinedResults = [...(regularRes.data || []), ...normalizedSpecial]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        if (error) throw error;
+        // Check Frontend expectation: 'time_taken' string vs number?
+        // Regular: "5 min" (string)
+        // Special: number (seconds)
+        // Adjust Special to match string format if needed OR update frontend to handle both.
+        // Frontend ExamResults.tsx: Math.floor(r.time_taken / 60). Expects NUMBER?
+        // Let's check Regular data... `time_taken` in `exam_results` is string "X min" in controller `topic.controller.ts`.
+        // BUT AdminService logs show it expects number?
+        // ExamResults.tsx line 82: `Math.floor(r.time_taken / 60)` -> Assumes number.
+        // Frontend `r.time_taken`.
+        // `topic.controller.ts`: `time_taken: timeTakenStr` (string).
+        // This suggests `ExamResults.tsx` might be broken for regular exams if they send "5 min".
+        // Let's force everything to be a number (seconds) if possible, or frontend handles NaN.
+        // I will normalize combined results time_taken.
+
+        const finalResults = combinedResults.map(r => {
+            let timeSeconds = 0;
+            if (typeof r.time_taken === 'string') {
+                // Parse "5 min" -> 300
+                const mins = parseInt(r.time_taken.replace(/[^0-9]/g, '') || "0");
+                timeSeconds = mins * 60;
+            } else {
+                timeSeconds = r.time_taken || 0;
+            }
+            return { ...r, time_taken: timeSeconds };
+        });
+
 
         res.json({
             success: true,
             data: {
-                results: data || [],
-                total: count || 0,
+                results: finalResults,
+                total: (regularRes.count || 0) + (specialRes.count || 0),
                 page,
-                totalPages: Math.ceil((count || 0) / limit),
+                totalPages: Math.ceil(((regularRes.count || 0) + (specialRes.count || 0)) / limit),
             }
         });
     } catch (error: any) {

@@ -29,7 +29,17 @@ const History = () => {
       const processedHistory: any[] = [];
       const specialExamsMap = new Map<string, any>();
 
+
+      // Ensure results is an array
+      if (!Array.isArray(results)) {
+        console.error('[History] Results is not an array:', results);
+        setLoading(false);
+        return;
+      }
+
       results.forEach((item: any) => {
+        if (!item) return;
+
         if (item.is_special) {
           const examId = item.exam_id;
           if (!specialExamsMap.has(examId)) {

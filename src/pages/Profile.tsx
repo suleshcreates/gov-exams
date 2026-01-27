@@ -447,8 +447,8 @@ const Profile = () => {
                           )}
                           <div>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${isSpecialExam
-                                ? 'bg-purple-500/20 text-purple-600'
-                                : 'bg-blue-500/20 text-blue-600'
+                              ? 'bg-purple-500/20 text-purple-600'
+                              : 'bg-blue-500/20 text-blue-600'
                               }`}>
                               {isSpecialExam ? 'Special Exam' : 'PYQ PDF'}
                             </span>

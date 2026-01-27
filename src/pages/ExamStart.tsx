@@ -131,67 +131,17 @@ const ExamStart = () => {
                   duration: 3000
                 });
 
-                // Navigate to next set (Force full reload to clean state)
-                // Using window.location to ensure fresh mount of components
-                const nextUrl = `/exam/${spExamId}/instructions/${nextSetId}`;
-                // We need to persist state across reload, but window.location clears state.
-                // However, our new robustness fix REBUILDS state on load!
-                // So we can safely rely on URL params and the verifyAccess restoration logic.
-                // But wait, setMap restoration needs data.
-                // Actually, since verifyAccess rebuilds setMap from API if it detects special exam, 
-                // we don't strictly *need* to pass state if we trust the restoration.
-                // BUT better safe: we can use navigate, but force a key change or similar?
-                // Or just trust the new "restored context" logic which is proven robust.
-
-                // Let's stick to navigate but remove 'replace' and maybe add a key if possible?
-                // Or better, stick to the plan: if we navigate to INSTRUCTIONS page, that is a different component usually?
-                // No, instructions might be same component if route is same?
-                // Route is /exam/:examId/instructions/:setId
-
-                // If previous was /exam/.../start/... and new is /exam/.../instructions/..., that IS a different route/component.
-                // So React should unmount ExamStart and mount ExamInstructions.
-
-                // Issue might be `replace: true` messing with history or prompt?
-                // Let's try standard navigate without replace, or use window.location if desperate.
-                // But window.location loses 'state'.
-
-                // If I use window.location, I rely 100% on the rebuild logic in ExamInstructions/Start.
-                // Does ExamInstructions have rebuild logic?
-                // I need to check ExamInstructions. If it expects state, window.location kills it.
-                // But I improved ExamStart to rebuild. I should probably improve ExamInstructions to rebuild too.
-
-                // For now, let's try to fix the "Repeating" issue.
-                // If spSetNum is 1. nextSetNum is 2. nextSetId is Id2.
-                // Navigate goes to /instructions/Id2.
-                // If user sees "Same set repeating", maybe they mean they see Set 1 Instructions again?
-                // That implies nextSetId == Id1.
-                // That implies spSetMap[2] == Id1 ??
-
-                // Let's verify loop logic.
-                // sets in DB: 1->Id1, 2->Id2.
-                // restoredSetMap: {1: Id1, 2: Id2}.
-                // spSetNum = 1. nextSetNum = 2. nextSetId = Id2.
-                // navigate(...Id2).
-
-                // If "Same set repeating", maybe spSetNum is somehow stuck at 0 or something?
-
-                // I will add logs to debug in production if I could, but here I must fix.
-                // I suspect the restoration logic in verifyAccess might have a bug where it sets setNumber wrong?
-
-                // Sets loop:
-                // if (s.question_set_id === setId) { currentSetNum = s.set_number; }
-                // If setId (from params) is Id1. currentSetNum = 1.
-                // This seems correct.
-
-                // What if the user is redirected to 'ExamStart' directly instead of 'Instructions'?
-                // The navigate call points to /instructions/.
-
-                // User said "direct result screen of the first set" initially.
-                // Now "same set repeating".
-
-                // Let's use window.location to be absolutely sure we are changing the URL and reloading.
-                // We rely on backend to provide data to rebuild state.
-                window.location.href = nextUrl;
+                // Navigate to next set's instructions with transition state
+                navigate(`/exam/${spExamId}/instructions/${nextSetId}`, {
+                  replace: true,
+                  state: {
+                    isTransition: true,
+                    specialExamId: spExamId,
+                    setNumber: nextSetNum,
+                    isSpecialExam: true,
+                    setMap: spSetMap
+                  }
+                });
                 return;
               }
             } else if (currentSetNum >= 5) {
@@ -282,6 +232,16 @@ const ExamStart = () => {
         const currentSet = await studentService.getQuestionSetDetails(setId);
 
         if (currentSet) {
+          if (currentSet.is_submitted) {
+            toast({
+              title: "Exam Completed",
+              description: "You have already submitted this exam.",
+              variant: "destructive",
+            });
+            navigate("/exams", { replace: true });
+            return;
+          }
+
           setTimeLimit(currentSet.time_limit_minutes);
           // Prefer subject name if available (from join), else fallback to exam_id
           const title = currentSet.subjects?.name || currentSet.subject?.name || currentSet.exam_id;
@@ -559,7 +519,7 @@ const ExamStart = () => {
 
 
   // Generate user-specific watermark text
-  const watermarkText = auth.user ? `${auth.user.name} - ${auth.user.phone}` : "GovExams";
+  const watermarkText = auth.user ? `${auth.user.name} - GovExams` : "GovExams";
   const watermarkTimestamp = new Date().toISOString();
 
   // Add exam-mode class to body to disable text selection globally
@@ -669,7 +629,22 @@ const ExamStart = () => {
   }
 
   if (questions.length === 0) {
-    return <div>No questions found for this exam</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full bg-card border border-border rounded-xl shadow-lg p-8 text-center">
+          <h2 className="text-xl font-bold text-destructive mb-2">No Questions Found</h2>
+          <p className="text-muted-foreground mb-6">
+            This exam set appears to be empty. It may not have been fully configured by the administrator.
+          </p>
+          <button
+            onClick={() => navigate('/exams')}
+            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Back to Exams
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -332,6 +332,10 @@ export const submitExamResultController = async (req: Request, res: Response) =>
             .select()
             .single();
 
+        console.log(`[SubmitSpecial] UserID: ${userId}, Email: ${userEmail}, ExamId: ${examId}, Set: ${setNumber}`);
+        if (error) console.error('[SubmitSpecial] Error:', error);
+
+
         if (error) {
             logger.error('Error submitting exam result:', error);
             return res.status(500).json({ error: error.message });

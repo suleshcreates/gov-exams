@@ -37,6 +37,57 @@ export const getPYQsController = async (req: Request, res: Response) => {
 };
 
 // ============================================
+// ADMIN: Get all PYQs with Purchase Counts
+// ============================================
+export const getAdminPYQsController = async (req: Request, res: Response) => {
+    try {
+        // 1. Fetch all PYQs (active and inactive)
+        const { data: pyqs, error: pyqError } = await supabase
+            .from('pyq_pdfs')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (pyqError) {
+            logger.error('Error fetching admin PYQs:', pyqError);
+            return res.status(500).json({ error: pyqError.message });
+        }
+
+        // 2. Fetch purchase counts
+        // Since we can't easily do a cross-table join count without FKs or Views, 
+        // we'll fetch all PYQ purchases and aggregate.
+        // Optimization: For large datasets, use a SQL view or RPC. For now, in-memory is fine.
+        const { data: purchases, error: purchaseError } = await supabase
+            .from('user_premium_access')
+            .select('resource_id')
+            .eq('resource_type', 'pyq');
+
+        if (purchaseError) {
+            logger.error('Error fetching purchase counts:', purchaseError);
+            // Proceed without counts if error (or return error)
+        }
+
+        // 3. Aggregate counts
+        const purchaseMap: Record<string, number> = {};
+        if (purchases) {
+            purchases.forEach((p) => {
+                purchaseMap[p.resource_id] = (purchaseMap[p.resource_id] || 0) + 1;
+            });
+        }
+
+        // 4. Merge
+        const results = (pyqs || []).map((pyq) => ({
+            ...pyq,
+            purchase_count: purchaseMap[pyq.id] || 0
+        }));
+
+        return res.status(200).json(results);
+    } catch (err: any) {
+        logger.error('Server error fetching admin PYQs:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// ============================================
 // PUBLIC: Get PYQ by ID
 // ============================================
 export const getPYQByIdController = async (req: Request, res: Response) => {

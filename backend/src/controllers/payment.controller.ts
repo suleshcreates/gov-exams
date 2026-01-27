@@ -19,6 +19,8 @@ export const createOrderController = async (req: Request, res: Response) => {
     try {
         const { amount, planId, receipt } = req.body;
 
+        logger.info('[PAYMENT] createOrder request:', { amount, planId, receipt, notes: req.body.notes });
+
         if (!amount) {
             return res.status(400).json({
                 success: false,
@@ -26,35 +28,24 @@ export const createOrderController = async (req: Request, res: Response) => {
             });
         }
 
-        /*
-        // --- SIMULATION MODE START ---
-        // Mock order creation
-        const mockOrderId = `order_mock_${Date.now()}`;
-        logger.info(`[PAYMENT SIMULATION] Mock order created: ${mockOrderId} for amount: ${amount}`);
-
-        return res.status(200).json({
-            success: true,
-            order: {
-                id: mockOrderId,
-                amount: Math.round(parseFloat(amount) * 100), // Ensure integer paise
-                currency: 'INR',
-            },
-            id: mockOrderId, // Frontend expects top-level id
-            amount: Math.round(parseFloat(amount) * 100),
-            currency: 'INR'
-        });
-        // --- SIMULATION MODE END ---
-        */
-
         // REAL RAZORPAY LOGIC
+        // Ensure notes values are strings (Razorpay requirement)
+        const notesObj = req.body.notes || { planId: planId || '' };
+        const sanitizedNotes: Record<string, string> = {};
+        Object.keys(notesObj).forEach(key => {
+            sanitizedNotes[key] = String(notesObj[key]);
+        });
+
         // Create Razorpay order
+        // Receipt has max 40 chars limit
+        const rawReceipt = receipt || `receipt_${Date.now()}`;
+        const safeReceipt = rawReceipt.substring(0, 40);
+
         const options = {
             amount: Math.round(parseFloat(amount) * 100), // Amount in paise
             currency: 'INR',
-            receipt: receipt || `receipt_${Date.now()}`,
-            notes: {
-                planId,
-            },
+            receipt: safeReceipt,
+            notes: sanitizedNotes,
         };
 
         const order = await razorpay.orders.create(options);
@@ -75,9 +66,11 @@ export const createOrderController = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         logger.error('[PAYMENT] Error creating order:', error);
+        // Return full error details for debugging
         return res.status(500).json({
             success: false,
             error: error.message || 'Failed to create order',
+            details: error
         });
     }
 };

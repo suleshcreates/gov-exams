@@ -33,24 +33,38 @@ const Plans = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanTemplate | null>(null);
 
-  // Load plan templates from database
+  const [subjectsMap, setSubjectsMap] = useState<Record<string, string>>({});
+
+  // Load plan templates and subjects
   useEffect(() => {
-    const loadPlans = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        // Use public endpoint
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/public/plans`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch plan templates');
+        // Fetch Plans and Subjects in parallel
+        const [plansRes, subjectsRes] = await Promise.all([
+          fetch(`${apiUrl}/api/public/plans`),
+          fetch(`${apiUrl}/api/public/subjects`)
+        ]);
+
+        if (!plansRes.ok) throw new Error('Failed to fetch plans');
+
+        const plansResult = await plansRes.json();
+        const activePlans = (plansResult.data || []).filter((p: PlanTemplate) => p.is_active !== false);
+        setPlanTemplates(activePlans);
+
+        if (subjectsRes.ok) {
+          const subjectsResult = await subjectsRes.json();
+          const map: Record<string, string> = {};
+          (subjectsResult.data || []).forEach((s: any) => {
+            map[s.id] = s.name;
+          });
+          setSubjectsMap(map);
         }
 
-        const result = await response.json();
-        // Filter for active plans (backend might return all, so filter here too safely)
-        const activePlans = (result.data || []).filter((p: PlanTemplate) => p.is_active !== false);
-        setPlanTemplates(activePlans);
       } catch (error) {
-        logger.error("Error loading plans:", error);
+        logger.error("Error loading data:", error);
         toast({
           title: "Error",
           description: "Failed to load plans. Please refresh the page.",
@@ -61,7 +75,7 @@ const Plans = () => {
       }
     };
 
-    loadPlans();
+    loadData();
   }, []);
 
   // Load purchased plans
@@ -239,9 +253,17 @@ const Plans = () => {
                     <ul className="space-y-3 mb-8">
                       <li className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-sm sm:text-base text-muted-foreground">
-                          {subjects.length} Subject{subjects.length !== 1 ? 's' : ''} Included
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm sm:text-base text-muted-foreground font-medium">
+                            Includes:
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {subjects.length > 0
+                              ? subjects.map(id => subjectsMap[id] || 'Unknown Subject').join(', ')
+                              : 'No specific subjects'
+                            }
+                          </span>
+                        </div>
                       </li>
                       <li className="flex items-start gap-3">
                         <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />

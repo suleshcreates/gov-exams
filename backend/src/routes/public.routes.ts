@@ -11,11 +11,13 @@ import {
     getPYQByIdController
 } from '../controllers/pyq.controller';
 import { getCategoriesController } from '../controllers/premiumAccess.controller';
+import { getSubjectsController } from '../controllers/admin.controller';
 
 const router = Router();
 
 // Public Plan Routes (No auth required to view plans)
 router.get('/plans', getPlanTemplatesController);
+router.get('/subjects', getSubjectsController);
 
 // Public Special Exams (No auth required to view list)
 router.get('/special-exams', getSpecialExamsController);

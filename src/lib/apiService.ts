@@ -76,7 +76,7 @@ async function refreshAccessToken(): Promise<string | null> {
 /**
  * Make authenticated API request with automatic token refresh
  */
-async function authenticatedFetch(
+export async function authenticatedFetch(
     url: string,
     options: RequestInit = {}
 ): Promise<Response> {

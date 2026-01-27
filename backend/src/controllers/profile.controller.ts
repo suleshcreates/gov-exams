@@ -44,13 +44,30 @@ export const getUserProfileController = async (req: Request, res: Response) => {
         if (regularError) logger.error('[PROFILE] Error fetching regular results:', regularError);
 
         // Fetch Special Exam Results
-        const { data: specialResults, error: specialError } = await supabaseAdmin
-            .from('special_exam_results')
-            .select('*, special_exam:special_exams(title)')
-            .eq('user_auth_id', userId)
-            .order('created_at', { ascending: false });
+        let specialResults: any[] = [];
+        try {
+            let query = supabaseAdmin
+                .from('special_exam_results')
+                .select('*, special_exam:special_exams(title)')
+                .order('created_at', { ascending: false });
 
-        if (specialError) logger.error('[PROFILE] Error fetching special results:', specialError);
+            if (userId) {
+                query = query.eq('user_auth_id', userId);
+            } else {
+                query = query.eq('user_email', userPhone); // Fallback to phone/email
+            }
+
+            const { data, error } = await query;
+
+            if (error) {
+                logger.error('[PROFILE] Error fetching special results:', error);
+            } else {
+                specialResults = data || [];
+                console.log(`[ProfileController] Special Results found: ${specialResults.length}`);
+            }
+        } catch (e) {
+            logger.error('[PROFILE] Unexpected error fetching special results:', e);
+        }
 
         // Normalize and Group Special Exams
         const specialExamsMap = new Map<string, any>();

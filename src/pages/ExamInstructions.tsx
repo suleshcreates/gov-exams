@@ -46,15 +46,54 @@ const ExamInstructions = () => {
   const [questionSet, setQuestionSet] = useState<any>(null);
   const [totalQuestions, setTotalQuestions] = useState(20);
 
-  const { specialExamId, setNumber, isSpecialExam, setMap } = (location.state as any) || {};
+  const { specialExamId, setNumber, isSpecialExam, setMap, isTransition } = (location.state as any) || {};
+  const [countdown, setCountdown] = useState(15);
+
+  // Auto-start transition handling
+  useEffect(() => {
+    if (isTransition && countdown > 0) {
+      const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (isTransition && countdown === 0) {
+      void handleConfirmBegin();
+    }
+  }, [isTransition, countdown]);
 
   // Define callbacks BEFORE any conditional returns
   const ensureCameraPermission = useCallback(async () => {
-    // ...
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Stop the stream immediately, strict mode might keep it open if we don't
+      stream.getTracks().forEach(track => track.stop());
+      setCameraReady(true);
+      return true;
+    } catch (error) {
+      console.error("Camera permission error:", error);
+      toast({
+        title: "Camera Access Required",
+        description: "Please allow camera access to proceed with the exam.",
+        variant: "destructive",
+      });
+      setCameraReady(false);
+      return false;
+    }
   }, []);
 
   const ensureFullscreen = useCallback(async () => {
-    // ...
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+      return true;
+    } catch (error) {
+      console.error("Fullscreen error:", error);
+      toast({
+        title: "Fullscreen Required",
+        description: "Please allow fullscreen mode to proceed.",
+        variant: "destructive",
+      });
+      return false;
+    }
   }, []);
 
   const handleBegin = async () => {
@@ -304,6 +343,44 @@ const ExamInstructions = () => {
             View Plans
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (isTransition) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-8"
+        >
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+            Get Ready for Set {setNumber}!
+          </h1>
+
+          <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-700"></div>
+            <motion.div
+              className="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            />
+            <div className="text-6xl font-black font-mono">{countdown}</div>
+          </div>
+
+          <p className="text-slate-400 max-w-md mx-auto">
+            Take a deep breath. The next set of {totalQuestions} questions is about to begin.
+            Ensure you remain in fullscreen and keep looking at the camera.
+          </p>
+
+          <Button
+            onClick={() => void handleConfirmBegin()}
+            className="px-8 py-6 text-lg rounded-full gradient-primary hover:scale-105 transition-transform"
+          >
+            Start Next Set Now
+          </Button>
+        </motion.div>
       </div>
     );
   }

@@ -385,6 +385,8 @@ export const submitStudentExamResultController = async (req: Request, res: Respo
 export const getStudentQuestionSetDetailsController = async (req: Request, res: Response) => {
     try {
         const { setId } = req.params;
+        const user = (req as any).user;
+        const userPhone = user.phone; // Assuming phone is the key for exam_results
 
         const { data: setDetails, error } = await supabase
             .from('question_sets')
@@ -397,7 +399,18 @@ export const getStudentQuestionSetDetailsController = async (req: Request, res: 
             return res.status(500).json({ error: error.message });
         }
 
-        return res.status(200).json(setDetails);
+        // Check if submitted
+        const { data: submission } = await supabase
+            .from('exam_results')
+            .select('id')
+            .eq('set_id', setId)
+            .eq('student_phone', userPhone)
+            .maybeSingle();
+
+        return res.status(200).json({
+            ...setDetails,
+            is_submitted: !!submission
+        });
     } catch (err: any) {
         console.error('Server error fetching set details:', err);
         return res.status(500).json({ error: 'Internal server error' });
@@ -410,6 +423,10 @@ export const getStudentExamHistoryController = async (req: Request, res: Respons
         const user = (req as any).user;
         const userPhone = user.phone;
         const userId = user.auth_user_id || user.id;
+
+        try {
+            fs.appendFileSync('history_debug.log', `[${new Date().toISOString()}] Start History Fetch. User: ${userPhone}, ID: ${userId}\n`);
+        } catch (e) { }
 
         // 1. Fetch Regular Exam Results
         const { data: regularHistory, error: regularError } = await supabase
@@ -424,21 +441,35 @@ export const getStudentExamHistoryController = async (req: Request, res: Respons
         }
 
         // 2. Fetch Special Exam Results
-        const { data: specialHistory, error: specialError } = await supabase
-            .from('special_exam_results')
-            .select(`
-                *,
-                special_exam:special_exams(title)
-            `)
-            .eq('user_auth_id', userId)
-            .order('created_at', { ascending: false });
+        // 2. Fetch Special Exam Results
+        let specialHistory: any[] = [];
+        try {
+            // Use Auth ID (preferred) or fallback to Email
+            let query = supabase
+                .from('special_exam_results')
+                .select('*, special_exam:special_exams(title)')
+                .order('created_at', { ascending: false });
 
-        if (specialError) {
-            console.error('Error fetching special exam history:', specialError);
+            if (userId) {
+                query = query.eq('user_auth_id', userId);
+            } else {
+                query = query.eq('user_email', userPhone); // Fallback if user_auth_id missing from req.user
+            }
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.error('[History] Special Exam Fetch Error:', error);
+            } else {
+                specialHistory = data || [];
+                console.log(`[History] Fetched ${specialHistory.length} special results`);
+            }
+        } catch (e) {
+            console.error('[History] Unexpected error fetching special results:', e);
         }
 
         // 3. Normalize and Combine
-        const normalizedSpecial = (specialHistory || []).map((item: any) => ({
+        const normalizedSpecial = specialHistory.map((item: any) => ({
             id: item.id,
             exam_id: item.special_exam_id,
             exam_title: item.special_exam?.title || 'Special Exam',

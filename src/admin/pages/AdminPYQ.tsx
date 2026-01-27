@@ -15,6 +15,7 @@ interface PYQ {
     file_size_mb: number;
     is_active: boolean;
     download_count: number;
+    purchase_count?: number;
     created_at: string;
 }
 
@@ -44,11 +45,40 @@ const AdminPYQ = () => {
 
     const loadPYQs = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/public/pyq`);
+            const token = localStorage.getItem('admin_access_token');
+            if (!token) {
+                // If no token, maybe redirect or just stop
+                console.error("No admin token found");
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/api/admin/pyq`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('API Error:', response.status, errorData);
+                if (response.status === 401 || response.status === 403) {
+                    alert("Session expired. Please login again.");
+                    // Optional: window.location.href = '/admin/login';
+                }
+                throw new Error(errorData.error || 'Failed to fetch PYQs');
+            }
+
             const data = await response.json();
-            setPYQs(data || []);
+
+            if (Array.isArray(data)) {
+                setPYQs(data);
+            } else {
+                console.error("Received non-array data:", data);
+                setPYQs([]);
+            }
         } catch (error) {
             console.error('Error loading PYQs:', error);
+            setPYQs([]); // Ensure it's always an array to prevent crashes
         } finally {
             setLoading(false);
         }
@@ -213,7 +243,7 @@ const AdminPYQ = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Downloads</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchases</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
@@ -229,8 +259,8 @@ const AdminPYQ = () => {
                                 <td className="px-6 py-4 text-sm text-gray-900">{pyq.year || '-'}</td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">₹{pyq.price}</td>
                                 <td className="px-6 py-4 text-sm text-gray-900">
-                                    <span className="flex items-center gap-1">
-                                        <Download size={14} /> {pyq.download_count || 0}
+                                    <span className="flex items-center gap-1 font-semibold text-green-600">
+                                        <Download size={14} /> {pyq.purchase_count || 0}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">

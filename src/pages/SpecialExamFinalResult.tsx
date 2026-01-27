@@ -24,7 +24,11 @@ const SpecialExamFinalResult = () => {
     // Fetch Results
     useEffect(() => {
         const fetchResults = async () => {
-            if (!auth.accessToken || !examId) return;
+            const token = localStorage.getItem('access_token');
+            if (!token || !examId) {
+                setLoading(false);
+                return;
+            }
 
             try {
                 // Fetch Exam Title first
@@ -37,27 +41,19 @@ const SpecialExamFinalResult = () => {
 
                 // Fetch Student Results
                 const resultsRes = await fetch(`${API_URL}/api/student/special-exams/${examId}/results`, {
-                    headers: { 'Authorization': `Bearer ${auth.accessToken}` }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const results = await resultsRes.json();
 
                 // Aggregate Data
-                const totalScore = results.reduce((sum: number, r: any) => sum + (r.score || 0), 0);
-                const maxPossible = 100; // 5 sets * 20 questions * 1 mark (assuming)
-                // Actually stored score is percentage usually? Let's check logic.
-                // In ExamStart we send: score (raw count).
-                // But stored "score" in special_exam_results... wait.
-                // Let's assume standard 1 mark per question for now or sum up total_questions.
+                // Use a Map to deduplicate results by set_number if necessary, or just assume distinct
+                const uniqueResults = Array.from(new Map(results.map((item: any) => [item.set_number, item])).values());
 
-                const totalQuestions = results.reduce((sum: number, r: any) => sum + (r.total_questions || 20), 0);
-                const rawScore = results.reduce((sum: number, r: any) => {
-                    // Back-calculate raw score from percentage if needed, or if API returns raw
-                    // Implementation in ExamStart sends 'score' (raw)
-                    // But db schema 'score' might be percentage? 
-                    // Let's check backend logic if possible.
-                    // Assuming result.score is the raw marks obtained.
-                    return sum + (r.score || 0);
+                const totalQuestions = uniqueResults.length * 20; // Enforce 20 questions per set standard
+                const rawScore = uniqueResults.reduce((sum: number, r: any) => {
+                    return sum + (Number(r.score) || 0);
                 }, 0);
+
 
                 // Correction: The backend controller stores 'score' directly. 
                 // Let's assume 5 sets * 20 Q = 100 Marks.
@@ -79,7 +75,7 @@ const SpecialExamFinalResult = () => {
         };
 
         fetchResults();
-    }, [examId, auth.accessToken]);
+    }, [examId]);
 
     if (loading) {
         return (
@@ -93,7 +89,7 @@ const SpecialExamFinalResult = () => {
     const passed = stats?.percentage >= 60; // 60% Passing criteria
 
     return (
-        <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
+        <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-4 sm:px-6">
             <div className="max-w-3xl mx-auto">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
