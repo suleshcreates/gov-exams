@@ -17,6 +17,9 @@ RUN npm run build
 # Remove devDependencies after build
 RUN npm prune --production
 
+# Set production environment
+ENV NODE_ENV=production
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 USER nodejs
