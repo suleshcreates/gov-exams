@@ -1,13 +1,13 @@
 # GovExams Exam Portal
 
-A comprehensive online examination platform built for GovExams with Google OAuth authentication, bilingual support (English/Marathi), and real-time exam monitoring.
+A comprehensive online examination platform built for GovExams with bilingual support (English/Marathi), and real-time exam monitoring.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+ installed
 - Supabase account
-- Google Cloud Console project (for OAuth)
+
 
 ### Installation
 
@@ -34,10 +34,7 @@ A comprehensive online examination platform built for GovExams with Google OAuth
    VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    
-   # EmailJS Configuration (optional)
-   VITE_EMAILJS_SERVICE_ID=your_emailjs_service_id
-   VITE_EMAILJS_TEMPLATE_ID=your_emailjs_template_id
-   VITE_EMAILJS_PUBLIC_KEY=your_emailjs_public_key
+
    ```
 
 4. **Set up Supabase Database**
@@ -48,11 +45,9 @@ A comprehensive online examination platform built for GovExams with Google OAuth
    # Execute them in your Supabase SQL Editor
    ```
 
-5. **Configure Google OAuth**
 
-   See [Google OAuth Setup](docs/setup/GOOGLE_OAUTH_SETUP.md) for detailed instructions.
 
-6. **Run Development Server**
+5. **Run Development Server**
    ```bash
    npm run dev
    ```
@@ -80,7 +75,7 @@ ethereal-exam-quest/
 
 ## ✨ Features
 
-- **Google OAuth Authentication** - Secure sign-in with Google
+
 - **Bilingual Support** - English and Marathi
 - **5 Subjects** - Mathematics, Physics, Chemistry, Biology, General Knowledge
 - **25 Question Sets** - 5 sets per subject, 20 MCQs each
@@ -91,8 +86,7 @@ ethereal-exam-quest/
 
 ## 🔐 Authentication Flow
 
-1. User clicks "Sign in with Google"
-2. OAuth popup/redirect to Google
+94. User signs in with Phone/Email (OTP based)
 3. User authorizes the app
 4. Redirected to `/auth/callback`
 5. User profile created in `students` table
@@ -106,26 +100,11 @@ ethereal-exam-quest/
 - File organization and cleanup
 - Logger utility implementation
 - TypeScript strict mode compliance
-- Google OAuth integration
+
 - Admin panel
 - Plan management system
 
-### ⚠️ **CRITICAL: Google OAuth Not Configured**
 
-**Login and signup won't work until you configure Google OAuth!**
-
-**Quick Fix:**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Go to Credentials → Create OAuth 2.0 Client ID
-5. Add authorized redirect URI: `http://localhost:8080/auth/callback`
-6. Go to Supabase Dashboard → Authentication → Providers
-7. Enable Google provider
-8. Paste your Google Client ID and Client Secret
-9. **No .env changes needed** - Supabase handles OAuth configuration
-
-**Detailed Guide:** See `docs/setup/` folder
 
 ### 🚧 In Progress
 - Performance optimization
@@ -142,7 +121,7 @@ npm run lint         # Run ESLint
 
 ## 📚 Documentation
 
-- [Google OAuth Setup](docs/setup/GOOGLE_OAUTH_SETUP.md)
+
 - [Admin Panel Setup](docs/setup/ADMIN_PANEL_SETUP.md)
 - [Troubleshooting](docs/troubleshooting/common-issues.md)
 
