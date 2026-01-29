@@ -8,7 +8,8 @@ import {
 } from '../controllers/specialExam.controller';
 import {
     checkPYQAccessController,
-    getPYQDownloadController
+    getPYQDownloadController,
+    getPYQWatermarkedDownloadController
 } from '../controllers/pyq.controller';
 import {
     purchasePremiumAccessController,
@@ -55,6 +56,7 @@ router.get('/special-exams/:examId/results', getUserExamResultsController);
 // PYQ
 router.get('/pyq/:id/access', checkPYQAccessController);
 router.get('/pyq/:id/download', getPYQDownloadController);
+router.get('/pyq/:id/download-watermarked', getPYQWatermarkedDownloadController);
 
 export default router;
 

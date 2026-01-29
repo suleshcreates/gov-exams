@@ -9,10 +9,11 @@ import { PlanCardSkeleton } from "@/components/skeletons/PlanCardSkeleton";
 import { adminService } from "@/admin/lib/adminService";
 import apiService from "@/lib/apiService";
 import YouTubeSection from "@/components/YouTubeSection";
-import TelegramSection from "@/components/TelegramSection";
+import WhatsAppSection from "@/components/WhatsAppSection";
 import AcademyJourney from "@/components/AcademyJourney";
 import MotivationSection from "@/components/MotivationSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import FAQSection from "@/components/FAQSection";
 import logger from "@/lib/logger";
 
 interface PlanTemplate {
@@ -312,7 +313,6 @@ const Home = () => {
                           title: subject.name,
                           description: subject.description || 'Subject exam',
                           timeAllowed: 60,
-
                           difficulty: 'medium' as const,
                           topics: [],
                           passingScore: 85
@@ -337,11 +337,11 @@ const Home = () => {
         featuredVideoId="-acucIxddUw"
       />
 
-      {/* Telegram Community Section */}
-      <TelegramSection
-        channelUrl="https://t.me/marathi_mahiti_kendra"
-        channelName="Marathi Mahiti Kendra"
-        memberCount="10K+"
+      {/* WhatsApp Community Section */}
+      <WhatsAppSection
+        communityUrl="https://chat.whatsapp.com/JNkG48K7ootH2qdQ2eG2sC"
+        communityName="GovExams Community"
+        memberCount="5K+"
       />
 
       {/* Plans Section */}
@@ -585,108 +585,7 @@ const Home = () => {
       <TestimonialsSection />
 
       {/* FAQ Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-6">
-          {/* Section Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 backdrop-blur-sm border border-primary/20 mb-6">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="text-sm font-bold text-primary">Got Questions?</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4">
-              Frequently Asked <span className="gradient-text">Questions</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Find answers to common questions about our platform, exams, and pricing
-            </p>
-          </motion.div>
-
-          {/* FAQ Accordion */}
-          <div className="max-w-3xl mx-auto space-y-4">
-            {[
-              {
-                question: "How many subjects and question sets are available?",
-                answer: "We offer 5 comprehensive subjects, each with 5 different question sets. Every question set contains 20 carefully curated MCQs, giving you a total of 500 practice questions across all subjects."
-              },
-              {
-                question: "What is the exam format and duration?",
-                answer: "Each exam set contains 20 multiple-choice questions with a time limit that varies by subject. The platform offers bilingual support (English and Marathi), instant results, and detailed performance analytics after each exam."
-              },
-              {
-                question: "How does the pricing work?",
-                answer: "We offer flexible plans including individual subject access and bundled packages. Our Master Plan provides access to all subjects with a 31% discount. All plans include lifetime access to question sets, bilingual support, and comprehensive analytics."
-              },
-              {
-                question: "Can I access the platform on mobile devices?",
-                answer: "Yes! Our platform is fully responsive and works seamlessly on all devices - smartphones, tablets, and desktop computers. You can practice anytime, anywhere with a stable internet connection."
-              },
-              {
-                question: "What happens if I fail an exam?",
-                answer: "Don't worry! You can retake any exam multiple times. Each attempt helps you learn and improve. Our analytics show your progress over time, helping you identify areas that need more focus."
-              },
-              {
-                question: "Is there a refund policy?",
-                answer: "We offer a 7-day money-back guarantee if you're not satisfied with our platform. Contact our support team at support@govexams.info for assistance with refunds or any other concerns."
-              },
-              {
-                question: "How are the rankings calculated?",
-                answer: "Your global rank is calculated based on your average score across all exams taken. The ranking system updates automatically after each exam completion, showing you where you stand among all students on the platform."
-              },
-              {
-                question: "Do I need to install any software?",
-                answer: "No installation required! GovExams is a web-based platform. Simply visit our website, create an account, and start practicing. All you need is a web browser and internet connection."
-              }
-            ].map((faq, index) => (
-              <motion.details
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className="glass-card rounded-xl overflow-hidden group"
-              >
-                <summary className="px-6 py-4 cursor-pointer font-semibold text-foreground hover:text-primary transition-colors flex items-center justify-between">
-                  <span className="pr-4">{faq.question}</span>
-                  <ArrowRight className="w-5 h-5 text-primary group-open:rotate-90 transition-transform flex-shrink-0" />
-                </summary>
-                <div className="px-6 pb-4 text-muted-foreground">
-                  <p>{faq.answer}</p>
-                </div>
-              </motion.details>
-            ))}
-          </div>
-
-          {/* Contact Support */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mt-12"
-          >
-            <p className="text-muted-foreground mb-4">
-              Still have questions? We're here to help!
-            </p>
-            <a
-              href="https://wa.me/918275437940?text=Hello!%20I%20have%20a%20question%20about%20GovExams"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 rounded-full gradient-primary text-white font-semibold hover:opacity-90 transition-opacity"
-              >
-                Contact on WhatsApp
-              </motion.button>
-            </a>
-          </motion.div>
-        </div>
-      </section>
+      <FAQSection />
     </div>
   );
 };

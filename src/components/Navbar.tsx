@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BookOpen, History, User, Menu, X, Crown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,6 +11,24 @@ const Navbar = () => {
   const { visible } = useNavbar();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { auth, signOut } = useAuth();
+
+  // Track if we're on the hero section (top of home page)
+  const [isOnHero, setIsOnHero] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Consider "hero" the first 500px of scroll on home page
+      const scrolled = window.scrollY > 100;
+      setIsOnHero(!scrolled && location.pathname === '/');
+    };
+
+    // Initial check
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
+
   const onLogout = async () => {
     await signOut();
     window.location.href = "/login";
@@ -90,25 +108,34 @@ const Navbar = () => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className="relative"
+                      className="relative group"
                     >
                       <motion.div
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all ${isActive
-                          ? "gradient-primary text-white neon-border"
-                          : "glass-card hover:bg-white/10"
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 ${isActive
+                          ? "gradient-primary text-white neon-border shadow-lg shadow-primary/30"
+                          : isOnHero
+                            ? "bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 hover:shadow-lg hover:shadow-black/20 border border-white/20"
+                            : "glass-card hover:bg-white/10 hover:shadow-lg hover:shadow-primary/10"
                           }`}
                       >
-                        <Icon className="w-4 h-4" />
+                        <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
                         <span className="font-bold">{item.label}</span>
+                        {/* Hover underline indicator */}
+                        {!isActive && (
+                          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-purple-500 group-hover:w-1/2 transition-all duration-300 rounded-full" />
+                        )}
                       </motion.div>
                     </Link>
                   );
                 })}
                 <button
                   onClick={onLogout}
-                  className="ml-2 px-6 py-2.5 rounded-full glass-card border font-bold hover:bg-white/10 transition"
+                  className={`ml-2 px-6 py-2.5 rounded-full font-bold transition ${isOnHero
+                    ? "bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 border border-white/20"
+                    : "glass-card border hover:bg-white/10"
+                    }`}
                 >
                   Logout
                 </button>

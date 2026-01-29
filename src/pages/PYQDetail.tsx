@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FileText, Lock, Calendar, ArrowLeft, Eye, ShieldCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, Lock, Calendar, ArrowLeft, Eye, ShieldCheck, Download, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface PYQData {
@@ -31,6 +31,11 @@ const PYQDetail = () => {
     const [hasAccess, setHasAccess] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [showViewer, setShowViewer] = useState(false);
+
+    // Download state
+    const [downloading, setDownloading] = useState(false);
+    const [downloadComplete, setDownloadComplete] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState(0);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
     const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
@@ -262,14 +267,128 @@ const PYQDetail = () => {
                         {/* Action Area */}
                         <div className="border-t pt-6">
                             {hasAccess ? (
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <button
-                                        onClick={() => navigate(`/secure-viewer/${id}`)}
-                                        className="flex-1 py-4 bg-primary text-primary-foreground rounded-lg font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Eye className="w-5 h-5" />
-                                        View PDF Securely
-                                    </button>
+                                <div className="space-y-6">
+                                    {/* View & Download Buttons */}
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => navigate(`/secure-viewer/${id}`)}
+                                            className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg"
+                                        >
+                                            <Eye className="w-5 h-5" />
+                                            View PDF Securely
+                                        </motion.button>
+
+                                        {/* Animated Download Button */}
+                                        <motion.button
+                                            whileHover={{ scale: downloading ? 1 : 1.02 }}
+                                            whileTap={{ scale: downloading ? 1 : 0.98 }}
+                                            onClick={async () => {
+                                                if (downloading || downloadComplete) return;
+                                                setDownloading(true);
+                                                setDownloadProgress(0);
+
+                                                try {
+                                                    const token = localStorage.getItem('access_token');
+                                                    const response = await fetch(`${API_URL}/api/student/pyq/${id}/download-watermarked`, {
+                                                        headers: { 'Authorization': `Bearer ${token}` }
+                                                    });
+
+                                                    if (!response.ok) throw new Error('Download failed');
+
+                                                    // Simulate progress for UX
+                                                    for (let i = 0; i <= 90; i += 10) {
+                                                        setDownloadProgress(i);
+                                                        await new Promise(r => setTimeout(r, 100));
+                                                    }
+
+                                                    const blob = await response.blob();
+                                                    setDownloadProgress(100);
+
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = `${pyq?.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'PYQ'}_GovExams.pdf`;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    window.URL.revokeObjectURL(url);
+                                                    document.body.removeChild(a);
+
+                                                    setDownloadComplete(true);
+                                                    setTimeout(() => {
+                                                        setDownloadComplete(false);
+                                                        setDownloadProgress(0);
+                                                    }, 3000);
+                                                } catch (err) {
+                                                    console.error('Download error:', err);
+                                                    alert('Failed to download PDF. Please try again.');
+                                                } finally {
+                                                    setDownloading(false);
+                                                }
+                                            }}
+                                            disabled={downloading}
+                                            className={`flex-1 py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-lg relative overflow-hidden ${downloadComplete
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:opacity-90'
+                                                }`}
+                                        >
+                                            {/* Progress Bar Background */}
+                                            {downloading && (
+                                                <motion.div
+                                                    className="absolute inset-0 bg-green-400/30"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${downloadProgress}%` }}
+                                                    transition={{ duration: 0.2 }}
+                                                />
+                                            )}
+
+                                            {/* Button Content */}
+                                            <span className="relative z-10 flex items-center gap-2">
+                                                <AnimatePresence mode="wait">
+                                                    {downloadComplete ? (
+                                                        <motion.span
+                                                            key="complete"
+                                                            initial={{ scale: 0, rotate: -180 }}
+                                                            animate={{ scale: 1, rotate: 0 }}
+                                                            exit={{ scale: 0 }}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <CheckCircle className="w-5 h-5" />
+                                                            Downloaded!
+                                                        </motion.span>
+                                                    ) : downloading ? (
+                                                        <motion.span
+                                                            key="loading"
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            {downloadProgress}% Downloading...
+                                                        </motion.span>
+                                                    ) : (
+                                                        <motion.span
+                                                            key="default"
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <Download className="w-5 h-5" />
+                                                            Download PDF
+                                                        </motion.span>
+                                                    )}
+                                                </AnimatePresence>
+                                            </span>
+                                        </motion.button>
+                                    </div>
+
+                                    {/* Download info text */}
+                                    <p className="text-center text-sm text-muted-foreground">
+                                        📄 PDF includes watermark with your details for security
+                                    </p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col sm:flex-row items-center gap-6">

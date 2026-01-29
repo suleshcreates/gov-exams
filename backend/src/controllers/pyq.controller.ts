@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabaseAdmin as supabase } from '../config/supabase';
 import logger from '../utils/logger';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 // ============================================
 // PUBLIC: Get all active PYQ PDFs
@@ -344,6 +345,124 @@ export const getPYQDownloadController = async (req: Request, res: Response) => {
         });
     } catch (err: any) {
         logger.error('Server error getting PYQ download:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// ============================================
+// USER: Download WATERMARKED PYQ PDF (requires access)
+// ============================================
+export const getPYQWatermarkedDownloadController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const user = (req as any).user;
+        const userId = user.auth_user_id || user.id;
+        const userEmail = user.email || 'protected@govexams.info';
+        const userName = user.name || 'Student';
+
+        // Check access
+        const { data: access } = await supabase
+            .from('user_premium_access')
+            .select('*')
+            .eq('user_auth_id', userId)
+            .eq('resource_type', 'pyq')
+            .eq('resource_id', id)
+            .single();
+
+        if (!access) {
+            return res.status(403).json({ error: 'Purchase required to download this PYQ' });
+        }
+
+        // Get PYQ details
+        const { data: pyq, error } = await supabase
+            .from('pyq_pdfs')
+            .select('pdf_url, title')
+            .eq('id', id)
+            .single();
+
+        if (error || !pyq) {
+            logger.error('PYQ not found:', { id, error });
+            return res.status(404).json({ error: 'PYQ not found' });
+        }
+
+        logger.info('PYQ found:', { id, pdf_url: pyq.pdf_url, title: pyq.title });
+
+        // Extract filename from public URL
+        // Public URL format: https://xxx.supabase.co/storage/v1/object/public/pyq-pdfs/<filename>
+        const fileName = pyq.pdf_url.split('/').pop();
+        if (!fileName) {
+            logger.error('Invalid file path - could not extract filename from:', pyq.pdf_url);
+            return res.status(500).json({ error: 'Invalid file path' });
+        }
+
+        logger.info('Attempting to download file:', { fileName, bucket: 'pyq-pdfs' });
+
+        // Download original PDF from Supabase
+        const { data: fileData, error: downloadError } = await supabase.storage
+            .from('pyq-pdfs')
+            .download(fileName);
+
+        if (downloadError || !fileData) {
+            logger.error('Error downloading PDF for watermarking:', { downloadError, fileName });
+            return res.status(500).json({ error: 'Failed to fetch PDF', details: downloadError?.message });
+        }
+
+        logger.info('PDF downloaded successfully, size:', fileData.size);
+
+        // Convert Blob to ArrayBuffer
+        const pdfBytes = await fileData.arrayBuffer();
+
+        // Load the PDF with pdf-lib
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const pages = pdfDoc.getPages();
+
+        // Watermark text
+        const watermarkText = `GovExams.info • ${userEmail} • ${new Date().toLocaleDateString()}`;
+
+        // Add watermark to each page
+        for (const page of pages) {
+            const { width, height } = page.getSize();
+            const fontSize = 10;
+
+            // Bottom-center footer watermark - darker for visibility
+            page.drawText(watermarkText, {
+                x: (width - 300) / 2,
+                y: 15,
+                size: fontSize,
+                font: helveticaFont,
+                color: rgb(0.4, 0.4, 0.4), // Medium gray - visible on white
+                opacity: 0.7,
+            });
+
+            // Diagonal watermarks across the page (3 rows) - subtle but visible
+            const diagonalText = `${userName} • GovExams.info`;
+            for (let i = 0; i < 3; i++) {
+                page.drawText(diagonalText, {
+                    x: 50,
+                    y: height * (0.25 + i * 0.25),
+                    size: 28,
+                    font: helveticaFont,
+                    color: rgb(0.75, 0.75, 0.75), // Light gray - visible but not intrusive
+                    opacity: 0.35,
+                    rotate: { type: 'degrees', angle: -30 } as any,
+                });
+            }
+        }
+
+        // Save the watermarked PDF
+        const watermarkedPdfBytes = await pdfDoc.save();
+
+        // Set headers for file download
+        const safeTitle = pyq.title.replace(/[^a-zA-Z0-9]/g, '_');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}_watermarked.pdf"`);
+        res.setHeader('Content-Length', watermarkedPdfBytes.length);
+
+        // Send the watermarked PDF
+        return res.send(Buffer.from(watermarkedPdfBytes));
+    } catch (err: any) {
+        logger.error('Server error generating watermarked PDF:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
