@@ -217,7 +217,7 @@ export async function login(
 
         const tempSession = await createSession(
             student.auth_user_id,
-            userAgent,
+            userAgent || '',
             ipAddress
         );
 
