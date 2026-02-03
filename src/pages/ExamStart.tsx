@@ -177,6 +177,7 @@ const ExamStart = () => {
       if (!isSpecialFallback) {
         navigate(`/result/${examId}/${setId}`, {
           state: { score, total: totalQuestions, timeTaken, setNumber },
+          replace: true,
         });
       }
     },
@@ -234,11 +235,11 @@ const ExamStart = () => {
         if (currentSet) {
           if (currentSet.is_submitted) {
             toast({
-              title: "Exam Completed",
-              description: "You have already submitted this exam.",
+              title: "Exam Already Submitted",
+              description: "You cannot re-enter an exam session that has already been submitted.",
               variant: "destructive",
             });
-            navigate("/exams", { replace: true });
+            navigate("/history", { replace: true });
             return;
           }
 

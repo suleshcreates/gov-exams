@@ -3,6 +3,7 @@ import {
     updateStudentProfile,
     getUserPlans,
     getActivePlans,
+    getStudentPurchases,
     getExamResults,
     getExamProgress,
 } from '../services/supabase.service';
@@ -116,11 +117,15 @@ export async function getUserPlansController(
             return;
         }
 
-        const plans = await getUserPlans(req.user.phone);
+        const [plans, purchasedSubjects] = await Promise.all([
+            getUserPlans(req.user.phone),
+            getStudentPurchases(req.user.phone)
+        ]);
 
         res.status(200).json({
             success: true,
             plans,
+            purchased_subjects: purchasedSubjects,
         });
     } catch (error: any) {
         logger.error('Get user plans controller error:', error);

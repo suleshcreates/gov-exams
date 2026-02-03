@@ -246,6 +246,16 @@ const ExamInstructions = () => {
         const currentSet = await studentService.getQuestionSetDetails(setId);
 
         if (currentSet) {
+          if (currentSet.is_submitted) {
+            toast({
+              title: "Exam Already Submitted",
+              description: "You have already completed this exam.",
+              variant: "destructive",
+            });
+            navigate("/history", { replace: true });
+            return;
+          }
+
           setQuestionSet(currentSet);
 
           // Determine Subject Name or Exam Title

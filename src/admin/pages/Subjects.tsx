@@ -8,6 +8,8 @@ interface Subject {
   id: string;
   name: string;
   description: string | null;
+  price: number;
+  validity_days: number | null;
   created_at: string;
 }
 
@@ -16,7 +18,7 @@ const Subjects = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', price: 0, validityDays: 365 });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -38,10 +40,15 @@ const Subjects = () => {
   const handleOpenModal = (subject?: Subject) => {
     if (subject) {
       setEditingSubject(subject);
-      setFormData({ name: subject.name, description: subject.description || '' });
+      setFormData({
+        name: subject.name,
+        description: subject.description || '',
+        price: subject.price || 0,
+        validityDays: subject.validity_days || 365
+      });
     } else {
       setEditingSubject(null);
-      setFormData({ name: '', description: '' });
+      setFormData({ name: '', description: '', price: 0, validityDays: 365 });
     }
     setShowModal(true);
   };
@@ -49,12 +56,12 @@ const Subjects = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingSubject(null);
-    setFormData({ name: '', description: '' });
+    setFormData({ name: '', description: '', price: 0, validityDays: 365 });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       alert('Subject name is required');
       return;
@@ -63,9 +70,20 @@ const Subjects = () => {
     try {
       setSaving(true);
       if (editingSubject) {
-        await adminService.updateSubject(editingSubject.id, formData.name, formData.description);
+        await adminService.updateSubject(
+          editingSubject.id,
+          formData.name,
+          formData.description,
+          formData.price,
+          formData.validityDays
+        );
       } else {
-        await adminService.createSubject(formData.name, formData.description);
+        await adminService.createSubject(
+          formData.name,
+          formData.description,
+          formData.price,
+          formData.validityDays
+        );
       }
       handleCloseModal();
       loadSubjects();
@@ -129,9 +147,17 @@ const Subjects = () => {
                     {subject.description && (
                       <p className="text-sm text-gray-600 mt-2">{subject.description}</p>
                     )}
+                    <div className="mt-2 flex gap-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Price: ₹{subject.price || 0}
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Validity: {subject.validity_days || 'Lifetime'} days
+                      </span>
+                    </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200">
                   <Link
                     to={`/admin/subjects/${subject.id}`}
@@ -167,47 +193,72 @@ const Subjects = () => {
                 {editingSubject ? 'Edit Subject' : 'Add New Subject'}
               </h2>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Subject Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Mathematics"
-                  required
-                />
+
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Mathematics"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹) *</label>
+                    <input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0 for free"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Validity (Days)</label>
+                    <input
+                      type="number"
+                      value={formData.validityDays}
+                      onChange={(e) => setFormData({ ...formData, validityDays: Number(e.target.value) })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="365"
+                      min="1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Default: 365 days</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Brief description of the subject"
+                    rows={3}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Brief description of the subject"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-6">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
                   disabled={saving}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
                   disabled={saving}
                 >
                   {saving ? 'Saving...' : editingSubject ? 'Update' : 'Create'}

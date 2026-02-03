@@ -237,6 +237,26 @@ export async function updateExamProgress(
         return null;
     }
 }
+// Fetch individual student purchases
+export async function getStudentPurchases(studentPhone: string): Promise<any[]> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('student_purchases')
+            .select('*')
+            .eq('student_phone', studentPhone)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            logger.error('Error fetching student purchases:', error);
+            return [];
+        }
+
+        return data || [];
+    } catch (error) {
+        logger.error('Exception in getStudentPurchases:', error);
+        return [];
+    }
+}
 
 export default {
     getStudentByAuthId,
@@ -244,6 +264,7 @@ export default {
     updateStudentProfile,
     getUserPlans,
     getActivePlans,
+    getStudentPurchases, // Added export
     savePlanPurchase,
     getExamResults,
     saveExamResult,

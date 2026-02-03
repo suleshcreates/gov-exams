@@ -5,6 +5,15 @@ import { apiLimiter } from './middlewares/rateLimit.middleware';
 import { globalErrorHandler, notFoundHandler } from './middlewares/error.middleware';
 import logger from './utils/logger';
 import env from './config/env';
+import { setDefaultResultOrder } from 'node:dns';
+
+// Fix for Node.js 17+ IPV6 resolution issues
+try {
+    setDefaultResultOrder('ipv4first');
+    logger.info('✅ DNS: Set default result order to ipv4first');
+} catch (error) {
+    logger.warn('⚠️ DNS: Failed to set default result order (requires Node 17+)');
+}
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -96,9 +105,7 @@ function createApp(): Application {
     return app;
 }
 
-/**
- * Start the Express server
- */
+
 function startServer(): void {
     const app = createApp();
     const port = env.PORT;
@@ -111,7 +118,6 @@ function startServer(): void {
     });
 }
 
-// Start server if this file is run directly
 if (require.main === module) {
     startServer();
 }

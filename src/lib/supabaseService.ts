@@ -348,8 +348,8 @@ export const supabaseService = {
     // Use backend API for secure plan access
     const token = localStorage.getItem('access_token');
     if (!token) {
-      logger.warn('[getStudentPlans] No auth token, returning empty array');
-      return [];
+      logger.warn('[getStudentPlans] No auth token, returning empty object');
+      return { plans: [], purchasedSubjects: [] };
     }
 
     try {
@@ -368,10 +368,13 @@ export const supabaseService = {
       const data = await response.json();
       logger.debug('[getStudentPlans] Plans retrieved via API:', data);
 
-      return data.plans || [];
+      return {
+        plans: data.plans || [],
+        purchasedSubjects: data.purchased_subjects || []
+      };
     } catch (error) {
       logger.error('[getStudentPlans] Error fetching from backend:', error);
-      return [];
+      return { plans: [], purchasedSubjects: [] };
     }
   },
 

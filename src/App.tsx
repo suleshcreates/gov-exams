@@ -9,6 +9,7 @@ import ExamDetails from "./pages/ExamDetails";
 import ExamInstructions from "./pages/ExamInstructions";
 import ExamStart from "./pages/ExamStart";
 import Result from "./pages/Result";
+import TopicLearningConsole from "./pages/TopicLearningConsole";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
 import ExamReview from "./pages/ExamReview";
@@ -60,12 +61,13 @@ const AppContent = () => {
 
   // Hide navbar & footer on exam start route and admin routes
   const hideLayout = /^\/exam\/[^/]+\/start\/[^/]+$/.test(location.pathname) ||
+    /^\/exam\/[^/]+\/topic\/[^/]+$/.test(location.pathname) || // Also hide for Learning Console
     location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/secure-viewer');
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
-      {!hideLayout && <Navbar />} {/* 👈 Hide Navbar on ExamStart and Admin */}
+      {!hideLayout && <Navbar />} {/* 👈 Hide Navbar on ExamStart, LearningConsole and Admin */}
       <AnimatePresence mode="wait">
         <Routes>
           {/* Public Routes */}
@@ -84,6 +86,7 @@ const AppContent = () => {
 
           {/* Protected Routes - Require complete profile */}
           <Route path="/exam/:examId" element={<ProtectedRoute><ExamDetails /></ProtectedRoute>} />
+          <Route path="/exam/:examId/topic/:topicId" element={<ProtectedRoute><TopicLearningConsole /></ProtectedRoute>} />
           <Route path="/exam/:examId/instructions/:setId" element={<ProtectedRoute><ExamInstructions /></ProtectedRoute>} />
           <Route path="/exam/:examId/start/:setId" element={<ProtectedRoute><ExamStart /></ProtectedRoute>} />
           <Route path="/result/:examId/:setId" element={<ProtectedRoute><Result /></ProtectedRoute>} />
@@ -124,7 +127,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
-      {!hideLayout && <Footer />} {/* 👈 Hide Footer on ExamStart and Admin */}
+      {!hideLayout && <Footer />} {/* 👈 Hide Footer on ExamStart, LearningConsole and Admin */}
     </div>
   );
 };

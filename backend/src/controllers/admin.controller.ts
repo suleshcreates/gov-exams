@@ -279,7 +279,7 @@ export async function createSubjectController(
     res: Response
 ): Promise<void> {
     try {
-        const { name, description } = req.body;
+        const { name, description, price, validity_days } = req.body;
 
         if (!name) {
             res.status(400).json({ success: false, error: 'Name is required' });
@@ -288,7 +288,12 @@ export async function createSubjectController(
 
         const { data, error } = await supabaseAdmin
             .from('subjects')
-            .insert([{ name, description: description || '' }])
+            .insert([{
+                name,
+                description: description || '',
+                price: price || 0,
+                validity_days: validity_days !== undefined ? validity_days : null
+            }])
             .select()
             .single();
 
@@ -311,11 +316,16 @@ export async function updateSubjectController(
 ): Promise<void> {
     try {
         const { id } = req.params;
-        const { name, description } = req.body;
+        const { name, description, price, validity_days } = req.body;
 
         const { data, error } = await supabaseAdmin
             .from('subjects')
-            .update({ name, description })
+            .update({
+                name,
+                description,
+                price: price || 0,
+                validity_days: validity_days !== undefined ? validity_days : null
+            })
             .eq('id', id)
             .select()
             .single();
@@ -332,6 +342,8 @@ export async function updateSubjectController(
         });
     }
 }
+
+
 
 export async function deleteSubjectController(
     req: AuthRequest,

@@ -1,30 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import logger from '@/lib/logger';
 import { adminService } from '../lib/adminService';
-import { DollarSign, Save, X, Edit2, Check, XCircle } from 'lucide-react';
+import { DollarSign, Save, X, Edit2, Info } from 'lucide-react';
 
-interface SubjectPricingData {
+interface Subject {
   id: string;
-  subject_id: string;
+  name: string;
+  description: string;
   price: number;
   validity_days: number | null;
-  is_active: boolean;
-  subject?: {
-    id: string;
-    name: string;
-    description: string;
-  };
+  created_at: string;
 }
 
 const SubjectPricing = () => {
-  const [pricingData, setPricingData] = useState<SubjectPricingData[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     price: 0,
-    validity_days: 30,
-    is_active: true,
+    validity_days: null as number | null,
   });
 
   useEffect(() => {
@@ -34,36 +28,31 @@ const SubjectPricing = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [pricingResponse, subjectsResponse] = await Promise.all([
-        adminService.getSubjectPricing(),
-        adminService.getSubjects(),
-      ]);
-
-      setPricingData(pricingResponse);
+      const subjectsResponse = await adminService.getSubjects();
+      // Filter out special exams if needed, generally we want to price all regular subjects
       setSubjects(subjectsResponse);
     } catch (error) {
       logger.error('Error loading data:', error);
-      alert('Failed to load pricing data');
+      alert('Failed to load subjects data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (pricing: SubjectPricingData) => {
-    setEditingId(pricing.subject_id);
+  const handleEdit = (subject: Subject) => {
+    setEditingId(subject.id);
     setEditForm({
-      price: pricing.price,
-      validity_days: pricing.validity_days,
-      is_active: pricing.is_active,
+      price: subject.price || 0,
+      validity_days: subject.validity_days,
     });
   };
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditForm({ price: 0, validity_days: 30, is_active: true });
+    setEditForm({ price: 0, validity_days: 30 });
   };
 
-  const handleSave = async (subjectId: string) => {
+  const handleSave = async (subject: Subject) => {
     try {
       if (editForm.price < 0) {
         alert('Price must be positive');
@@ -75,7 +64,15 @@ const SubjectPricing = () => {
         return;
       }
 
-      await adminService.updateSubjectPricing(subjectId, editForm);
+      // We must pass name/description back because updateSubject expects them
+      await adminService.updateSubject(
+          subject.id,
+          subject.name,
+          subject.description,
+          editForm.price,
+          editForm.validity_days
+      );
+      
       await loadData();
       setEditingId(null);
       alert('Pricing updated successfully!');
@@ -85,39 +82,10 @@ const SubjectPricing = () => {
     }
   };
 
-  const handleToggleStatus = async (subjectId: string, currentStatus: boolean) => {
-    try {
-      await adminService.toggleSubjectPricingStatus(subjectId, !currentStatus);
-      await loadData();
-    } catch (error) {
-      logger.error('Error toggling status:', error);
-      alert('Failed to toggle status');
-    }
-  };
-
-  const handleAddPricing = async (subjectId: string) => {
-    try {
-      await adminService.updateSubjectPricing(subjectId, {
-        price: 199,
-        validity_days: 30,
-        is_active: true,
-      });
-      await loadData();
-      alert('Pricing added successfully!');
-    } catch (error) {
-      logger.error('Error adding pricing:', error);
-      alert('Failed to add pricing');
-    }
-  };
-
-  const getPricingForSubject = (subjectId: string) => {
-    return pricingData.find(p => p.subject_id === subjectId);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -127,7 +95,7 @@ const SubjectPricing = () => {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Subject Pricing</h1>
-        <p className="text-gray-600 mt-1">Configure pricing for individual subjects</p>
+        <p className="text-gray-600 mt-1">Configure pricing and validity for individual subjects</p>
       </div>
 
       {/* Pricing Table */}
@@ -138,13 +106,11 @@ const SubjectPricing = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price (₹)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Validity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {subjects.map((subject) => {
-              const pricing = getPricingForSubject(subject.id);
               const isEditing = editingId === subject.id;
 
               return (
@@ -153,118 +119,70 @@ const SubjectPricing = () => {
                     <div>
                       <div className="text-sm font-medium text-gray-900">{subject.name}</div>
                       {subject.description && (
-                        <div className="text-sm text-gray-500">{subject.description}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-xs">{subject.description}</div>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {pricing ? (
-                      isEditing ? (
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editForm.price}
+                        onChange={(e) => setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })}
+                        className="w-32 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary"
+                        min="0"
+                        step="1"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-gray-900">
+                        {subject.price ? `₹${subject.price}` : <span className="text-gray-400">Not set</span>}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    {isEditing ? (
+                      <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={editForm.price}
-                          onChange={(e) => setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })}
-                          className="w-32 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          min="0"
-                          step="0.01"
+                          value={editForm.validity_days ?? ''}
+                          onChange={(e) => setEditForm({ ...editForm, validity_days: e.target.value ? parseInt(e.target.value) : null })}
+                          className="w-24 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary"
+                          min="1"
+                          placeholder="Lifetime"
                         />
-                      ) : (
-                        <span className="text-sm font-medium text-gray-900">₹{pricing.price}</span>
-                      )
+                        <span className="text-sm text-gray-500">days</span>
+                      </div>
                     ) : (
-                      <span className="text-sm text-gray-400">Not set</span>
+                      <span className="text-sm text-gray-900">
+                         {subject.validity_days ? `${subject.validity_days} days` : 'Lifetime'}
+                      </span>
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    {pricing ? (
-                      isEditing ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={editForm.validity_days || ''}
-                            onChange={(e) => setEditForm({ ...editForm, validity_days: e.target.value ? parseInt(e.target.value) : null })}
-                            className="w-24 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                            min="1"
-                            placeholder="Lifetime"
-                          />
-                          <span className="text-sm text-gray-500">days</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-900">
-                          {pricing.validity_days ? `${pricing.validity_days} days` : 'Lifetime'}
-                        </span>
-                      )
-                    ) : (
-                      <span className="text-sm text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {pricing ? (
-                      isEditing ? (
-                        <select
-                          value={editForm.is_active ? 'active' : 'inactive'}
-                          onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === 'active' })}
-                          className="px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                        </select>
-                      ) : (
+                    {isEditing ? (
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleToggleStatus(subject.id, pricing.is_active)}
-                          className="flex items-center gap-1"
+                          onClick={() => handleSave(subject)}
+                          className="p-1 text-green-600 hover:bg-green-50 rounded"
+                          title="Save"
                         >
-                          {pricing.is_active ? (
-                            <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                              <Check size={14} />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                              <XCircle size={14} />
-                              Inactive
-                            </span>
-                          )}
+                          <Save size={18} />
                         </button>
-                      )
-                    ) : (
-                      <span className="text-sm text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {pricing ? (
-                      isEditing ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleSave(subject.id)}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
-                            title="Save"
-                          >
-                            <Save size={18} />
-                          </button>
-                          <button
-                            onClick={handleCancel}
-                            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                            title="Cancel"
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
-                      ) : (
                         <button
-                          onClick={() => handleEdit(pricing)}
-                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                          title="Edit"
+                          onClick={handleCancel}
+                          className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                          title="Cancel"
                         >
-                          <Edit2 size={18} />
+                          <X size={18} />
                         </button>
-                      )
+                      </div>
                     ) : (
                       <button
-                        onClick={() => handleAddPricing(subject.id)}
-                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                        onClick={() => handleEdit(subject)}
+                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                        title="Edit"
                       >
-                        Add Pricing
+                        <Edit2 size={18} />
                       </button>
                     )}
                   </td>
@@ -285,12 +203,15 @@ const SubjectPricing = () => {
 
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-medium text-blue-900 mb-2">💡 Pricing Tips</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Set competitive prices for individual subjects</li>
-          <li>• Leave validity empty for lifetime access</li>
-          <li>• Inactive pricing won't be shown to students</li>
-          <li>• Students can purchase individual subjects or bundled plans</li>
+        <h3 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+          <Info size={16} />
+          Pricing Tips
+        </h3>
+        <ul className="text-sm text-blue-800 space-y-1 ml-6 list-disc">
+          <li>Set competitive prices for individual subjects.</li>
+          <li>Leave validity empty for <strong>Lifetime Access</strong>.</li>
+          <li>Students can purchase individual subjects or bundled plans.</li>
+          <li>Data is now synchronized directly with the subject catalog.</li>
         </ul>
       </div>
     </div>

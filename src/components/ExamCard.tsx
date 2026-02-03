@@ -6,9 +6,11 @@ import { Exam } from "@/data/mockData";
 interface ExamCardProps {
   exam: Exam;
   index: number;
+  isPurchased?: boolean;
+  onPurchase?: (exam: Exam) => void;
 }
 
-const ExamCard = ({ exam, index }: ExamCardProps) => {
+const ExamCard = ({ exam, index, isPurchased, onPurchase }: ExamCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -24,9 +26,17 @@ const ExamCard = ({ exam, index }: ExamCardProps) => {
           <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:gradient-text transition-all">
             {exam.title}
           </h3>
-          {!exam.isPaid && (
-            <Lock className="w-5 h-5 text-muted-foreground" />
-          )}
+          <div className="flex items-center gap-2">
+            {exam.price ? (
+              <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg border border-green-100">
+                <span className="text-xs font-bold text-green-700">₹{exam.price}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg">
+                <span className="text-xs font-bold text-slate-600">Free</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 line-clamp-2">
@@ -49,21 +59,36 @@ const ExamCard = ({ exam, index }: ExamCardProps) => {
           <div className="flex items-center gap-2 text-xs sm:text-sm col-span-2">
             <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
             <span className="text-muted-foreground">
-              {exam.timeAllowed} minutes
+              {exam.timeAllowed} minutes • {exam.validity_days ? `${exam.validity_days} Days Validity` : 'Lifetime Access'}
             </span>
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-4">
-          <Link to={`/exam/${exam.id}`}>
+          {exam.isPaid && !isPurchased ? (
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-primary text-white font-medium neon-glow text-sm sm:text-base whitespace-nowrap"
+              onClick={(e) => {
+                e.preventDefault();
+                onPurchase?.(exam);
+              }}
+              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-accent text-white font-medium neon-glow text-sm sm:text-base whitespace-nowrap flex items-center gap-2"
             >
-              View Details
+              <Lock className="w-4 h-4" />
+              Unlock Now
             </motion.button>
-          </Link>
+          ) : (
+            <Link to={`/exam/${exam.id}`}>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-primary text-white font-medium neon-glow text-sm sm:text-base whitespace-nowrap"
+              >
+                {isPurchased ? 'Start Learning' : 'View Details'}
+              </motion.button>
+            </Link>
+          )}
         </div>
       </div>
     </motion.div>

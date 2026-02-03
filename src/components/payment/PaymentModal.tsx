@@ -11,11 +11,12 @@ interface PaymentModalProps {
     isOpen: boolean;
     onClose: () => void;
     plan: {
-        id: string;
+        id?: string; // Optional for subject purchase
         name: string;
         price: number;
         subjects: string[];
         validity_days: number | null;
+        type?: 'plan' | 'subject'; // Distinguish type
     };
     onSuccess: () => void;
 }
@@ -93,11 +94,17 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_signature: response.razorpay_signature,
-                                planId: plan.id,
+                                planId: plan.type === 'subject' ? null : plan.id, // Send null for subject (avoids FK error)
                                 planName: plan.name,
                                 pricePaid: plan.price,
                                 examIds: plan.subjects,
-                                validityDays: plan.validity_days
+                                validityDays: plan.validity_days,
+                                resource_type: plan.type || 'plan',
+                                resource_id: plan.type === 'subject' ? plan.id : null, // Track subject ID here
+                                notes: {
+                                    type: plan.type || 'plan',
+                                    planId: plan.id || 'subject-purchase'
+                                }
                             })
                         });
 

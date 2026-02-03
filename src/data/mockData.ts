@@ -16,6 +16,7 @@ export interface Exam {
   difficulty?: 'easy' | 'medium' | 'hard';
   topics?: string[];
   passingScore?: number;
+  validity_days?: number | null;
 }
 
 export interface Question {

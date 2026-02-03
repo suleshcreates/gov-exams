@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabaseAdmin } from '../config/supabase';
+import { getStudentPurchases } from '../services/supabase.service';
 import logger from '../utils/logger';
 
 /**
@@ -57,11 +58,18 @@ export const getUserPlansController = async (req: Request, res: Response) => {
             }
         }
 
-        logger.info(`[PLANS] Returning ${data?.length || 0} active plans for user ${userPhone}`);
+        // Fetch individual subject purchases
+        let purchasedSubjects: any[] = [];
+        if (userPhone) {
+            purchasedSubjects = await getStudentPurchases(userPhone);
+        }
+
+        logger.info(`[PLANS] Returning ${data?.length || 0} active plans and ${purchasedSubjects.length} subject purchases for user ${userPhone}`);
 
         return res.status(200).json({
             success: true,
             plans: data || [],
+            purchased_subjects: purchasedSubjects,
         });
     } catch (error) {
         logger.error('[PLANS] Unexpected error:', error);

@@ -1,7 +1,8 @@
 import { supabaseAdmin } from '../config/supabase';
 import logger from '../utils/logger';
-// import nodemailer from 'nodemailer'; // Removed for EmailJS
 import env from '../config/env';
+import https from 'https';
+import dns from 'node:dns';
 
 // EmailJS Configuration is loaded from env.ts
 if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_PUBLIC_KEY || !env.EMAILJS_PRIVATE_KEY) {
@@ -19,29 +20,22 @@ export function generateOTP(): string {
 
 /**
  * Store OTP in students table (for new signups before account creation)
- * This creates a temporary record that will be completed after OTP verification
  */
 export async function storeOTPForSignup(email: string, otp: string, name: string): Promise<boolean> {
   try {
-    // Create expiry time: 10 minutes from now using milliseconds
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes
 
     logger.info(`[OTP STORE] Storing OTP for email: ${email}, OTP: ${otp}`);
     logger.info(`[OTP STORE] Now: ${now.toISOString()}, Expires: ${expiresAt.toISOString()}`);
 
-
-    // Check if temporary record already exists
     const { data: existing } = await supabaseAdmin
       .from('students')
       .select('email, is_verified')
       .eq('email', email)
       .single();
 
-    logger.info(`[OTP STORE] Existing record:`, { email, exists: !!existing, isVerified: existing?.is_verified });
-
     if (existing) {
-      // Update existing unverified record
       const { error, data: updated } = await supabaseAdmin
         .from('students')
         .update({
@@ -56,14 +50,8 @@ export async function storeOTPForSignup(email: string, otp: string, name: string
         logger.error('[OTP STORE] Error updating OTP:', error);
         return false;
       }
-
-      logger.info(`[OTP STORE] Updated existing record:`, {
-        email,
-        stored_otp: updated?.verification_code,
-        expires: updated?.verification_code_expires
-      });
+      logger.info(`[OTP STORE] Updated existing record.`);
     } else {
-      // Create temporary record with just email and OTP
       const { error, data: created } = await supabaseAdmin
         .from('students')
         .insert({
@@ -81,14 +69,8 @@ export async function storeOTPForSignup(email: string, otp: string, name: string
         logger.error('[OTP STORE] Error storing OTP:', error);
         return false;
       }
-
-      logger.info(`[OTP STORE] Created new record:`, {
-        email,
-        stored_otp: created?.verification_code,
-        expires: created?.verification_code_expires
-      });
+      logger.info(`[OTP STORE] Created new record.`);
     }
-
     return true;
   } catch (error) {
     logger.error('Exception in storeOTPForSignup:', error);
@@ -99,96 +81,46 @@ export async function storeOTPForSignup(email: string, otp: string, name: string
 /**
  * Verify OTP from students table
  */
-export async function verifyOTP(email: string, otp: string): Promise<{
-  valid: boolean;
-  message: string;
-}> {
+export async function verifyOTP(email: string, otp: string): Promise<{ valid: boolean; message: string; }> {
   try {
-    logger.info(`[OTP VERIFY] Attempting to verify OTP for email: ${email}, OTP: ${otp}`);
-
-    // Find student record with this email
     const { data: student, error } = await supabaseAdmin
       .from('students')
       .select('verification_code, verification_code_expires, is_verified')
       .eq('email', email)
       .single();
 
-    logger.info(`[OTP VERIFY] Student found:`, {
-      email,
-      hasStudent: !!student,
-      storedOTP: student?.verification_code,
-      inputOTP: otp,
-      expires: student?.verification_code_expires,
-      isVerified: student?.is_verified
-    });
-
     if (error || !student) {
-      logger.error(`[OTP VERIFY] No student found for email: ${email}`, error);
-      return {
-        valid: false,
-        message: 'No OTP found for this email. Please request a new one.',
-      };
+      return { valid: false, message: 'No OTP found for this email. Please request a new one.' };
     }
-
-    // Check if already verified
     if (student.is_verified) {
-      logger.warn(`[OTP VERIFY] Email already verified: ${email}`);
-      return {
-        valid: false,
-        message: 'This email is already verified.',
-      };
+      return { valid: false, message: 'This email is already verified.' };
     }
-
-    // Check if no OTP code
     if (!student.verification_code) {
-      logger.warn(`[OTP VERIFY] No OTP code stored for: ${email}`);
-      return {
-        valid: false,
-        message: 'No OTP found. Please request a new one.',
-      };
+      return { valid: false, message: 'No OTP found. Please request a new one.' };
     }
 
-    // Expiry check disabled - OTP valid until manually cleared
-    logger.info(`[OTP VERIFY] Skipping expiry check for: ${email}`);
-
-    // Verify OTP (strict string comparison)
+    // Check match
     const isMatch = student.verification_code.trim() === otp.trim();
-    logger.info(`[OTP VERIFY] OTP Match: ${isMatch} (stored: "${student.verification_code}", input: "${otp}")`);
-
     if (!isMatch) {
-      logger.warn(`[OTP VERIFY] OTP mismatch for: ${email}`);
-      return {
-        valid: false,
-        message: 'Incorrect OTP. Please try again.',
-      };
+      return { valid: false, message: 'Incorrect OTP. Please try again.' };
     }
 
-    // OTP is valid!
     logger.info(`[OTP VERIFY] OTP verified successfully for: ${email}`);
-    return {
-      valid: true,
-      message: 'OTP verified successfully!',
-    };
+    return { valid: true, message: 'OTP verified successfully!' };
   } catch (error) {
     logger.error('Exception in verifyOTP:', error);
-    return {
-      valid: false,
-      message: 'An error occurred during verification.',
-    };
+    return { valid: false, message: 'An error occurred during verification.' };
   }
 }
 
 /**
- * Clear OTP after successful verification
+ * Clear OTP
  */
 export async function clearOTP(email: string): Promise<void> {
   try {
     await supabaseAdmin
       .from('students')
-      .update({
-        verification_code: null,
-        verification_code_expires: null,
-      })
+      .update({ verification_code: null, verification_code_expires: null })
       .eq('email', email);
   } catch (error) {
     logger.error('Exception in clearOTP:', error);
@@ -196,116 +128,120 @@ export async function clearOTP(email: string): Promise<void> {
 }
 
 /**
- * Send OTP via email using Nodemailer with professional HTML template
+ * Helper to resolve DNS IPv4 manually
  */
-export async function sendOTPEmail(
-  email: string,
-  name: string,
-  otp: string
-): Promise<boolean> {
-  try {
-    const data = {
-      service_id: env.EMAILJS_SERVICE_ID,
-      template_id: env.EMAILJS_TEMPLATE_ID,
-      user_id: env.EMAILJS_PUBLIC_KEY,
-      accessToken: env.EMAILJS_PRIVATE_KEY,
-      template_params: {
-        email: email,       // Matches {{email}} in "To Email"
-        to_name: name,      // Use {{to_name}} in your template greeting (e.g. "Hi {{to_name}}")
-        otp: otp,           // Keeping generic {{otp}}
-        passcode: otp,      // Matches {{passcode}} in standard EmailJS templates
-        message: `Your verification code is ${otp}`,
-      }
-    };
-
-    logger.info(`[EmailJS] Sending OTP to ${email} via REST API...`);
-
-    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Origin': 'http://localhost' // Some APIs require Origin header, EmailJS might be lenient
-      },
-      body: JSON.stringify(data)
+function resolveIPv4(hostname: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    dns.resolve4(hostname, (err, addresses) => {
+      if (err) reject(err);
+      else if (addresses && addresses.length > 0) resolve(addresses[0]);
+      else reject(new Error('No IPv4 addresses found'));
     });
-
-    if (response.ok) {
-      logger.info(`[EmailJS] Success! Status: ${response.status}`);
-      return true;
-    } else {
-      const errorText = await response.text();
-      logger.error(`[EmailJS] Failed. Status: ${response.status}, Response: ${errorText}`);
-      return false;
-    }
-
-  } catch (error) {
-    logger.error('Error sending OTP email via EmailJS:', error);
-    return false;
-  }
+  });
 }
 
 /**
- * Verify OTP for password reset (skips email_verified check)
- * This is separate from signup OTP verification
+ * Send OTP via email using EmailJS (Native HTTPS + Manual IPv4 Resolution)
  */
-export async function verifyPasswordResetOTP(email: string, otp: string): Promise<{
-  valid: boolean;
-  message: string;
-}> {
-  try {
-    logger.info(`[PASSWORD RESET OTP] Verifying for email: ${email}`);
+export async function sendOTPEmail(email: string, name: string, otp: string): Promise<boolean> {
+  return new Promise(async (resolve) => {
+    try {
+      const data = JSON.stringify({
+        service_id: env.EMAILJS_SERVICE_ID,
+        template_id: env.EMAILJS_TEMPLATE_ID,
+        user_id: env.EMAILJS_PUBLIC_KEY,
+        accessToken: env.EMAILJS_PRIVATE_KEY,
+        template_params: {
+          email: email,
+          to_name: name,
+          otp: otp,
+          passcode: otp,
+          message: `Your verification code is ${otp}`,
+        }
+      });
 
-    // Find student record with this email
+      // 1. Resolve Hostname to IPv4 Manually (Bypass System DNS issues)
+      const hostname = 'api.emailjs.com';
+      let targetIp = hostname;
+      try {
+        targetIp = await resolveIPv4(hostname);
+        logger.info(`[EmailJS] Resolved ${hostname} to IPv4: ${targetIp}`);
+      } catch (dnsError) {
+        logger.error(`[EmailJS] DNS Resolution Failed:`, dnsError);
+        // Fallback to hostname if manual resolution fails (system might handle it)
+      }
+
+      logger.info(`[EmailJS] Sending OTP to ${email} via HTTPS (${targetIp})...`);
+
+      const options = {
+        hostname: targetIp, // Use resolved IP
+        port: 443,
+        path: '/api/v1.0/email/send',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': data.length,
+          'Host': hostname, // CRITICAL: Host header must be the domain name
+          'Origin': 'http://localhost'
+        },
+        // Force IPv4 family in the socket
+        family: 4
+      };
+
+      const req = https.request(options, (res) => {
+        let responseData = '';
+
+        res.on('data', (chunk) => { responseData += chunk; });
+
+        res.on('end', () => {
+          if (res.statusCode === 200 || res.statusCode === 201) {
+            logger.info(`[EmailJS] Success! Status: ${res.statusCode}`);
+            resolve(true);
+          } else {
+            logger.error(`[EmailJS] Failed. Status: ${res.statusCode}, Response: ${responseData}`);
+            resolve(false);
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        logger.error('Error sending OTP email via EmailJS (HTTPS):', error);
+        resolve(false);
+      });
+
+      req.write(data);
+      req.end();
+
+    } catch (error) {
+      logger.error('Exception in sendOTPEmail:', error);
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Verify OTP for password reset
+ */
+export async function verifyPasswordResetOTP(email: string, otp: string): Promise<{ valid: boolean; message: string; }> {
+  try {
     const { data: student, error } = await supabaseAdmin
       .from('students')
-      .select('verification_code, verification_code_expires')
+      .select('verification_code')
       .eq('email', email)
       .single();
 
-    if (error || !student) {
-      logger.error(`[PASSWORD RESET OTP] No student found for email: ${email}`);
-      return {
-        valid: false,
-        message: 'No OTP found for this email. Please request a new one.',
-      };
+    if (error || !student || !student.verification_code) {
+      return { valid: false, message: 'No OTP found or invalid email.' };
     }
-
-    // Check if no OTP code
-    if (!student.verification_code) {
-      logger.warn(`[PASSWORD RESET OTP] No OTP code stored for: ${email}`);
-      return {
-        valid: false,
-        message: 'No OTP found. Please request a new one.',
-      };
-    }
-
-    // Verify OTP (strict string comparison)
     const isMatch = student.verification_code.trim() === otp.trim();
-    logger.info(`[PASSWORD RESET OTP] OTP Match: ${isMatch}`);
-
-    if (!isMatch) {
-      logger.warn(`[PASSWORD RESET OTP] OTP mismatch for: ${email}`);
-      return {
-        valid: false,
-        message: 'Incorrect OTP. Please try again.',
-      };
+    if (isMatch) {
+      await clearOTP(email);
+      return { valid: true, message: 'OTP verified successfully!' };
     }
-
-    // Clear OTP after successful verification
-    await clearOTP(email);
-
-    // OTP is valid!
-    logger.info(`[PASSWORD RESET OTP] OTP verified successfully for: ${email}`);
-    return {
-      valid: true,
-      message: 'OTP verified successfully!',
-    };
+    return { valid: false, message: 'Incorrect OTP.' };
   } catch (error) {
     logger.error('Exception in verifyPasswordResetOTP:', error);
-    return {
-      valid: false,
-      message: 'An error occurred during verification.',
-    };
+    return { valid: false, message: 'Error verifying OTP.' };
   }
 }
 

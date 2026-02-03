@@ -101,20 +101,39 @@ const SpecialExamDetail: React.FC = () => {
                             question_set_id: qSetId,
                             status: 'completed',
                             completed_at: completionTime,
-                            status: 'completed',
-                            completed_at: completionTime,
                             score: result.score,
                             result_id: result.id // Capture result ID from backend
                         });
                     } else if (accessData.hasAccess) {
-                        // UNLOCK ALL IF PURCHASED/ACCESSED
-                        // The user requested: "once the exam is attempted... keep all set of that exam unlocked"
-                        sets.push({
-                            set_number: i,
-                            question_set_id: qSetId,
-                            status: 'unlocked'
-                        });
+                        // SEQUENTIAL UNLOCK LOGIC
+                        if (i === 1) {
+                            // Set 1 is ALWAYS unlocked if purchased
+                            sets.push({
+                                set_number: i,
+                                question_set_id: qSetId,
+                                status: 'unlocked'
+                            });
+                        } else {
+                            // Subsequent sets (2, 3...) unlock ONLY if previous is completed
+                            // Check if previous set has a valid completion time/result
+                            const prevCompletionTime = prevResult?.completed_at || prevResult?.created_at;
+
+                            if (prevCompletionTime) {
+                                sets.push({
+                                    set_number: i,
+                                    question_set_id: qSetId,
+                                    status: 'unlocked'
+                                });
+                            } else {
+                                sets.push({
+                                    set_number: i,
+                                    question_set_id: qSetId,
+                                    status: 'locked'
+                                });
+                            }
+                        }
                     } else if (i === 1) {
+                        // Default preview logic (if any)
                         sets.push({
                             set_number: i,
                             question_set_id: qSetId,

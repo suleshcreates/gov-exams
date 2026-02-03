@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ExamCard from "@/components/ExamCard";
 import { GraduationCap, Sparkles, Trophy, Clock, Shield, Crown, ArrowRight, Star } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { ExamCardSkeleton } from "@/components/skeletons/ExamCardSkeleton";
 import { PlanCardSkeleton } from "@/components/skeletons/PlanCardSkeleton";
@@ -15,6 +15,7 @@ import MotivationSection from "@/components/MotivationSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import FAQSection from "@/components/FAQSection";
 import logger from "@/lib/logger";
+import PaymentModal from "@/components/payment/PaymentModal";
 
 interface PlanTemplate {
   id: string;
@@ -32,6 +33,8 @@ interface Subject {
   id: string;
   name: string;
   description: string;
+  price?: number;
+  validity_days?: number | null;
   created_at: string;
 }
 
@@ -65,6 +68,7 @@ const heroSlides = [
 
 const Home = () => {
   const { auth } = useAuth();
+  const location = useLocation();
   const [examsLoading, setExamsLoading] = useState(true);
   const [plansLoading, setPlansLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -85,7 +89,9 @@ const Home = () => {
       try {
         setExamsLoading(true);
         const subjectsData = await adminService.getSubjects();
-        setSubjects(subjectsData);
+        // Filter out 'Special Exams' as it has its own section
+        const filteredSubjects = subjectsData.filter((s: any) => s.name !== 'Special Exams');
+        setSubjects(filteredSubjects);
       } catch (error) {
         logger.error("Error loading subjects:", error);
       } finally {
@@ -111,7 +117,95 @@ const Home = () => {
     };
 
     loadPlans();
+    loadPlans();
   }, []);
+
+  // Handle hash scrolling on mount/update
+  useEffect(() => {
+    if (location.hash) {
+      const element = document.getElementById(location.hash.substring(1));
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [location]);
+
+  // Purchase Logic
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [purchasedSubjectIds, setPurchasedSubjectIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (auth.user?.phone) {
+      loadPurchasedSubjects();
+    }
+  }, [auth.user]);
+
+  const loadPurchasedSubjects = async () => {
+    try {
+      const response = await apiService.getUserPlans();
+      const ids = new Set<string>();
+
+      if (response.success) {
+        // 1. Process Plans
+        if (Array.isArray(response.plans)) {
+          response.plans.forEach((plan: any) => {
+            // Check validity
+            if (plan.is_active === false) {
+              console.log(`DEBUG: Skipping inactive plan: ${plan.plan_name}`);
+              return;
+            }
+            if (plan.expires_at && new Date(plan.expires_at) < new Date()) {
+              console.log(`DEBUG: Skipping expired plan: ${plan.plan_name} (Expired: ${plan.expires_at})`);
+              return;
+            }
+
+            if (Array.isArray(plan.exam_ids)) {
+              plan.exam_ids.forEach((id: string) => ids.add(id));
+            }
+            // Also check 'subjects' field if present (from old schema or specific plans)
+            if (Array.isArray((plan as any).subjects)) {
+              (plan as any).subjects.forEach((id: string) => ids.add(id));
+            }
+          });
+        }
+
+        // 2. Process Direct Subject Purchases
+        if (Array.isArray(response.purchased_subjects)) {
+          response.purchased_subjects.forEach((purchase: any) => {
+            // Check validity
+            if (purchase.expires_at && new Date(purchase.expires_at) < new Date()) {
+              console.log(`DEBUG: Skipping expired subject purchase: ${purchase.subject_id} (Expired: ${purchase.expires_at})`);
+              return;
+            }
+            if (purchase.subject_id) {
+              ids.add(purchase.subject_id);
+            }
+          });
+        }
+      }
+      console.log('DEBUG: User Plans Response:', response);
+      console.log('DEBUG: Extracted Purchased IDs:', Array.from(ids));
+      setPurchasedSubjectIds(Array.from(ids));
+    } catch (error) {
+      console.error("Error loading purchases:", error);
+    }
+  };
+
+  const handleUnlockClick = (subject: Subject) => {
+    setSelectedSubject(subject);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    if (auth.user?.phone) {
+      loadPurchasedSubjects();
+    }
+    setIsPaymentModalOpen(false);
+  };
+
 
   const scrollToExams = () => {
     document.getElementById('exams-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -305,25 +399,61 @@ const Home = () => {
                       <p className="text-gray-500 text-lg">No subjects available. Please add subjects from the admin panel.</p>
                     </div>
                   ) : (
-                    subjects.map((subject, index) => (
-                      <ExamCard
-                        key={subject.id}
-                        exam={{
-                          id: subject.id,
-                          title: subject.name,
-                          description: subject.description || 'Subject exam',
-                          timeAllowed: 60,
-                          difficulty: 'medium' as const,
-                          topics: [],
-                          passingScore: 85
-                        }}
-                        index={index}
-                      />
-                    ))
+                    subjects.map((subject, index) => {
+                      const isPurchased = purchasedSubjectIds.includes(subject.id);
+                      console.log(`DEBUG: Rendering Subject ${subject.name} (${subject.id}) - Purchased: ${isPurchased}`);
+                      return (
+                        <ExamCard
+                          key={subject.id}
+                          exam={{
+                            id: subject.id,
+                            title: subject.name,
+                            description: subject.description || 'Subject exam',
+                            price: subject.price || 0,
+                            timeAllowed: 60,
+                            difficulty: 'medium' as const,
+                            topics: [],
+                            passingScore: 85,
+                            isPaid: true,
+                            questionSets: [],
+                            validity_days: subject.validity_days
+                          }}
+                          index={index}
+                          isPurchased={isPurchased}
+                          onPurchase={(exam) => {
+                            // Map back to Subject-like object for PaymentModal
+                            handleUnlockClick({
+                              id: exam.id,
+                              name: exam.title,
+                              description: exam.description,
+                              price: exam.price,
+                              created_at: new Date().toISOString()
+                            });
+                          }}
+                        />
+                      );
+                    })
                   )}
                 </motion.div>
               )}
             </AnimatePresence>
+          )}
+
+          {/* Payment Modal for Single Subject */}
+          {selectedSubject && (
+            <PaymentModal
+              isOpen={isPaymentModalOpen}
+              onClose={() => setIsPaymentModalOpen(false)}
+              plan={{
+                id: selectedSubject.id, // Subject ID acts as Plan ID for tracking (but nullable in DB)
+                name: selectedSubject.name,
+                price: selectedSubject.price || 0,
+                subjects: [selectedSubject.id], // Array with single subject ID
+                validity_days: null, // Lifetime for single subject usually? Or default. Let's say null=lifetime.
+                type: 'subject'
+              }}
+              onSuccess={handlePaymentSuccess}
+            />
           )}
         </div>
       </section>

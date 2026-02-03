@@ -4,7 +4,9 @@ import crypto from 'crypto';
 import env from '../config/env';
 import { supabaseAdmin } from '../config/supabase';
 import logger from '../utils/logger';
+import { savePlanPurchase } from '../services/supabase.service';
 
+// Initialize Razorpay
 // Initialize Razorpay
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -17,40 +19,40 @@ const razorpay = new Razorpay({
  */
 export const createOrderController = async (req: Request, res: Response) => {
     try {
+        console.log('[PAYMENT] Create Order Request Received');
         const { amount, planId, receipt } = req.body;
 
-        logger.info('[PAYMENT] createOrder request:', { amount, planId, receipt, notes: req.body.notes });
-
+        // Validation
         if (!amount) {
-            return res.status(400).json({
-                success: false,
-                error: 'Amount is required',
-            });
+            return res.status(400).json({ success: false, error: 'Amount is required' });
         }
 
-        // REAL RAZORPAY LOGIC
-        // Ensure notes values are strings (Razorpay requirement)
-        const notesObj = req.body.notes || { planId: planId || '' };
-        const sanitizedNotes: Record<string, string> = {};
-        Object.keys(notesObj).forEach(key => {
-            sanitizedNotes[key] = String(notesObj[key]);
-        });
+        const amountNum = parseAmount(amount);
+        if (amountNum < 1) { // Min 1 INR
+            return res.status(400).json({ success: false, error: 'Amount must be at least ₹1' });
+        }
 
-        // Create Razorpay order
-        // Receipt has max 40 chars limit
-        const rawReceipt = receipt || `receipt_${Date.now()}`;
-        const safeReceipt = rawReceipt.substring(0, 40);
+        // Construct receipt - Script logic
+        const safeReceipt = (receipt || `receipt_${Date.now()}`).substring(0, 40);
+
+        // Construct Notes - Fail-safe
+        const notes: any = {
+            type: planId ? 'plan' : 'subject',
+            planId: planId ? String(planId) : 'individual'
+        };
 
         const options = {
-            amount: Math.round(parseFloat(amount) * 100), // Amount in paise
+            amount: amountNum * 100, // paise
             currency: 'INR',
             receipt: safeReceipt,
-            notes: sanitizedNotes,
+            notes: notes
         };
+
+        console.log('[PAYMENT] Creating order with options:', JSON.stringify(options));
 
         const order = await razorpay.orders.create(options);
 
-        logger.info(`[PAYMENT] Order created: ${order.id} for plan: ${planId}`);
+        console.log(`[PAYMENT] Order created successfully: ${order.id}`);
 
         return res.status(200).json({
             success: true,
@@ -59,21 +61,26 @@ export const createOrderController = async (req: Request, res: Response) => {
                 amount: order.amount,
                 currency: order.currency,
             },
-            id: order.id, // Frontend expects top-level id as well sometimes
+            id: order.id,
             amount: order.amount,
             currency: order.currency
         });
 
     } catch (error: any) {
-        logger.error('[PAYMENT] Error creating order:', error);
-        // Return full error details for debugging
+        console.error('[PAYMENT] Controller Error:', error);
         return res.status(500).json({
             success: false,
             error: error.message || 'Failed to create order',
-            details: error
+            details: error.error || error
         });
     }
 };
+
+function parseAmount(val: any): number {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') return parseFloat(val);
+    return 0;
+}
 
 /**
  * Verify Payment and Save Purchase
@@ -144,57 +151,54 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
         // Calculate expiry date
         const expiresAt = validityDays
             ? new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString()
-            : null;
+            : undefined;
 
-        // Handle differnet purchase types
-        // 1. Plan Purchase (Multiple exams) -> user_plans
-        // 2. Single Resource Purchase (PYQ/Special Exam) -> user_premium_access (or user_plans with specific type?)
+        let data, error;
 
-        // IMPORTANT: The system seems to use 'user_plans' for PLANS and 'user_premium_access' (or similar logic) for individual items?
-        // Checking schema via previous context...
-        // Actually, previous context showed 'user_plans' saving.
-        // Let's stick to saving to 'user_plans' for plans, but for single items we might need to check if we have a table for that 
-        // OR simply reuse user_plans with a different structure?
-        // Wait, 'premiumAccess.controller.ts' handles single item purchases usually?
-        // 'verifyPaymentController' here seems to be designed for PLANS primarily based on 'planId' param.
-        // BUT, SpecialExamDetail calls '/api/student/premium-access/purchase' which maps to 'premiumAccess.controller.ts'.
-        // THIS controller is '/api/payments/verify' which is used by PaymentModal (Plans).
-
-        // SO THIS FILE IS ONLY FOR PLANS.
-        // Special Exmas use 'premiumAccess.controller.ts'.
-
-        // Save purchase to user_plans table
-        const { data, error } = await supabaseAdmin
-            .from('user_plans')
-            .insert({
-                auth_user_id: authUserId,
-                plan_template_id: planId,
+        // Handle different purchase types
+        if (planId) {
+            // 1. Plan Purchase (Multiple exams) -> user_plans
+            // Use the service function which handles student name lookup etc.
+            const result = await savePlanPurchase({
                 student_phone: studentPhone,
                 student_name: studentName,
                 plan_id: planId,
                 plan_name: planName,
-                original_price: pricePaid,
-                price_paid: pricePaid,
-                discount_amount: 0,
+                price_paid: pricePaid || amount_paid,
                 exam_ids: normalizedExamIds,
-                purchased_at: new Date().toISOString(),
-                expires_at: expiresAt,
-                is_active: true,
-                payment_id: razorpay_payment_id,
-                order_id: razorpay_order_id,
-                payment_signature: razorpay_signature,
-                payment_status: 'completed',
+                expires_at: expiresAt
             });
+            data = result;
+            if (!result) error = { message: 'Failed to save plan purchase' };
+        } else {
+            // 2. Single Resource Purchase (Subject/Special Exam) -> student_purchases
+            // Insert directly into student_purchases table
+            const { data: purchaseData, error: purchaseError } = await supabaseAdmin
+                .from('student_purchases')
+                .insert([{
+                    student_phone: studentPhone,
+                    subject_id: resource_id || normalizedExamIds[0], // Fallback to first exam ID if resource_id missing
+                    payment_id: razorpay_payment_id,
+                    amount_paid: amount_paid || pricePaid,
+                    expires_at: expiresAt,
+                    is_active: true
+                }])
+                .select()
+                .single();
 
-        if (error) {
-            logger.error('[PAYMENT] Database error:', error);
+            data = purchaseData;
+            error = purchaseError;
+        }
+
+        if (error || !data) {
+            logger.error('[PAYMENT] Database Save Error:', error);
             return res.status(500).json({
                 success: false,
-                error: 'Failed to save purchase',
+                error: 'Failed to save purchase record',
             });
         }
 
-        logger.info(`[PAYMENT] Purchase saved for ${studentPhone}: ${planName}`);
+        logger.info(`[PAYMENT] Purchase saved for ${studentPhone}: ${planName || 'Subject Purchase'}`);
 
         return res.status(200).json({
             success: true,

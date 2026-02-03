@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- GovExams "G" logo stylized -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,27c-14.91,0 -27,12.09 -27,27s12.09,27 27,27 27,-12.09 27,-27 -12.09,-27 -27,-27zM54,75c-11.58,0 -21,-9.42 -21,-21s9.42,-21 21,-21 21,9.42 21,21 -9.42,21 -21,21z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,39c-8.28,0 -15,6.72 -15,15s6.72,15 15,15c4.14,0 7.89,-1.68 10.61,-4.39l-4.24,-4.24c-1.58,1.58 -3.76,2.56 -6.17,2.56 -4.83,0 -8.75,-3.92 -8.75,-8.75s3.92,-8.75 8.75,-8.75c2.21,0 4.23,0.83 5.77,2.18l0,-5.93c0,0 -0.27,0 -5.97,0c-0.27,0 -0.53,0.01 -0.8,0.02l5.8,0l0,8.5l8.5,0c0.01,0.26 0.02,0.52 0.02,0.78 0,8.27 -6.72,14.98 -15,14.98"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M67.5,48l0,6l-7.5,0l0,-6z"/>
+</vector>

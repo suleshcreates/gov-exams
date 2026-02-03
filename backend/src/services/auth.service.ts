@@ -39,9 +39,7 @@ export async function isUsernameTaken(username: string): Promise<boolean> {
     return !!data;
 }
 
-/**
- * Check if phone is already taken
- */
+
 export async function isPhoneTaken(phone: string): Promise<boolean> {
     const { data } = await supabaseAdmin
         .from('students')
@@ -52,9 +50,7 @@ export async function isPhoneTaken(phone: string): Promise<boolean> {
     return !!data;
 }
 
-/**
- * Signup new user (called AFTER OTP verification)
- */
+
 export async function signup(
     signupData: SignupRequest,
     userAgent?: string,
@@ -63,7 +59,6 @@ export async function signup(
     const { name, email, username, phone, password } = signupData;
 
     try {
-        // Check if username/phone already taken (email already has partial record from OTP)
         const [usernameExists, phoneExists] = await Promise.all([
             isUsernameTaken(username),
             isPhoneTaken(phone),
@@ -83,7 +78,6 @@ export async function signup(
             };
         }
 
-        // Create Supabase Auth user
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             email_confirm: true,
@@ -120,7 +114,6 @@ export async function signup(
         const authUserId = authData.user.id;
         const passwordHash = await hashPassword(password);
 
-        // Update existing partial OTP record with full signup data
         logger.info(`Updating OTP record for: ${email}`);
         const { data: student, error: updateError } = await supabaseAdmin
             .from('students')
@@ -148,15 +141,12 @@ export async function signup(
             };
         }
 
-        // Generate JWT tokens
         const tokens = generateTokenPair(authUserId, email);
 
-        // SINGLE DEVICE ENFORCEMENT: Delete all existing sessions for this user
         const { deleteAllUserSessions } = await import('./session.service');
         await deleteAllUserSessions(authUserId);
         logger.info(`[Single Device] Cleared existing sessions for: ${email}`);
 
-        // Store new session
         const refreshTokenHash = hashRefreshToken(tokens.refreshToken);
         const session = await createSession(authUserId, refreshTokenHash, userAgent, ipAddress);
 
@@ -190,9 +180,7 @@ export async function signup(
     }
 }
 
-/**
- * Login existing user
- */
+
 export async function login(
     loginData: LoginRequest,
     userAgent?: string,
@@ -201,7 +189,6 @@ export async function login(
     const { identifier, password } = loginData;
 
     try {
-        // Find user by email OR username
         const { data: student, error } = await supabaseAdmin
             .from('students')
             .select('*')
@@ -215,7 +202,6 @@ export async function login(
             };
         }
 
-        // Verify password using bcrypt
         const isValidPassword = await comparePassword(password, student.password_hash);
 
         if (!isValidPassword) {
@@ -225,16 +211,12 @@ export async function login(
             };
         }
 
-        // SINGLE DEVICE ENFORCEMENT: Delete all existing sessions for this user
         const { deleteAllUserSessions } = await import('./session.service');
         await deleteAllUserSessions(student.auth_user_id);
         logger.info(`[Single Device] Cleared existing sessions for: ${student.email}`);
 
-        // Create new session FIRST (to get session ID)
-        // Use temporary hash, will update with real refresh token hash later
         const tempSession = await createSession(
             student.auth_user_id,
-            'temp_hash', // Temporary placeholder
             userAgent,
             ipAddress
         );
@@ -247,7 +229,6 @@ export async function login(
             };
         }
 
-        // Generate JWT tokens WITH session ID
         const tokens = generateTokenPair(
             student.auth_user_id,
             student.email,

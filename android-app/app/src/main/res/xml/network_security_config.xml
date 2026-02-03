@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+
+    <!-- Default: allow HTTPS everywhere -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Explicitly allow your domains -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">govexams.info</domain>
+        <domain includeSubdomains="true">www.govexams.info</domain>
+        <domain includeSubdomains="true">gov-exams-hs3a.onrender.com</domain>
+        <domain includeSubdomains="true">vepbxdvdfmcqwzzjkziq.supabase.co</domain>
+        <domain includeSubdomains="true">razorpay.com</domain>
+        <domain includeSubdomains="true">checkout.razorpay.com</domain>
+
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+</network-security-config>
