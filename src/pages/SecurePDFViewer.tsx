@@ -341,7 +341,19 @@ const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
                 style={{ filter: showBlur ? 'blur(30px)' : 'none', transition: 'filter 0.2s' }}
             >
                 <Document
-                // ... props
+                    file={pdfUrl}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    loading={
+                        <div className="flex items-center justify-center h-96">
+                            <Loader2 className="w-8 h-8 animate-spin text-white" />
+                        </div>
+                    }
+                    error={
+                        <div className="flex flex-col items-center justify-center h-96 text-white">
+                            <ShieldCheck className="w-12 h-12 mb-4 text-red-500" />
+                            <p>Failed to load document.</p>
+                        </div>
+                    }
                 >
                     <Page
                         pageNumber={pageNumber}
