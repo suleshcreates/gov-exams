@@ -331,39 +331,133 @@ const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
     return (
         <div
             ref={containerRef}
-        // ...
+            className="flex flex-col h-screen bg-gray-900 text-white overflow-hidden"
         >
-            {/* ... */}
+            {/* TOOLBAR */}
+            <div className="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between shadow-md z-10 shrink-0">
+
+                {/* Left: Back / Title */}
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => window.close()} // Assuming opened in new tab/window
+                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white"
+                        title="Close Viewer"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                        <span className="font-semibold text-sm md:text-base hidden md:block">Secure Viewer</span>
+                    </div>
+                </div>
+
+                {/* Center: Pagination */}
+                <div className="flex items-center gap-4 bg-gray-900/50 rounded-lg p-1">
+                    <button
+                        onClick={() => changePage(-1)}
+                        disabled={pageNumber <= 1}
+                        className="p-1.5 hover:bg-gray-700 rounded-md disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                        title="Previous Page"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <span className="text-sm font-medium w-16 text-center tabular-nums">
+                        {pageNumber} / {numPages || '-'}
+                    </span>
+
+                    <button
+                        onClick={() => changePage(1)}
+                        disabled={pageNumber >= numPages}
+                        className="p-1.5 hover:bg-gray-700 rounded-md disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                        title="Next Page"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Right: Zoom */}
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-gray-900/50 rounded-lg p-1">
+                        <button
+                            onClick={() => zoom(-0.25)}
+                            disabled={scale <= 0.5}
+                            className="p-1.5 hover:bg-gray-700 rounded-md disabled:opacity-30 transition-colors"
+                            title="Zoom Out"
+                        >
+                            <ZoomOut className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs font-medium w-12 text-center tabular-nums text-gray-400">
+                            {Math.round(scale * 100)}%
+                        </span>
+                        <button
+                            onClick={() => zoom(0.25)}
+                            disabled={scale >= 2.5}
+                            className="p-1.5 hover:bg-gray-700 rounded-md disabled:opacity-30 transition-colors"
+                            title="Zoom In"
+                        >
+                            <ZoomIn className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* ERROR / WARNING OVERLAY */}
+            {warningMessage && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <div className="bg-red-500/10 border border-red-500/50 p-6 rounded-xl text-center max-w-md mx-4 animate-in fade-in zoom-in duration-200">
+                        <ShieldCheck className="w-16 h-16 mx-auto mb-4 text-red-500" />
+                        <h3 className="text-xl font-bold text-white mb-2">Security Alert</h3>
+                        <p className="text-red-200">{warningMessage}</p>
+                    </div>
+                </div>
+            )}
 
             {/* PDF VIEWER */}
             <div
-                className="flex-1 overflow-auto bg-gray-800 flex justify-center py-4"
-                style={{ filter: showBlur ? 'blur(30px)' : 'none', transition: 'filter 0.2s' }}
+                className="flex-1 overflow-auto bg-gray-800 flex justify-center py-8 relative"
+                style={{ filter: showBlur ? 'blur(20px)' : 'none', transition: 'filter 0.2s' }}
             >
-                <Document
-                    file={pdfUrl}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    loading={
-                        <div className="flex items-center justify-center h-96">
-                            <Loader2 className="w-8 h-8 animate-spin text-white" />
-                        </div>
-                    }
-                    error={
-                        <div className="flex flex-col items-center justify-center h-96 text-white">
-                            <ShieldCheck className="w-12 h-12 mb-4 text-red-500" />
-                            <p>Failed to load document.</p>
-                        </div>
-                    }
-                >
-                    <Page
-                        pageNumber={pageNumber}
-                        scale={scale}
-                        width={Math.min(containerWidth - 40, 900)} // Responsive width with margin
-                        renderTextLayer={false}  // SECURITY: Disable text selection
-                        renderAnnotationLayer={false}  // SECURITY: Disable links/forms
-                        className="shadow-2xl"
-                    />
-                </Document>
+                {/* Watermark Overlay (Fixed pattern) */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-[0.03] select-none">
+                    <div className="flex flex-wrap h-full w-full content-start">
+                        {Array.from({ length: 20 }).map((_, i) => (
+                            <div key={i} className="w-64 h-64 flex items-center justify-center transform -rotate-45">
+                                <span className="text-white font-bold text-xl whitespace-nowrap">
+                                    {auth.user?.email || 'Protected Content'}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="relative z-10 px-4">
+                    <Document
+                        file={pdfUrl}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        loading={
+                            <div className="flex items-center justify-center h-96">
+                                <Loader2 className="w-8 h-8 animate-spin text-white" />
+                            </div>
+                        }
+                        error={
+                            <div className="flex flex-col items-center justify-center h-96 text-white">
+                                <ShieldCheck className="w-12 h-12 mb-4 text-red-500" />
+                                <p>Failed to load document.</p>
+                            </div>
+                        }
+                        className="flex flex-col gap-8" // Add gap between pages if showing multiple (we show 1 for now but good for future)
+                    >
+                        <Page
+                            pageNumber={pageNumber}
+                            scale={scale}
+                            width={Math.min(containerWidth - 40, 1000)} // Responsive width with margin
+                            renderTextLayer={false}  // SECURITY: Disable text selection
+                            renderAnnotationLayer={false}  // SECURITY: Disable links/forms
+                            className="shadow-2xl"
+                        />
+                    </Document>
+                </div>
             </div>
         </div>
     );
