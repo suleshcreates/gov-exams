@@ -55,8 +55,11 @@ import AdminSpecialExamSets from "./admin/pages/AdminSpecialExamSets";
 import AdminPYQ from "./admin/pages/AdminPYQ";
 import SupabaseTest from "./admin/pages/SupabaseTest";
 
+import { useSiteProtection } from "./hooks/useSiteProtection";
+
 // ✅ helper component to handle navbar & footer visibility based on route
 const AppContent = () => {
+  useSiteProtection(); // 🛡️ Activates global site security
   const location = useLocation();
 
   // Hide navbar & footer on exam start route and admin routes
