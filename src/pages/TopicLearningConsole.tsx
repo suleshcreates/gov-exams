@@ -400,7 +400,7 @@ const TopicLearningConsole = () => {
                                                         <p className="text-xs text-slate-500">Supplemental Material</p>
                                                     </div>
                                                     <button
-                                                        onClick={() => setActiveContent({ type: 'pdf', url: m.url, title: m.title })}
+                                                        onClick={() => window.open(`/secure-viewer/material/${m.id}`, '_blank')}
                                                         className="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors"
                                                     >
                                                         View

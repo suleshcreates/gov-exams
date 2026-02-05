@@ -101,6 +101,7 @@ const AppContent = () => {
           <Route path="/pyq/:id" element={<ProtectedRoute><PYQDetail /></ProtectedRoute>} />
           <Route path="/secure-viewer/:id" element={<ProtectedRoute><SecurePDFViewer /></ProtectedRoute>} />
           <Route path="/secure-viewer/topic/:id" element={<ProtectedRoute><SecurePDFViewer type="topic" /></ProtectedRoute>} />
+          <Route path="/secure-viewer/material/:id" element={<ProtectedRoute><SecurePDFViewer type="material" /></ProtectedRoute>} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

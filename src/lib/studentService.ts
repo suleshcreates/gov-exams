@@ -66,6 +66,17 @@ export const studentService = {
         return data.downloadUrl;
     },
 
+    getTopicMaterialPdfUrl: async (materialId: string): Promise<string> => {
+        const response = await authenticatedFetch(`${API_URL}/api/student/topic-materials/${materialId}/pdf`);
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch Material PDF URL');
+        }
+
+        const data = await response.json();
+        return data.downloadUrl;
+    },
+
     getQuestions: async (setId: string): Promise<any[]> => {
         const response = await authenticatedFetch(`${API_URL}/api/student/question-sets/${setId}/questions`);
 

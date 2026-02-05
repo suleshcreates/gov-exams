@@ -311,6 +311,39 @@ export const getTopicPDFController = async (req: Request, res: Response) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+// Get Topic Material PDF (Secondary Notes)
+export const getTopicMaterialPDFController = async (req: Request, res: Response) => {
+    try {
+        const { materialId } = req.params;
+
+        const { data: material, error } = await supabase
+            .from('topic_materials')
+            .select('url, type')
+            .eq('id', materialId)
+            .single();
+
+        if (error || !material) {
+            return res.status(404).json({ error: 'Material not found' });
+        }
+
+        if (material.type !== 'pdf') {
+            return res.status(400).json({ error: 'Material is not a PDF' });
+        }
+
+        // If it's a Supabase URL, we can try to sign it, otherwise return as is
+        // For now, let's just return the URL directly since they are likely public or external
+        // If we need security, we should implement signing logic similar to above if it matches our bucket
+
+        return res.status(200).json({
+            downloadUrl: material.url
+        });
+
+    } catch (err: any) {
+        console.error('Server error getting material PDF:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
 // Get Questions for a Question Set (Student)
 export const getStudentQuestionsController = async (req: Request, res: Response) => {
     try {

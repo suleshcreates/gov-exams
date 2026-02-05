@@ -20,7 +20,8 @@ import {
     getTopicPDFController,
     getTopicProgressController,
     markVideoCompletedController,
-    getTopicMaterialsController
+    getTopicMaterialsController,
+    getTopicMaterialPDFController
 } from '../controllers/topic.controller';
 
 const router = Router();
@@ -32,6 +33,7 @@ router.use(requireAuth);
 router.get('/subjects/:subjectId/topics', getTopicsBySubjectController);
 router.get('/topics/:topicId/materials', getTopicMaterialsController);
 router.get('/topics/:topicId/pdf', getTopicPDFController);
+router.get('/topic-materials/:materialId/pdf', getTopicMaterialPDFController);
 router.get('/topics/:topicId/progress', getTopicProgressController);
 router.post('/topics/:topicId/complete', markVideoCompletedController);
 

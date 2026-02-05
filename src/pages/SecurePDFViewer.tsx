@@ -10,7 +10,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 import { studentService } from '@/lib/studentService';
 
 interface SecurePDFViewerProps {
-    type?: 'pyq' | 'topic';
+    type?: 'pyq' | 'topic' | 'material';
 }
 
 const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
@@ -59,9 +59,15 @@ const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
                     return;
                 }
 
+                console.log(`[SecurePDFViewer] Fetching URL for type: ${type}, id: ${id}`);
+
                 if (type === 'topic') {
                     // For topics, use the signed URL helper we added to provided service
                     const url = await studentService.getTopicPdfUrl(id!);
+                    setPdfUrl(url);
+                } else if (type === 'material') {
+                    // For topic materials (secondary notes)
+                    const url = await studentService.getTopicMaterialPdfUrl(id!);
                     setPdfUrl(url);
                 } else {
                     // Default PYQ behavior
