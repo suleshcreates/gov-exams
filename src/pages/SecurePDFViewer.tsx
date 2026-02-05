@@ -29,6 +29,18 @@ const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
     const [pageNumber, setPageNumber] = useState<number>(1);
     const [scale, setScale] = useState<number>(1.0);
 
+    // Responsive Width Logic - Moved to top to avoid conditional hook call error
+    const [containerWidth, setContainerWidth] = useState<number>(window.innerWidth);
+
+    useEffect(() => {
+        const updateWidth = () => {
+            setContainerWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', updateWidth);
+        return () => window.removeEventListener('resize', updateWidth);
+    }, []);
+
     const containerRef = useRef<HTMLDivElement>(null);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -308,19 +320,7 @@ const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
     // ============================================
     // RENDER: Main Viewer
     // ============================================
-    // Responsive Width Logic
-    const [containerWidth, setContainerWidth] = useState<number>(window.innerWidth);
 
-    useEffect(() => {
-        const updateWidth = () => {
-            setContainerWidth(window.innerWidth);
-        };
-
-        window.addEventListener('resize', updateWidth);
-        return () => window.removeEventListener('resize', updateWidth);
-    }, []);
-
-    // ... (rest of the file) ...
 
     return (
         <div
