@@ -90,7 +90,7 @@ const ContactUs = () => {
                                 <div>
                                     <h3 className="font-semibold mb-1">Location</h3>
                                     <p className="text-muted-foreground">
-                                        Udgir, Maharashtra<br />
+                                        Nanded, Maharashtra<br />
                                         India
                                     </p>
                                 </div>

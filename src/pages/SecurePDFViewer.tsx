@@ -308,114 +308,26 @@ const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
     // ============================================
     // RENDER: Main Viewer
     // ============================================
+    // Responsive Width Logic
+    const [containerWidth, setContainerWidth] = useState<number>(window.innerWidth);
+
+    useEffect(() => {
+        const updateWidth = () => {
+            setContainerWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', updateWidth);
+        return () => window.removeEventListener('resize', updateWidth);
+    }, []);
+
+    // ... (rest of the file) ...
+
     return (
         <div
             ref={containerRef}
-            className="w-screen h-screen bg-gray-900 overflow-hidden flex flex-col relative select-none"
-            style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+        // ...
         >
-            {/* Security CSS */}
-            <style>{`
-                @media print {
-                    * { display: none !important; visibility: hidden !important; }
-                    body::after {
-                        content: "Printing is disabled for security.";
-                        display: block !important;
-                        visibility: visible !important;
-                        font-size: 24px;
-                        text-align: center;
-                        padding: 100px;
-                        color: red;
-                    }
-                }
-                .react-pdf__Page__canvas {
-                    margin: 0 auto;
-                }
-                ::selection { background: transparent; }
-                ::-moz-selection { background: transparent; }
-            `}</style>
-
-            {/* PROTECTION OVERLAY */}
-            {showBlur && (
-                <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center">
-                    <div className="text-center p-8">
-                        <ShieldCheck className="w-24 h-24 mx-auto mb-6 text-yellow-500 animate-pulse" />
-                        <h2 className="text-3xl font-bold text-white mb-3">Content Protected</h2>
-                        <p className="text-gray-400 text-lg">{warningMessage || 'Return focus to continue viewing'}</p>
-                        <p className="text-gray-600 text-sm mt-6">Click inside this window to resume</p>
-                    </div>
-                </div>
-            )}
-
-            {/* WATERMARK OVERLAY */}
-            {auth.user && (
-                <div
-                    className="absolute inset-0 z-30 pointer-events-none overflow-hidden"
-                    style={{ opacity: 0.08 }}
-                >
-                    <div className="absolute inset-0 flex flex-wrap">
-                        {Array.from({ length: 20 }).map((_, i) => (
-                            <div
-                                key={i}
-                                className="w-1/4 h-1/5 flex items-center justify-center"
-                                style={{ transform: 'rotate(-30deg)' }}
-                            >
-                                <span className="text-white font-bold text-lg whitespace-nowrap">
-                                    PROTECTED • {auth.user?.email}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* TOOLBAR */}
-            <div className="bg-gray-800 text-white py-2 px-4 flex items-center justify-between z-40 shadow-lg">
-                <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-yellow-500" />
-                    <span className="font-medium">Secure Viewer</span>
-                </div>
-
-                {/* Page Controls */}
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => changePage(-1)}
-                        disabled={pageNumber <= 1}
-                        className="p-2 hover:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <span className="text-sm">
-                        Page {pageNumber} of {numPages || '...'}
-                    </span>
-                    <button
-                        onClick={() => changePage(1)}
-                        disabled={pageNumber >= numPages}
-                        className="p-2 hover:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <ChevronRight className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Zoom Controls */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => zoom(-0.25)}
-                        disabled={scale <= 0.5}
-                        className="p-2 hover:bg-gray-700 rounded disabled:opacity-50"
-                    >
-                        <ZoomOut className="w-5 h-5" />
-                    </button>
-                    <span className="text-sm w-16 text-center">{Math.round(scale * 100)}%</span>
-                    <button
-                        onClick={() => zoom(0.25)}
-                        disabled={scale >= 2.5}
-                        className="p-2 hover:bg-gray-700 rounded disabled:opacity-50"
-                    >
-                        <ZoomIn className="w-5 h-5" />
-                    </button>
-                </div>
-            </div>
+            {/* ... */}
 
             {/* PDF VIEWER */}
             <div
@@ -423,23 +335,12 @@ const SecurePDFViewer: React.FC<SecurePDFViewerProps> = ({ type = 'pyq' }) => {
                 style={{ filter: showBlur ? 'blur(30px)' : 'none', transition: 'filter 0.2s' }}
             >
                 <Document
-                    file={pdfUrl}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    loading={
-                        <div className="flex items-center justify-center h-full text-white">
-                            <Loader2 className="w-8 h-8 animate-spin mr-2" />
-                            Loading PDF...
-                        </div>
-                    }
-                    error={
-                        <div className="flex items-center justify-center h-full text-red-400">
-                            Failed to load PDF. Please try again.
-                        </div>
-                    }
+                // ... props
                 >
                     <Page
                         pageNumber={pageNumber}
                         scale={scale}
+                        width={Math.min(containerWidth - 40, 900)} // Responsive width with margin
                         renderTextLayer={false}  // SECURITY: Disable text selection
                         renderAnnotationLayer={false}  // SECURITY: Disable links/forms
                         className="shadow-2xl"

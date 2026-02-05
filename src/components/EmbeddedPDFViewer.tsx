@@ -29,6 +29,24 @@ const EmbeddedPDFViewer: React.FC<EmbeddedPDFViewerProps> = ({ url, title }) => 
         setError(null);
     }, [url]);
 
+    // Responsive Width Logic
+    const [containerWidth, setContainerWidth] = useState<number>(0);
+
+    useEffect(() => {
+        const updateWidth = () => {
+            if (containerRef.current) {
+                setContainerWidth(containerRef.current.offsetWidth);
+            }
+        };
+
+        // Initial set
+        updateWidth();
+
+        // Update on resize
+        window.addEventListener('resize', updateWidth);
+        return () => window.removeEventListener('resize', updateWidth);
+    }, []);
+
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
         setPageNumber(1);
@@ -51,19 +69,20 @@ const EmbeddedPDFViewer: React.FC<EmbeddedPDFViewerProps> = ({ url, title }) => 
 
     return (
         <div
-            className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50 select-none shadow-sm"
+            ref={containerRef}
+            className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50 select-none shadow-sm w-full"
             onContextMenu={handleContextMenu}
         >
             {/* Header / Toolbar */}
             <div className="bg-white border-b border-slate-200 p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-red-600" />
-                    <span className="font-semibold text-slate-800">{title || 'PDF Notes'}</span>
+                    <span className="font-semibold text-slate-800 text-sm md:text-base truncate max-w-[150px] md:max-w-none">{title || 'PDF Notes'}</span>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                     {/* Zoom */}
-                    <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+                    <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 hidden md:flex">
                         <button onClick={() => zoom(-0.25)} disabled={scale <= 0.5} className="p-1 hover:bg-white rounded disabled:opacity-50">
                             <ZoomOut className="w-4 h-4 text-slate-600" />
                         </button>
@@ -82,7 +101,7 @@ const EmbeddedPDFViewer: React.FC<EmbeddedPDFViewerProps> = ({ url, title }) => 
                         >
                             <ChevronLeft className="w-5 h-5 text-slate-600" />
                         </button>
-                        <span className="text-sm font-medium text-slate-700">
+                        <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
                             {pageNumber} / {numPages || '-'}
                         </span>
                         <button
@@ -97,7 +116,7 @@ const EmbeddedPDFViewer: React.FC<EmbeddedPDFViewerProps> = ({ url, title }) => 
             </div>
 
             {/* Viewer Area */}
-            <div className="relative bg-slate-100 min-h-[400px] max-h-[600px] overflow-auto flex justify-center p-4">
+            <div className="relative bg-slate-100 min-h-[300px] md:min-h-[400px] max-h-[500px] md:max-h-[600px] overflow-auto flex justify-center p-2 md:p-4">
 
                 {/* Watermark Overlay */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 opacity-[0.03]">
@@ -136,10 +155,10 @@ const EmbeddedPDFViewer: React.FC<EmbeddedPDFViewerProps> = ({ url, title }) => 
                     <Page
                         pageNumber={pageNumber}
                         scale={scale}
+                        width={containerWidth ? Math.min(containerWidth - 32, 800) : undefined}
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
                         className="shadow-lg bg-white"
-                        width={containerRef.current ? containerRef.current.offsetWidth * 0.8 : undefined}
                     />
                 </Document>
             </div>

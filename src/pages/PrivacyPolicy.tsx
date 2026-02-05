@@ -111,7 +111,7 @@ const PrivacyPolicy = () => {
                             <div className="bg-primary/5 rounded-lg p-4 mt-4">
                                 <p className="text-muted-foreground"><strong>Email:</strong> governmentadamany23@gmail.com</p>
                                 <p className="text-muted-foreground"><strong>Phone:</strong> +91 9834100959</p>
-                                <p className="text-muted-foreground"><strong>Address:</strong> Udgir, Maharashtra, India</p>
+                                <p className="text-muted-foreground"><strong>Address:</strong> Nanded, Maharashtra, India</p>
                             </div>
                         </section>
                     </div>

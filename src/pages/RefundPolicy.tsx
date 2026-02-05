@@ -121,7 +121,7 @@ const RefundPolicy = () => {
                                 <p className="text-muted-foreground"><strong>Email:</strong> support@govexams.info</p>
                                 <p className="text-muted-foreground"><strong>Phone:</strong> +91 9834100959</p>
                                 <p className="text-muted-foreground"><strong>WhatsApp:</strong> +91 9834100959</p>
-                                <p className="text-muted-foreground"><strong>Address:</strong> Udgir, Maharashtra, India</p>
+                                <p className="text-muted-foreground"><strong>Address:</strong> Nanded, Maharashtra, India</p>
                             </div>
                         </section>
 
