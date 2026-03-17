@@ -3,6 +3,7 @@ import { generateTokenPair } from '../utils/jwt';
 import { createSession } from './session.service';
 import logger from '../utils/logger';
 import crypto from 'crypto';
+import { comparePassword } from '../utils/password';
 
 /**
  * Create hash of refresh token for secure storage
@@ -42,7 +43,7 @@ export async function isAdmin(email: string): Promise<boolean> {
 }
 
 /**
- * Admin login with plain text password comparison
+ * Admin login
  */
 export async function adminLogin(
     email: string,
@@ -62,8 +63,24 @@ export async function adminLogin(
             };
         }
 
-        // Simple password comparison (plain text)
-        if (admin.password_hash !== password) {
+        // Compare password using bcrypt (wrapped in try/catch because bcrypt throws if hash is invalid)
+        let isValidPassword = false;
+        try {
+            isValidPassword = await comparePassword(password, admin.password_hash);
+        } catch (e) {
+            // Hash was probably not a bcrypt string (e.g. plain text pass@123)
+            isValidPassword = false;
+        }
+
+        // Fallback for transition: if bcrypt fails, try plain text match
+        // (Helpful if the DB still has 'pass@123' in plain text until it's updated)
+        let passwordMatches = isValidPassword;
+        if (!isValidPassword && admin.password_hash === password) {
+            passwordMatches = true;
+            logger.warn(`Admin ${email} is still using a plain text password!`);
+        }
+
+        if (!passwordMatches) {
             logger.warn(`Admin login attempt with incorrect password: ${email}`);
             return {
                 success: false,

@@ -11,7 +11,7 @@ bcrypt.compare(password, storedHash).then(match => {
         bcrypt.hash(password, 10).then(newHash => {
             console.log('\nNew hash:', newHash);
             console.log('\nRun this SQL:');
-            console.log(`UPDATE admins SET password_hash = '${newHash}' WHERE email = 'suleshvi43@gmail.com';`);
+            console.log(`UPDATE admins SET password_hash = '${newHash}' WHERE email = 'admin@govexams.info';`);
         });
     } else {
         console.log('\n✅ Hash matches! Login should work.');

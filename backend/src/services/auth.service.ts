@@ -213,6 +213,13 @@ export async function login(
             };
         }
 
+        if (!student.is_verified) {
+            return {
+                success: false,
+                error: 'Please verify your email before logging in',
+            };
+        }
+
         const isValidPassword = await comparePassword(password, student.password_hash);
 
         if (!isValidPassword) {
