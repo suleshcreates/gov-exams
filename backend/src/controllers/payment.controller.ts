@@ -7,8 +7,6 @@ import logger from '../utils/logger';
 import { savePlanPurchase } from '../services/supabase.service';
 
 // Initialize Razorpay
-// Initialize Razorpay
-// Initialize Razorpay
 const razorpay = new Razorpay({
     key_id: env.RAZORPAY_KEY_ID,
     key_secret: env.RAZORPAY_KEY_SECRET,
@@ -19,7 +17,7 @@ const razorpay = new Razorpay({
  */
 export const createOrderController = async (req: Request, res: Response) => {
     try {
-        console.log('[PAYMENT] Create Order Request Received');
+        logger.info('[PAYMENT] Create Order Request Received');
         const { amount, planId, receipt } = req.body;
 
         // Validation
@@ -48,11 +46,11 @@ export const createOrderController = async (req: Request, res: Response) => {
             notes: notes
         };
 
-        console.log('[PAYMENT] Creating order with options:', JSON.stringify(options));
+        logger.info('[PAYMENT] Creating order with options:', JSON.stringify(options));
 
         const order = await razorpay.orders.create(options);
 
-        console.log(`[PAYMENT] Order created successfully: ${order.id}`);
+        logger.info(`[PAYMENT] Order created successfully: ${order.id}`);
 
         return res.status(200).json({
             success: true,
@@ -67,7 +65,7 @@ export const createOrderController = async (req: Request, res: Response) => {
         });
 
     } catch (error: any) {
-        console.error('[PAYMENT] Controller Error:', error);
+        logger.error('[PAYMENT] Controller Error:', error);
         return res.status(500).json({
             success: false,
             error: error.message || 'Failed to create order',

@@ -1,12 +1,14 @@
 import rateLimit from 'express-rate-limit';
+import env from '../config/env';
+
+const isDev = env.NODE_ENV === 'development';
 
 /**
  * Rate limiter for signup endpoint
- * Max 500 signups per IP per 5 minutes (very high for development)
  */
 export const signupLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes (shorter window for dev)
-    max: 500, // Very high for development - reduce in production!
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: isDev ? 500 : 10, // Strict in production, relaxed in dev
     message: {
         success: false,
         error: 'Too many signup attempts from this IP. Please try again after 5 minutes.',
@@ -17,11 +19,10 @@ export const signupLimiter = rateLimit({
 
 /**
  * Rate limiter for login endpoint
- * Max 100 login attempts per IP per 15 minutes (increased for development)
  */
 export const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Increased from 5 to 100 for development
+    max: isDev ? 100 : 15, // Strict in production, relaxed in dev
     message: {
         success: false,
         error: 'Too many login attempts. Please try again after 15 minutes.',
@@ -36,7 +37,7 @@ export const loginLimiter = rateLimit({
  */
 export const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
+    max: isDev ? 500 : 100,
     message: {
         success: false,
         error: 'Too many requests from this IP. Please try again later.',

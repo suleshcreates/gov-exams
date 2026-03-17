@@ -23,6 +23,7 @@ const ForgotPassword = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
+    const [resetToken, setResetToken] = useState('');
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,6 +121,11 @@ const ForgotPassword = () => {
                 return;
             }
 
+            // Store the reset token from backend
+            if (result.resetToken) {
+                setResetToken(result.resetToken);
+            }
+
             // Move to password reset step
             toast({
                 title: 'Verified!',
@@ -193,7 +199,7 @@ const ForgotPassword = () => {
         setError('');
 
         try {
-            await resetPassword(email, password);
+            await resetPassword(email, password, resetToken);
 
             toast({
                 title: 'Password Reset Successful!',

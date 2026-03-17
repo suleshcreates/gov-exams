@@ -40,6 +40,10 @@ export function verifyToken(token: string): JWTPayload {
     return jwt.verify(token, env.JWT_SECRET) as JWTPayload;
 }
 
+export function verifyRefreshToken(token: string): JWTPayload {
+    return jwt.verify(token, env.JWT_REFRESH_SECRET) as JWTPayload;
+}
+
 
 export function generateTokenPair(userId: string, email: string, sessionId?: string) {
     return {
@@ -53,5 +57,6 @@ export default {
     generateAccessToken,
     generateRefreshToken,
     verifyToken,
+    verifyRefreshToken,
     generateTokenPair,
 };

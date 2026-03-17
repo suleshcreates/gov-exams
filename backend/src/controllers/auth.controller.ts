@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { signup, login } from '../services/auth.service';
-import { verifyToken, generateAccessToken } from '../utils/jwt';
+import { verifyToken, verifyRefreshToken, generateAccessToken } from '../utils/jwt';
 import {
     findSession,
     updateSessionUsage,
@@ -97,7 +97,7 @@ export async function refreshController(
         // Verify refresh token
         let decoded;
         try {
-            decoded = verifyToken(refresh_token);
+            decoded = verifyRefreshToken(refresh_token);
         } catch (error: any) {
             res.status(401).json({
                 success: false,
@@ -274,12 +274,24 @@ export async function resetPasswordController(
     res: Response
 ): Promise<void> {
     try {
-        const { email, newPassword } = req.body;
+        const { email, newPassword, resetToken } = req.body;
 
-        if (!email || !newPassword) {
+        if (!email || !newPassword || !resetToken) {
             res.status(400).json({
                 success: false,
-                error: 'Email and new password are required',
+                error: 'Email, new password, and reset token are required',
+            });
+            return;
+        }
+
+        // Verify the reset token (proof that OTP was verified)
+        const otpService = await import('../services/otp.service');
+        const isValidToken = otpService.verifyResetToken(resetToken, email);
+
+        if (!isValidToken) {
+            res.status(403).json({
+                success: false,
+                error: 'Invalid or expired reset token. Please verify OTP again.',
             });
             return;
         }
@@ -425,6 +437,7 @@ export async function verifyResetOTPController(
         res.json({
             success: true,
             message: 'OTP verified successfully',
+            resetToken: verification.resetToken,
         });
     } catch (error: any) {
         logger.error('Verify reset OTP controller error:', error);

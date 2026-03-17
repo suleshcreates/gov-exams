@@ -24,7 +24,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
   verifyOTP: (email: string, otp: string) => { valid: boolean; message: string };
-  resetPassword: (email: string, newPassword: string) => Promise<void>;
+  resetPassword: (email: string, newPassword: string, resetToken: string) => Promise<void>;
 }
 
 interface SignUpData {
@@ -217,11 +217,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Reset password
-  const resetPassword = async (email: string, newPassword: string): Promise<void> => {
+  const resetPassword = async (email: string, newPassword: string, resetToken: string): Promise<void> => {
     try {
       logger.debug('[AuthContext] Resetting password for:', email);
 
-      const response = await api.resetPassword(email, newPassword);
+      const response = await api.resetPassword(email, newPassword, resetToken);
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to reset password');

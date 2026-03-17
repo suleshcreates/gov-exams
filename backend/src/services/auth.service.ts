@@ -141,17 +141,28 @@ export async function signup(
             };
         }
 
-        const tokens = generateTokenPair(authUserId, email);
-
         const { deleteAllUserSessions } = await import('./session.service');
         await deleteAllUserSessions(authUserId);
         logger.info(`[Single Device] Cleared existing sessions for: ${email}`);
 
-        const refreshTokenHash = hashRefreshToken(tokens.refreshToken);
-        const session = await createSession(authUserId, refreshTokenHash, userAgent, ipAddress);
+        // Create session first, then generate tokens with sessionId
+        const refreshTokenPlaceholder = 'pending_signup';
+        const session = await createSession(authUserId, refreshTokenPlaceholder, userAgent, ipAddress);
 
         if (!session) {
             logger.warn('Failed to create session for new user');
+        }
+
+        // Generate tokens with sessionId for single-device enforcement
+        const tokens = generateTokenPair(authUserId, email, session?.id);
+
+        // Update session with actual refresh token hash
+        if (session) {
+            const refreshTokenHash = hashRefreshToken(tokens.refreshToken);
+            await supabaseAdmin
+                .from('sessions')
+                .update({ refresh_token_hash: refreshTokenHash })
+                .eq('id', session.id);
         }
 
         logger.info(`New user signed up: ${email}`);
@@ -215,9 +226,11 @@ export async function login(
         await deleteAllUserSessions(student.auth_user_id);
         logger.info(`[Single Device] Cleared existing sessions for: ${student.email}`);
 
+        // Create session with a placeholder hash (will be updated after token generation)
         const tempSession = await createSession(
             student.auth_user_id,
-            userAgent || '',
+            'pending_login',  // placeholder — updated below with real hash
+            userAgent,
             ipAddress
         );
 

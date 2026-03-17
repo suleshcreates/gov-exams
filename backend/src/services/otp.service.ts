@@ -3,6 +3,7 @@ import logger from '../utils/logger';
 import env from '../config/env';
 import https from 'https';
 import dns from 'node:dns';
+import crypto from 'crypto';
 
 // EmailJS Configuration is loaded from env.ts
 if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_PUBLIC_KEY || !env.EMAILJS_PRIVATE_KEY) {
@@ -26,8 +27,8 @@ export async function storeOTPForSignup(email: string, otp: string, name: string
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes
 
-    logger.info(`[OTP STORE] Storing OTP for email: ${email}, OTP: ${otp}`);
-    logger.info(`[OTP STORE] Now: ${now.toISOString()}, Expires: ${expiresAt.toISOString()}`);
+    logger.info(`[OTP STORE] Storing OTP for email: ${email}`);
+    logger.debug(`[OTP STORE] Expires: ${expiresAt.toISOString()}`);
 
     const { data: existing } = await supabaseAdmin
       .from('students')
@@ -97,6 +98,11 @@ export async function verifyOTP(email: string, otp: string): Promise<{ valid: bo
     }
     if (!student.verification_code) {
       return { valid: false, message: 'No OTP found. Please request a new one.' };
+    }
+
+    // Check expiry
+    if (student.verification_code_expires && new Date(student.verification_code_expires) < new Date()) {
+      return { valid: false, message: 'OTP has expired. Please request a new one.' };
     }
 
     // Check match
@@ -222,21 +228,30 @@ export async function sendOTPEmail(email: string, name: string, otp: string): Pr
 /**
  * Verify OTP for password reset
  */
-export async function verifyPasswordResetOTP(email: string, otp: string): Promise<{ valid: boolean; message: string; }> {
+export async function verifyPasswordResetOTP(email: string, otp: string): Promise<{ valid: boolean; message: string; resetToken?: string }> {
   try {
     const { data: student, error } = await supabaseAdmin
       .from('students')
-      .select('verification_code')
+      .select('verification_code, verification_code_expires')
       .eq('email', email)
       .single();
 
     if (error || !student || !student.verification_code) {
       return { valid: false, message: 'No OTP found or invalid email.' };
     }
+
+    // Check expiry
+    if (student.verification_code_expires && new Date(student.verification_code_expires) < new Date()) {
+      return { valid: false, message: 'OTP has expired. Please request a new one.' };
+    }
+
     const isMatch = student.verification_code.trim() === otp.trim();
     if (isMatch) {
       await clearOTP(email);
-      return { valid: true, message: 'OTP verified successfully!' };
+
+      // Generate a short-lived reset token as proof of OTP verification
+      const resetToken = generateResetToken(email);
+      return { valid: true, message: 'OTP verified successfully!', resetToken };
     }
     return { valid: false, message: 'Incorrect OTP.' };
   } catch (error) {
@@ -245,11 +260,50 @@ export async function verifyPasswordResetOTP(email: string, otp: string): Promis
   }
 }
 
+/**
+ * Generate a short-lived HMAC-based reset token (valid for 10 minutes)
+ */
+export function generateResetToken(email: string): string {
+  const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+  const payload = `${email}:${expiry}`;
+  const signature = crypto.createHmac('sha256', env.JWT_SECRET).update(payload).digest('hex');
+  // Base64-encode the payload + signature for transport
+  return Buffer.from(`${payload}:${signature}`).toString('base64');
+}
+
+/**
+ * Verify a reset token
+ */
+export function verifyResetToken(token: string, email: string): boolean {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const parts = decoded.split(':');
+    if (parts.length !== 3) return false;
+
+    const [tokenEmail, expiryStr, signature] = parts;
+    const expiry = parseInt(expiryStr, 10);
+
+    // Check email matches
+    if (tokenEmail !== email) return false;
+
+    // Check not expired
+    if (Date.now() > expiry) return false;
+
+    // Verify HMAC signature
+    const expectedSignature = crypto.createHmac('sha256', env.JWT_SECRET).update(`${tokenEmail}:${expiryStr}`).digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  } catch {
+    return false;
+  }
+}
+
 export default {
   generateOTP,
   storeOTPForSignup,
   verifyOTP,
   verifyPasswordResetOTP,
+  verifyResetToken,
+  generateResetToken,
   clearOTP,
   sendOTPEmail,
 };

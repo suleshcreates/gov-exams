@@ -161,7 +161,6 @@ export async function signup(data: {
     phone: string;
     password: string;
 }) {
-    console.log('=== FRONTEND SENDING ===', data);
     const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -283,11 +282,11 @@ export function isAuthenticated(): boolean {
 /**
  * Reset password for user
  */
-export async function resetPassword(email: string, newPassword: string) {
+export async function resetPassword(email: string, newPassword: string, resetToken: string) {
     const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword }),
+        body: JSON.stringify({ email, newPassword, resetToken }),
     });
 
     return response.json();

@@ -55,11 +55,13 @@ function createApp(): Application {
     // Apply general rate limiting to all API routes
     app.use('/api', apiLimiter);
 
-    // DEBUG: Log all requests
-    app.use((req, _res, next) => {
-        console.log(`[Request] ${req.method} ${req.url}`);
-        next();
-    });
+    // Request logging (debug only)
+    if (env.NODE_ENV === 'development') {
+        app.use((req, _res, next) => {
+            logger.debug(`[Request] ${req.method} ${req.url}`);
+            next();
+        });
+    }
 
     // ==================== ROUTES ====================
 
