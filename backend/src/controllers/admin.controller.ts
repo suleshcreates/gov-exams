@@ -352,12 +352,53 @@ export async function deleteSubjectController(
     try {
         const { id } = req.params;
 
-        // Delete dependent student_purchases first to avoid FK constraint
+        // 1. Get all question_set IDs for this subject
+        const { data: questionSets } = await supabaseAdmin
+            .from('question_sets')
+            .select('id')
+            .eq('subject_id', id);
+
+        const qsIds = (questionSets || []).map((qs: any) => qs.id);
+
+        if (qsIds.length > 0) {
+            // 2. Delete questions belonging to those question sets
+            await supabaseAdmin
+                .from('questions')
+                .delete()
+                .in('question_set_id', qsIds);
+
+            // 3. Delete special_exam_sets referencing those question sets
+            await supabaseAdmin
+                .from('special_exam_sets')
+                .delete()
+                .in('question_set_id', qsIds);
+
+            // 4. Delete the question sets themselves
+            await supabaseAdmin
+                .from('question_sets')
+                .delete()
+                .eq('subject_id', id);
+        }
+
+        // 5. Delete topics for this subject
+        await supabaseAdmin
+            .from('topics')
+            .delete()
+            .eq('subject_id', id);
+
+        // 6. Delete subject_pricing for this subject
+        await supabaseAdmin
+            .from('subject_pricing')
+            .delete()
+            .eq('subject_id', id);
+
+        // 7. Delete student_purchases for this subject
         await supabaseAdmin
             .from('student_purchases')
             .delete()
             .eq('subject_id', id);
 
+        // 8. Finally delete the subject itself
         const { error } = await supabaseAdmin
             .from('subjects')
             .delete()
@@ -365,7 +406,7 @@ export async function deleteSubjectController(
 
         if (error) throw error;
 
-        logger.info(`Subject deleted: ${id}`);
+        logger.info(`Subject deleted with full cascade: ${id}`);
         res.json({ success: true, message: 'Subject deleted' });
     } catch (error: any) {
         logger.error('Delete subject error:', error);

@@ -33,7 +33,7 @@ import {
     deleteTopicMaterialController,
     generateUploadUrlController
 } from '../controllers/topic.controller';
-import { createQuestionSetController, updateQuestionSetController } from '../controllers/questionSet.controller';
+import { createQuestionSetController, updateQuestionSetController, deleteQuestionSetController } from '../controllers/questionSet.controller';
 import { bulkCreateQuestionsController } from '../controllers/question.controller';
 import {
     createSpecialExamController,
@@ -101,6 +101,7 @@ router.post('/generate-upload-url', generateUploadUrlController);
 // Question Sets Management
 router.post('/question-sets', createQuestionSetController);
 router.put('/question-sets/:id', updateQuestionSetController);
+router.delete('/question-sets/:id', deleteQuestionSetController);
 
 // Questions Management
 router.post('/questions/bulk', bulkCreateQuestionsController);

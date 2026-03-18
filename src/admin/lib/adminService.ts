@@ -787,12 +787,20 @@ export const adminService = {
 
   async deleteQuestionSet(id: string) {
     try {
-      const { error } = await supabase
-        .from('question_sets')
-        .delete()
-        .eq('id', id);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/question-sets/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete question set');
+      }
+
       return true;
     } catch (error) {
       logger.error('[adminService] Error deleting question set:', error);

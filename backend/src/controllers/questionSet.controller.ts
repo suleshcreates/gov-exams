@@ -52,3 +52,38 @@ export const updateQuestionSetController = async (req: Request, res: Response) =
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+// Delete Question Set (with cascade)
+export const deleteQuestionSetController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        // Delete child questions first
+        await supabase
+            .from('questions')
+            .delete()
+            .eq('question_set_id', id);
+
+        // Delete special_exam_sets referencing this question set
+        await supabase
+            .from('special_exam_sets')
+            .delete()
+            .eq('question_set_id', id);
+
+        // Delete the question set
+        const { error } = await supabase
+            .from('question_sets')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Supabase error deleting question set:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        return res.status(200).json({ success: true, message: 'Question set deleted' });
+    } catch (err: any) {
+        console.error('Server error deleting question set:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
