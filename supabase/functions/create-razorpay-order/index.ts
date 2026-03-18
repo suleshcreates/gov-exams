@@ -3,10 +3,8 @@ const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
 Deno.serve(async (req) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
     try {
         const { amount, planId, receipt } = await req.json();
 
@@ -31,13 +29,11 @@ Deno.serve(async (req) => {
                 notes: { planId: planId || "" }
             })
         });
-
         const data = await resp.json();
         if (!resp.ok) {
             console.error("razorpay error:", data);
             return new Response(JSON.stringify({ error: data.error?.description || "Razorpay failed" }), { headers: corsHeaders, status: 400 });
         }
-
         return new Response(JSON.stringify(data), { headers: corsHeaders, status: 200 });
     } catch (err) {
         console.error("create-razorpay-order error:", err);

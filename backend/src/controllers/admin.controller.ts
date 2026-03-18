@@ -147,7 +147,7 @@ export async function getRecentExamCompletionsController(
         // 2. Fetch Special
         const { data: special, error: specError } = await supabaseAdmin
             .from('special_exam_results')
-            .select('id, user_auth_id, score, total_questions, accuracy, created_at, special_exam:special_exams(title), student:students(name)')
+            .select('id, user_auth_id, score, total_questions, accuracy, created_at, special_exam:special_exams(title), user_email')
             // Note: student relation might not exist directly if user_auth_id links to auth.users
             // We might need to fetch student name from 'students' table using user_email if available?
             // special_exam_results has 'user_email'.
@@ -351,6 +351,12 @@ export async function deleteSubjectController(
 ): Promise<void> {
     try {
         const { id } = req.params;
+
+        // Delete dependent student_purchases first to avoid FK constraint
+        await supabaseAdmin
+            .from('student_purchases')
+            .delete()
+            .eq('subject_id', id);
 
         const { error } = await supabaseAdmin
             .from('subjects')
@@ -734,6 +740,12 @@ export async function deletePlanTemplateController(
 ): Promise<void> {
     try {
         const { id } = req.params;
+
+        // Delete dependent user_plans first to avoid FK constraint
+        await supabaseAdmin
+            .from('user_plans')
+            .delete()
+            .eq('plan_template_id', id);
 
         const { error } = await supabaseAdmin
             .from('plan_templates')
