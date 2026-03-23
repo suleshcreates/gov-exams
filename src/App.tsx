@@ -53,6 +53,8 @@ import BulkImportQuestions from "./admin/pages/BulkImportQuestions";
 import AdminSpecialExams from "./admin/pages/AdminSpecialExams";
 import AdminSpecialExamSets from "./admin/pages/AdminSpecialExamSets";
 import AdminPYQ from "./admin/pages/AdminPYQ";
+import AdminTopicsTab from "./admin/pages/AdminTopicsTab";
+import AdminSubjectContent from "./admin/pages/AdminSubjectContent";
 import SupabaseTest from "./admin/pages/SupabaseTest";
 
 import { useSiteProtection } from "./hooks/useSiteProtection";
@@ -127,6 +129,8 @@ const AppContent = () => {
           <Route path="/admin/special-exams" element={<AdminLayout><AdminSpecialExams /></AdminLayout>} />
           <Route path="/admin/special-exams/:examId/sets" element={<AdminLayout><AdminSpecialExamSets /></AdminLayout>} />
           <Route path="/admin/pyq" element={<AdminLayout><AdminPYQ /></AdminLayout>} />
+          <Route path="/admin/topics" element={<AdminLayout><AdminTopicsTab /></AdminLayout>} />
+          <Route path="/admin/subject-content" element={<AdminLayout><AdminSubjectContent /></AdminLayout>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

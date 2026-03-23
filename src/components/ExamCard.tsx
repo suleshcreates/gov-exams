@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { Clock, FileText, Lock, BookMarked } from "lucide-react";
+import { Clock, Lock, Image } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Exam } from "@/data/mockData";
 
 interface ExamCardProps {
-  exam: Exam;
+  exam: Exam & { thumbnail_url?: string };
   index: number;
   isPurchased?: boolean;
   onPurchase?: (exam: Exam) => void;
@@ -17,54 +17,55 @@ const ExamCard = ({ exam, index, isPurchased, onPurchase }: ExamCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       whileHover={{ y: -8, scale: 1.02 }}
-      className="glass-card rounded-2xl p-4 sm:p-6 neon-border group relative overflow-hidden"
+      className="glass-card rounded-2xl neon-border group relative overflow-hidden"
     >
       <div className="absolute inset-0 gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
 
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-3 sm:mb-4">
-          <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:gradient-text transition-all">
+      {/* Thumbnail */}
+      {exam.thumbnail_url ? (
+        <div className="h-44 w-full overflow-hidden">
+          <img
+            src={exam.thumbnail_url}
+            alt={exam.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        </div>
+      ) : (
+        <div className="h-44 w-full bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 flex items-center justify-center">
+          <Image className="w-12 h-12 text-primary/30" />
+        </div>
+      )}
+
+      <div className="relative z-10 p-4 sm:p-6">
+        {/* Title + Price */}
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:gradient-text transition-all flex-1 pr-3">
             {exam.title}
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end shrink-0">
             {exam.price ? (
-              <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg border border-green-100">
-                <span className="text-xs font-bold text-green-700">₹{exam.price}</span>
-              </div>
+              <span className="text-2xl font-extrabold text-primary">₹{exam.price}</span>
             ) : (
-              <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg">
-                <span className="text-xs font-bold text-slate-600">Free</span>
-              </div>
+              <span className="text-xl font-bold text-green-600">Free</span>
             )}
           </div>
         </div>
 
-        <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 line-clamp-2">
+        {/* Description */}
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
           {exam.description}
         </p>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 text-xs sm:text-sm">
-            <BookMarked className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-            <span className="text-muted-foreground">
-              5 Question Sets
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs sm:text-sm">
-            <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-            <span className="text-muted-foreground">
-              20 MCQs/Set
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs sm:text-sm col-span-2">
-            <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-            <span className="text-muted-foreground">
-              {exam.timeAllowed} minutes • {exam.validity_days ? `${exam.validity_days} Days Validity` : 'Lifetime Access'}
-            </span>
-          </div>
+        {/* Validity Badge */}
+        <div className="flex items-center gap-2 text-xs sm:text-sm mb-5">
+          <Clock className="w-3.5 h-3.5 text-primary" />
+          <span className="text-muted-foreground">
+            {exam.validity_days ? `${exam.validity_days} Days Validity` : 'Lifetime Access'}
+          </span>
         </div>
 
-        <div className="flex items-center justify-end gap-4">
+        {/* Action */}
+        <div className="flex items-center justify-end">
           {exam.isPaid && !isPurchased ? (
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -73,7 +74,7 @@ const ExamCard = ({ exam, index, isPurchased, onPurchase }: ExamCardProps) => {
                 e.preventDefault();
                 onPurchase?.(exam);
               }}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-accent text-white font-medium neon-glow text-sm sm:text-base whitespace-nowrap flex items-center gap-2"
+              className="px-5 py-2.5 rounded-full gradient-accent text-white font-medium neon-glow text-sm whitespace-nowrap flex items-center gap-2"
             >
               <Lock className="w-4 h-4" />
               Unlock Now
@@ -83,7 +84,7 @@ const ExamCard = ({ exam, index, isPurchased, onPurchase }: ExamCardProps) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-primary text-white font-medium neon-glow text-sm sm:text-base whitespace-nowrap"
+                className="px-5 py-2.5 rounded-full gradient-primary text-white font-medium neon-glow text-sm whitespace-nowrap"
               >
                 {isPurchased ? 'Start Learning' : 'View Details'}
               </motion.button>

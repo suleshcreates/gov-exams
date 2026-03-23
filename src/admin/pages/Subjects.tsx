@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import logger from '@/lib/logger';
-import { Link } from 'react-router-dom';
 import { adminService } from '../lib/adminService';
-import { Plus, Edit, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, Upload, Loader2, Image } from 'lucide-react';
 
 interface Subject {
   id: string;
@@ -10,6 +9,7 @@ interface Subject {
   description: string | null;
   price: number;
   validity_days: number | null;
+  thumbnail_url: string | null;
   created_at: string;
 }
 
@@ -18,8 +18,15 @@ const Subjects = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', price: 0, validityDays: 365 });
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    validityDays: 365,
+    thumbnailUrl: ''
+  });
   const [saving, setSaving] = useState(false);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
 
   useEffect(() => {
     loadSubjects();
@@ -44,11 +51,12 @@ const Subjects = () => {
         name: subject.name,
         description: subject.description || '',
         price: subject.price || 0,
-        validityDays: subject.validity_days || 365
+        validityDays: subject.validity_days || 365,
+        thumbnailUrl: subject.thumbnail_url || ''
       });
     } else {
       setEditingSubject(null);
-      setFormData({ name: '', description: '', price: 0, validityDays: 365 });
+      setFormData({ name: '', description: '', price: 0, validityDays: 365, thumbnailUrl: '' });
     }
     setShowModal(true);
   };
@@ -56,7 +64,23 @@ const Subjects = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingSubject(null);
-    setFormData({ name: '', description: '', price: 0, validityDays: 365 });
+    setFormData({ name: '', description: '', price: 0, validityDays: 365, thumbnailUrl: '' });
+  };
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingThumb(true);
+    try {
+      const publicUrl = await adminService.uploadSpecialExamThumbnail(file);
+      setFormData(prev => ({ ...prev, thumbnailUrl: publicUrl }));
+    } catch (error) {
+      logger.error('Error uploading thumbnail:', error);
+      alert('Failed to upload thumbnail');
+    } finally {
+      setUploadingThumb(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,14 +99,16 @@ const Subjects = () => {
           formData.name,
           formData.description,
           formData.price,
-          formData.validityDays
+          formData.validityDays,
+          formData.thumbnailUrl
         );
       } else {
         await adminService.createSubject(
           formData.name,
           formData.description,
           formData.price,
-          formData.validityDays
+          formData.validityDays,
+          formData.thumbnailUrl
         );
       }
       handleCloseModal();
@@ -96,7 +122,7 @@ const Subjects = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"? This will also delete all associated question sets and questions.`)) {
+    if (!confirm(`Are you sure you want to delete "${name}"? This will also delete all associated topics and question sets.`)) {
       return;
     }
 
@@ -105,7 +131,7 @@ const Subjects = () => {
       loadSubjects();
     } catch (error) {
       logger.error('Error deleting subject:', error);
-      alert('Failed to delete subject. Make sure there are no associated question sets.');
+      alert('Failed to delete subject.');
     }
   };
 
@@ -139,43 +165,52 @@ const Subjects = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {subjects.map((subject) => (
-            <div key={subject.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+            <div key={subject.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+              {/* Thumbnail */}
+              {subject.thumbnail_url ? (
+                <div className="h-40 w-full overflow-hidden">
+                  <img
+                    src={subject.thumbnail_url}
+                    alt={subject.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="h-40 w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                  <Image className="w-12 h-12 text-blue-300" />
+                </div>
+              )}
+
               <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{subject.name}</h3>
-                    {subject.description && (
-                      <p className="text-sm text-gray-600 mt-2">{subject.description}</p>
-                    )}
-                    <div className="mt-2 flex gap-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Price: ₹{subject.price || 0}
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Validity: {subject.validity_days || 'Lifetime'} days
-                      </span>
-                    </div>
-                  </div>
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900">{subject.name}</h3>
+                  <span className="text-xl font-bold text-green-600">₹{subject.price || 0}</span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200">
-                  <Link
-                    to={`/admin/subjects/${subject.id}`}
-                    className="flex-1 text-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium"
-                  >
-                    View Sets
-                  </Link>
+                {subject.description && (
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{subject.description}</p>
+                )}
+
+                <div className="flex gap-2 mb-4">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {subject.validity_days ? `${subject.validity_days} Days` : 'Lifetime'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
                   <button
                     onClick={() => handleOpenModal(subject)}
-                    className="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium"
                   >
-                    <Edit size={18} />
+                    <Edit size={16} />
+                    Edit
                   </button>
                   <button
                     onClick={() => handleDelete(subject.id, subject.name)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
+                    Delete
                   </button>
                 </div>
               </div>
@@ -187,7 +222,7 @@ const Subjects = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">
                 {editingSubject ? 'Edit Subject' : 'Add New Subject'}
@@ -203,7 +238,7 @@ const Subjects = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Mathematics"
+                    placeholder="e.g., Railway RRB"
                     required
                   />
                 </div>
@@ -245,6 +280,45 @@ const Subjects = () => {
                     rows={3}
                   />
                 </div>
+
+                {/* Thumbnail Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Thumbnail Image</label>
+                  {formData.thumbnailUrl ? (
+                    <div className="relative">
+                      <img
+                        src={formData.thumbnailUrl}
+                        alt="Thumbnail Preview"
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, thumbnailUrl: '' })}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+                      {uploadingThumb ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                          <span className="text-sm text-gray-500">Click to upload thumbnail</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleThumbnailUpload}
+                        className="hidden"
+                        disabled={uploadingThumb}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 pt-6">
@@ -259,7 +333,7 @@ const Subjects = () => {
                 <button
                   type="submit"
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
-                  disabled={saving}
+                  disabled={saving || uploadingThumb}
                 >
                   {saving ? 'Saving...' : editingSubject ? 'Update' : 'Create'}
                 </button>

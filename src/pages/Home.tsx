@@ -35,6 +35,7 @@ interface Subject {
   description: string;
   price?: number;
   validity_days?: number | null;
+  thumbnail_url?: string | null;
   created_at: string;
 }
 
@@ -416,7 +417,8 @@ const Home = () => {
                             passingScore: 85,
                             isPaid: true,
                             questionSets: [],
-                            validity_days: subject.validity_days
+                            validity_days: subject.validity_days,
+                            thumbnail_url: subject.thumbnail_url || null
                           }}
                           index={index}
                           isPurchased={isPurchased}

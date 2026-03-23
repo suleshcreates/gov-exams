@@ -321,26 +321,60 @@ export const getPYQDownloadController = async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'PYQ not found' });
         }
 
-        // Extract filename from public URL (assuming it's solely the file name at the end)
-        // Public URL format: .../object/public/pyq-pdfs/<filename>
-        const fileName = pyq.pdf_url.split('/').pop();
+        logger.info(`[PYQ Download] pdf_url: ${pyq.pdf_url}`);
 
-        if (!fileName) {
-            return res.status(500).json({ error: 'Invalid file path' });
+        // Extract filename from URL - handle various formats:
+        // 1. Public URL: https://xxx.supabase.co/storage/v1/object/public/pyq-pdfs/<filename>
+        // 2. Direct path: pyq-pdfs/<filename>  
+        // 3. Just filename: <filename>
+        let fileName: string | null = null;
+        
+        try {
+            const url = new URL(pyq.pdf_url);
+            // Extract path after the bucket name
+            const pathMatch = url.pathname.match(/\/pyq-pdfs\/(.+)$/);
+            if (pathMatch) {
+                fileName = decodeURIComponent(pathMatch[1]);
+            } else {
+                // Fallback: last segment of path
+                fileName = decodeURIComponent(url.pathname.split('/').pop() || '');
+            }
+        } catch {
+            // Not a URL, treat as direct path or filename
+            if (pyq.pdf_url.includes('/')) {
+                fileName = pyq.pdf_url.split('/').pop() || null;
+            } else {
+                fileName = pyq.pdf_url;
+            }
         }
 
-        // Generate signed URL
+        if (!fileName) {
+            logger.error('[PYQ Download] Could not extract filename from:', pyq.pdf_url);
+            // Fallback: return the stored URL directly (works if bucket is public)
+            return res.status(200).json({
+                downloadUrl: pyq.pdf_url,
+                title: pyq.title
+            });
+        }
+
+        logger.info(`[PYQ Download] Extracted filename: ${fileName}`);
+
+        // Try to generate a signed URL first
         const { data: signedData, error: signedError } = await supabase.storage
             .from('pyq-pdfs')
             .createSignedUrl(fileName, 3600); // 1 hour access
 
-        if (signedError) {
-            logger.error('Error creating signed URL:', signedError);
-            return res.status(500).json({ error: 'Failed to generate secure link' });
+        if (signedError || !signedData?.signedUrl) {
+            logger.warn('[PYQ Download] Signed URL failed, falling back to public URL:', signedError?.message);
+            // Fallback: return the stored public URL directly
+            return res.status(200).json({
+                downloadUrl: pyq.pdf_url,
+                title: pyq.title
+            });
         }
 
         return res.status(200).json({
-            downloadUrl: signedData.signedUrl, // This is now a signed, temporary URL
+            downloadUrl: signedData.signedUrl,
             title: pyq.title
         });
     } catch (err: any) {

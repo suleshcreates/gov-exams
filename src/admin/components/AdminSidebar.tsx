@@ -11,7 +11,9 @@ import {
     Menu,
     X,
     Award,
-    FileCheck
+    FileCheck,
+    Layers,
+    FolderOpen
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -21,6 +23,8 @@ const AdminSidebar = () => {
         { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/admin/students', icon: Users, label: 'Students' },
         { path: '/admin/subjects', icon: BookOpen, label: 'Subjects' },
+        { path: '/admin/topics', icon: Layers, label: 'Topics' },
+        { path: '/admin/subject-content', icon: FolderOpen, label: 'Subject Content' },
         { path: '/admin/special-exams', icon: Award, label: 'Special Exams' },
         { path: '/admin/pyq', icon: FileCheck, label: 'PYQ PDFs' },
         { path: '/admin/pricing/plans', icon: DollarSign, label: 'Pricing' },

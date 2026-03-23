@@ -25,6 +25,7 @@ const AdminPYQ = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingPYQ, setEditingPYQ] = useState<PYQ | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [uploadingThumb, setUploadingThumb] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [formData, setFormData] = useState({
         title: '',
@@ -33,6 +34,7 @@ const AdminPYQ = () => {
         year: new Date().getFullYear(),
         price: 0,
         pdf_url: '',
+        thumbnail_url: '',
         page_count: 0,
         file_size_mb: 0
     });
@@ -108,6 +110,22 @@ const AdminPYQ = () => {
         }
     };
 
+    const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingThumb(true);
+        try {
+            const publicUrl = await adminService.uploadSpecialExamThumbnail(file);
+            setFormData(prev => ({ ...prev, thumbnail_url: publicUrl }));
+        } catch (error) {
+            console.error('Error uploading thumbnail:', error);
+            alert('Failed to upload thumbnail');
+        } finally {
+            setUploadingThumb(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -153,6 +171,7 @@ const AdminPYQ = () => {
             year: new Date().getFullYear(),
             price: 0,
             pdf_url: '',
+            thumbnail_url: '',
             page_count: 0,
             file_size_mb: 0
         });
@@ -199,6 +218,7 @@ const AdminPYQ = () => {
             year: pyq.year || new Date().getFullYear(),
             price: pyq.price,
             pdf_url: pyq.pdf_url,
+            thumbnail_url: pyq.thumbnail_url || '',
             page_count: pyq.page_count || 0,
             file_size_mb: pyq.file_size_mb || 0
         });
@@ -411,6 +431,34 @@ const AdminPYQ = () => {
                                             </div>
                                         )}
                                     </div>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail Image</label>
+                                {formData.thumbnail_url ? (
+                                    <div className="flex items-center gap-2 p-2 bg-green-50 text-green-700 rounded-lg text-sm">
+                                        <img src={formData.thumbnail_url} alt="Thumbnail" className="w-16 h-16 object-cover rounded" />
+                                        <span className="flex-1">Thumbnail uploaded</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, thumbnail_url: '' })}
+                                            className="text-red-600 text-xs"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200">
+                                        {uploadingThumb ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload size={16} />}
+                                        {uploadingThumb ? 'Uploading...' : 'Upload Thumbnail'}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleThumbnailUpload}
+                                            className="hidden"
+                                            disabled={uploadingThumb}
+                                        />
+                                    </label>
                                 )}
                             </div>
                             <div className="flex gap-3 pt-4">

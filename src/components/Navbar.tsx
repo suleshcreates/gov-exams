@@ -60,7 +60,11 @@ const Navbar = () => {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-md border-b border-border/30"
+      className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md transition-colors duration-300 ${
+        isOnHero
+          ? 'bg-transparent border-b border-white/10'
+          : 'bg-gray-900/95 border-b border-gray-700/50 shadow-lg'
+      }`}
     >
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">

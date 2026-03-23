@@ -310,7 +310,7 @@ export const adminService = {
     }
   },
 
-  async createSubject(name: string, description: string, price: number, validityDays: number | null) {
+  async createSubject(name: string, description: string, price: number, validityDays: number | null, thumbnailUrl?: string) {
     try {
       const token = localStorage.getItem('admin_access_token');
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/subjects`, {
@@ -319,7 +319,7 @@ export const adminService = {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, description, price, validity_days: validityDays }),
+        body: JSON.stringify({ name, description, price, validity_days: validityDays, thumbnail_url: thumbnailUrl || null }),
       });
 
       if (!response.ok) {
@@ -335,7 +335,7 @@ export const adminService = {
     }
   },
 
-  async updateSubject(id: string, name: string, description: string, price: number, validityDays: number | null) {
+  async updateSubject(id: string, name: string, description: string, price: number, validityDays: number | null, thumbnailUrl?: string) {
     try {
       const token = localStorage.getItem('admin_access_token');
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/subjects/${id}`, {
@@ -344,7 +344,7 @@ export const adminService = {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, description, price, validity_days: validityDays }),
+        body: JSON.stringify({ name, description, price, validity_days: validityDays, thumbnail_url: thumbnailUrl || null }),
       });
 
       if (!response.ok) {
