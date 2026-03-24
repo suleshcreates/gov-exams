@@ -70,7 +70,7 @@ const heroSlides = [
 ];
 
 const Home = () => {
-  const { auth } = useAuth();
+  const { auth, openAuthModal } = useAuth();
   const location = useLocation();
   const [examsLoading, setExamsLoading] = useState(true);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -347,9 +347,6 @@ const Home = () => {
       {/* Motivational Section */}
       <MotivationSection />
 
-      {/* Academy Journey Timeline */}
-      <AcademyJourney />
-
       {/* Available Subjects (Moved Below Motivation) */}
       <section id="exams-section" className="py-20 bg-background">
         <div className="container mx-auto px-6">
@@ -369,11 +366,12 @@ const Home = () => {
           {!auth.isAuthenticated ? (
             <div className="w-full flex flex-col items-center justify-center py-16">
               <p className="text-lg mb-6">Login to view available exam sets.</p>
-              <a href="/login">
-                <button className="px-8 py-4 rounded-full gradient-primary text-white font-bold text-lg hover:scale-105 transition-transform neon-glow">
-                  Login to View Exams
-                </button>
-              </a>
+              <button 
+                onClick={() => openAuthModal('login')} 
+                className="px-8 py-4 rounded-full gradient-primary text-white font-bold text-lg hover:scale-105 transition-transform neon-glow"
+              >
+                Login to View Exams
+              </button>
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -463,6 +461,9 @@ const Home = () => {
           )}
         </div>
       </section>
+
+      {/* Academy Journey Timeline */}
+      <AcademyJourney />
 
       {/* YouTube Section */}
       <YouTubeSection

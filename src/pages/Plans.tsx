@@ -23,7 +23,7 @@ interface PlanTemplate {
 }
 
 const Plans = () => {
-  const { auth } = useAuth();
+  const { auth, openAuthModal } = useAuth();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [planTemplates, setPlanTemplates] = useState<PlanTemplate[]>([]);
@@ -104,7 +104,7 @@ const Plans = () => {
         description: "Please login to purchase a plan.",
         variant: "destructive",
       });
-      navigate("/login");
+      openAuthModal('login');
       return;
     }
 

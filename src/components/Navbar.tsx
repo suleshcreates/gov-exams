@@ -10,15 +10,13 @@ const Navbar = () => {
   const location = useLocation();
   const { visible } = useNavbar();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { auth, signOut } = useAuth();
+  const { auth, signOut, openAuthModal } = useAuth();
 
   const onLogout = async () => {
     await signOut();
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
-  const isLoginPage = location.pathname === "/login";
-  const isSignupPage = location.pathname === "/signup";
   const isCompleteProfilePage = location.pathname === "/complete-profile";
 
   if (!visible) {
@@ -39,8 +37,29 @@ const Navbar = () => {
     { path: "/profile", label: "Profile", icon: User },
   ];
 
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const controlNavbar = () => {
+      if (typeof window !== 'undefined') {
+        if (window.scrollY > lastScrollY && window.scrollY > 100) {
+          // if scroll down hide the navbar
+          setIsVisible(false);
+        } else {
+          // if scroll up show the navbar
+          setIsVisible(true);
+        }
+        setLastScrollY(window.scrollY);
+      }
+    };
+
+    window.addEventListener('scroll', controlNavbar);
+    return () => window.removeEventListener('scroll', controlNavbar);
+  }, [lastScrollY]);
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg">
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
@@ -62,20 +81,20 @@ const Navbar = () => {
             {!auth.isAuthenticated || !isProfileComplete ? (
               <>
                 {!isCompleteProfilePage && (
-                  <>
-                    <Link to="/login">
-                      <button className="px-6 py-2.5 rounded-full gradient-primary text-white font-bold neon-glow shadow-md">
-                        Login
-                      </button>
-                    </Link>
-                    {isLoginPage && (
-                      <Link to="/signup">
-                        <button className="ml-2 px-6 py-2.5 rounded-full glass-card border font-bold hover:bg-white/10 transition">
-                          Signup
-                        </button>
-                      </Link>
-                    )}
-                  </>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => openAuthModal('login')}
+                      className="px-6 py-2.5 rounded-full gradient-primary text-white font-bold neon-glow shadow-md hover:scale-105 transition-transform"
+                    >
+                      Login
+                    </button>
+                    <button 
+                      onClick={() => openAuthModal('signup')}
+                      className="px-6 py-2.5 rounded-full glass-card border font-bold hover:bg-white/10 transition text-gray-200"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
                 )}
               </>
             ) : (
@@ -137,16 +156,20 @@ const Navbar = () => {
                 {!auth.isAuthenticated || !isProfileComplete ? (
                   <>
                     {!isCompleteProfilePage && (
-                      <>
-                        <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                          <button className="w-full px-4 py-3 rounded-full gradient-primary text-white font-bold neon-glow shadow-md text-center">Login</button>
-                        </Link>
-                        {isLoginPage && (
-                          <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
-                            <button className="w-full mt-2 px-4 py-3 rounded-full glass-card border font-bold hover:bg-white/10 transition text-center">Signup</button>
-                          </Link>
-                        )}
-                      </>
+                      <div className="flex flex-col gap-2">
+                        <button 
+                          onClick={() => { openAuthModal('login'); setIsMenuOpen(false); }}
+                          className="w-full px-4 py-3 rounded-full gradient-primary text-white font-bold neon-glow shadow-md text-center"
+                        >
+                          Login
+                        </button>
+                        <button 
+                          onClick={() => { openAuthModal('signup'); setIsMenuOpen(false); }}
+                          className="w-full px-4 py-3 rounded-full glass-card border font-bold hover:bg-white/10 transition text-center text-gray-200"
+                        >
+                          Signup
+                        </button>
+                      </div>
                     )}
                   </>
                 ) : (

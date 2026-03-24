@@ -25,6 +25,9 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   verifyOTP: (email: string, otp: string) => { valid: boolean; message: string };
   resetPassword: (email: string, newPassword: string, resetToken: string) => Promise<void>;
+  authModalType: 'login' | 'signup' | 'forgot-password' | null;
+  openAuthModal: (type: 'login' | 'signup' | 'forgot-password') => void;
+  closeAuthModal: () => void;
 }
 
 interface SignUpData {
@@ -40,6 +43,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authModalType, setAuthModalType] = useState<'login' | 'signup' | 'forgot-password' | null>(null);
+
+  const openAuthModal = (type: 'login' | 'signup' | 'forgot-password') => {
+    setAuthModalType(type);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalType(null);
+  };
 
   // Load user profile on mount if token exists
   useEffect(() => {
@@ -78,14 +90,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Session is no longer valid (logged in on another device)
           api.clearTokens();
           setUser(null);
-          window.location.href = '/login';
+          window.location.href = '/';
         }
       } catch (error) {
         logger.error('[AuthContext] Session validation error:', error);
         // On error, consider session invalid
         api.clearTokens();
         setUser(null);
-        window.location.href = '/login';
+        window.location.href = '/';
       }
     };
 
@@ -241,8 +253,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ auth, signUp, signIn, signOut, refreshUser, verifyOTP, resetPassword }}>
-      {children}
+    <AuthContext.Provider value={{ auth, signUp, signIn, signOut, refreshUser,        verifyOTP,
+        resetPassword,
+        authModalType,
+        openAuthModal,
+        closeAuthModal
+      }}
+    >  {children}
     </AuthContext.Provider>
   );
 };

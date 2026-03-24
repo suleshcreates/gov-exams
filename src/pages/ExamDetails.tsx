@@ -30,7 +30,7 @@ interface Topic {
 }
 
 const ExamDetails = () => {
-  const { auth } = useAuth();
+  const { auth, openAuthModal } = useAuth();
   const { examId } = useParams();
   const navigate = useNavigate();
   const [hasAccess, setHasAccess] = useState(false);
@@ -139,7 +139,7 @@ const ExamDetails = () => {
       <div className="min-h-screen pt-24 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Please login to access content.</h1>
-          <a href="/login"><button className="px-6 py-3 rounded-full gradient-primary text-white font-bold">Login</button></a>
+          <button onClick={() => openAuthModal('login')} className="px-6 py-3 rounded-full gradient-primary text-white font-bold">Login</button>
         </div>
       </div>
     );

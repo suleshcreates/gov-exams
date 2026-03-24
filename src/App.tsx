@@ -14,9 +14,7 @@ import History from "./pages/History";
 import Profile from "./pages/Profile";
 import ExamReview from "./pages/ExamReview";
 import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
+import AuthModal from "./components/AuthModal";
 import Plans from "./pages/Plans";
 import Exams from "./pages/Exams";
 import PYQ from "./pages/PYQ";
@@ -73,13 +71,9 @@ const AppContent = () => {
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
       {!hideLayout && <Navbar />} {/* 👈 Hide Navbar on ExamStart, LearningConsole and Admin */}
+      <AuthModal />
       <AnimatePresence mode="wait">
         <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-
           {/* Policy Pages */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />

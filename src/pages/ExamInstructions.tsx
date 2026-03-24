@@ -31,7 +31,7 @@ const ExamInstructions = () => {
   const { examId, setId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { auth } = useAuth();
+  const { auth, openAuthModal } = useAuth();
   const [language, setLanguage] = useState("english");
   const [agreedToInstructions, setAgreedToInstructions] = useState(false);
   const [showWarnings, setShowWarnings] = useState(false);
@@ -311,7 +311,7 @@ const ExamInstructions = () => {
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Please login to access this exam.</h1>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => openAuthModal('login')}
             className="px-6 py-3 rounded-full gradient-primary text-white font-bold"
           >
             Login

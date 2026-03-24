@@ -21,7 +21,7 @@ const ExamStart = () => {
   const { examId, setId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { auth } = useAuth();
+  const { auth, openAuthModal } = useAuth();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [flagged, setFlagged] = useState<boolean[]>([]);
@@ -540,7 +540,7 @@ const ExamStart = () => {
     const verifyAccess = async () => {
       if (!auth.user || !examId) {
         setCheckingAccess(false);
-        navigate("/login");
+        openAuthModal('login');
         return;
       }
 
