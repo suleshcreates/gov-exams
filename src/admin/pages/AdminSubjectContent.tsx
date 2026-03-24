@@ -57,6 +57,10 @@ export default function AdminSubjectContent() {
   const [videoProgress, setVideoProgress] = useState(0);
   const [pdfProgress, setPdfProgress] = useState(0);
 
+  // Topic Materials state
+  const [topicMaterials, setTopicMaterials] = useState<any[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+
   // Load subjects on mount
   useEffect(() => {
     loadSubjects();
@@ -75,14 +79,28 @@ export default function AdminSubjectContent() {
     }
   }, [selectedSubjectId]);
 
-  // Load question sets when topic changes
+  // Load question sets and materials when topic changes
   useEffect(() => {
     if (selectedTopicId && selectedSubjectId) {
       loadQuestionSets();
+      loadTopicMaterials();
     } else {
       setQuestionSets([]);
+      setTopicMaterials([]);
     }
   }, [selectedTopicId]);
+
+  const loadTopicMaterials = async () => {
+    try {
+      setMaterialsLoading(true);
+      const materials = await adminService.getTopicMaterials(selectedTopicId);
+      setTopicMaterials(materials);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setMaterialsLoading(false);
+    }
+  };
 
   const loadSubjects = async () => {
     try {
@@ -213,6 +231,9 @@ export default function AdminSubjectContent() {
       return;
     }
 
+    const title = window.prompt("Enter a title for this PDF (e.g., 'Class Notes', 'Worksheet'):", file.name.replace(".pdf", ""));
+    if (!title) return; // Cancelled
+
     try {
       setUploadingPDF(true);
       setPdfProgress(0);
@@ -221,22 +242,22 @@ export default function AdminSubjectContent() {
         (progress) => setPdfProgress(Math.round(progress))
       );
 
-      await adminService.updateTopic(selectedTopicId, {
-        pdf_url: pdfUrl,
-        video_url: selectedTopic?.video_url || "",
-        video_duration: selectedTopic?.video_duration || 0,
-        title: selectedTopic?.title || "",
-        description: selectedTopic?.description || "",
-        order_index: selectedTopic?.order_index || 1
+      await adminService.createTopicMaterial({
+          topic_id: selectedTopicId,
+          type: "pdf",
+          title: title,
+          url: pdfUrl,
+          order_index: topicMaterials.length + 1
       });
 
       toast.success("PDF uploaded successfully");
-      loadTopics(selectedSubjectId);
+      loadTopicMaterials();
     } catch (error) {
       toast.error("Failed to upload PDF");
     } finally {
       setUploadingPDF(false);
       setPdfProgress(0);
+      if (e.target) e.target.value = ''; // Reset input
     }
   };
 
@@ -537,58 +558,110 @@ export default function AdminSubjectContent() {
 
               {/* PDF Notes Card */}
               <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                <div className="p-4 bg-red-50 border-b border-red-100 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-red-600" />
-                  <h3 className="font-semibold text-red-900">PDF Notes</h3>
+                <div className="p-4 bg-red-50 border-b border-red-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-red-600" />
+                    <h3 className="font-semibold text-red-900">PDF Notes</h3>
+                  </div>
+                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                    {topicMaterials.filter(m => m.type === 'pdf').length + (selectedTopic.pdf_url ? 1 : 0)} files
+                  </span>
                 </div>
-                <div className="p-4">
-                  {selectedTopic.pdf_url ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg">
-                        <FileText className="w-4 h-4" />
-                        <span>PDF uploaded</span>
+                <div className="p-4 space-y-4">
+                  
+                  {/* Legacy Primary PDF (if exists and hasn't been migrated yet) */}
+                  {selectedTopic.pdf_url && (
+                    <div className="flex items-center justify-between bg-red-50/50 p-3 rounded-lg border border-red-100">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-red-500" />
+                        <span className="text-sm font-medium text-gray-700">Primary Topic PDF</span>
                       </div>
-                      <a
-                        href={selectedTopic.pdf_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline block"
-                      >
-                        View PDF →
-                      </a>
-                      <button
-                        onClick={handleRemovePDF}
-                        className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-sm text-gray-500">No PDF uploaded</p>
-                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-red-400 hover:bg-red-50/50 transition-colors">
-                        {uploadingPDF ? (
-                          <div className="text-center">
-                            <Loader2 className="w-5 h-5 animate-spin text-red-500 mx-auto" />
-                            <span className="text-xs text-red-600 mt-1">{pdfProgress}%</span>
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="w-5 h-5 text-gray-400" />
-                            <span className="text-xs text-gray-500 mt-1">Upload PDF</span>
-                          </>
-                        )}
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={handlePDFUpload}
-                          className="hidden"
-                          disabled={uploadingPDF}
-                        />
-                      </label>
+                      <div className="flex items-center gap-3">
+                        <a
+                          href={selectedTopic.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          View
+                        </a>
+                        <button
+                          onClick={handleRemovePDF}
+                          className="text-slate-400 hover:text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
+
+                  {/* New Material PDFs */}
+                  {materialsLoading ? (
+                       <div className="flex justify-center py-4">
+                         <Loader2 className="w-5 h-5 animate-spin text-red-500" />
+                       </div>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {topicMaterials.filter(m => m.type === 'pdf').map(material => (
+                        <div key={material.id} className="flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                          <div className="flex items-center gap-2 truncate pr-2">
+                            <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-sm font-medium text-gray-700 truncate">{material.title}</span>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <a
+                              href={material.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline"
+                            >
+                              View
+                            </a>
+                            <button
+                              onClick={async () => {
+                                if (window.confirm("Remove this PDF?")) {
+                                  try {
+                                    await adminService.deleteTopicMaterial(material.id);
+                                    toast.success("PDF removed");
+                                    loadTopicMaterials();
+                                  } catch (error) {
+                                    toast.error("Failed to remove PDF");
+                                  }
+                                }
+                              }}
+                              className="text-slate-400 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload Dropzone Always Available */}
+                  <div className="pt-2">
+                    <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-red-400 hover:bg-red-50/50 transition-colors">
+                      {uploadingPDF ? (
+                        <div className="text-center">
+                          <Loader2 className="w-5 h-5 animate-spin text-red-500 mx-auto" />
+                          <span className="text-xs text-red-600 mt-1">{pdfProgress}%</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Upload className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-600 font-medium">Upload PDF Note</span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={handlePDFUpload}
+                        className="hidden"
+                        disabled={uploadingPDF}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>

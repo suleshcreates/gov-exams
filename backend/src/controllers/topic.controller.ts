@@ -331,12 +331,38 @@ export const getTopicMaterialPDFController = async (req: Request, res: Response)
             return res.status(400).json({ error: 'Material is not a PDF' });
         }
 
-        // If it's a Supabase URL, we can try to sign it, otherwise return as is
-        // For now, let's just return the URL directly since they are likely public or external
-        // If we need security, we should implement signing logic similar to above if it matches our bucket
+        // Extract filename from the Supabase public URL (assuming it comes from topic-pdfs bucket)
+        let downloadUrl = material.url;
+        
+        try {
+            // Check if the URL is a Supabase storage URL
+            if (material.url.includes('supabase.co/storage/v1/object/public/')) {
+                // Determine the bucket ("topic-pdfs" or others) from the URL
+                const urlParts = material.url.split('supabase.co/storage/v1/object/public/');
+                if (urlParts.length > 1) {
+                    const pathParts = urlParts[1].split('/');
+                    const bucket = pathParts[0];
+                    const fileName = pathParts.slice(1).join('/');
+
+                    if (bucket && fileName) {
+                        // Create a signed URL valid for 2 hours
+                        const { data, error: signError } = await supabase.storage
+                            .from(bucket)
+                            .createSignedUrl(fileName, 7200);
+
+                        if (!signError && data?.signedUrl) {
+                            downloadUrl = data.signedUrl;
+                        }
+                    }
+                }
+            }
+        } catch (urlError) {
+            console.warn('Could not parse or sign URL for material:', material.url);
+            // Fall back to the public URL if signing fails
+        }
 
         return res.status(200).json({
-            downloadUrl: material.url
+            downloadUrl: downloadUrl
         });
 
     } catch (err: any) {
@@ -456,10 +482,11 @@ export const getStudentExamHistoryController = async (req: Request, res: Respons
         const user = (req as any).user;
         const userPhone = user.phone;
         const userId = user.auth_user_id || user.id;
+        const isAdminFetch = req.query.admin_fetch === 'true'; // Check for admin_fetch query parameter
 
-        try {
-            fs.appendFileSync('history_debug.log', `[${new Date().toISOString()}] Start History Fetch. User: ${userPhone}, ID: ${userId}\n`);
-        } catch (e) { }
+        if (isAdminFetch) {
+            console.log(`Admin fetching history for student: ${userId}`);
+        }
 
         // 1. Fetch Regular Exam Results
         const { data: regularHistory, error: regularError } = await supabase

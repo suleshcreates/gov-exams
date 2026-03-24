@@ -12,9 +12,7 @@ import {
     ArrowLeft,
     Flag,
     Star,
-    MessageCircle,
     BookOpen,
-    Info,
     Share2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,7 +58,7 @@ const TopicLearningConsole = () => {
     const [activeContent, setActiveContent] = useState<{ type: 'video' | 'pdf', url: string, title: string } | null>(null);
     const [isVideoCompleted, setIsVideoCompleted] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'qa'>('overview');
+
 
     // Load Data
     useEffect(() => {
@@ -98,7 +96,8 @@ const TopicLearningConsole = () => {
 
                 // 5. Get Sets
                 const allSets = await adminService.getQuestionSets();
-                const topicSets = allSets.filter(s => s.topic_id === topicId);
+                const topicSets = allSets.filter(s => s.topic_id === topicId)
+                    .sort((a, b) => a.set_number - b.set_number);
                 setQuestionSets(topicSets);
 
                 // Set Initial Content (Main Video)
@@ -302,132 +301,53 @@ const TopicLearningConsole = () => {
                         </div>
                     </div>
 
-                    {/* LEARNING CONTEXT TABS */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden min-h-[300px]">
-                        <div className="flex items-center border-b border-slate-100 px-4">
-                            <button
-                                onClick={() => setActiveTab('overview')}
-                                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'overview' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Overview
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('notes')}
-                                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'notes' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            >
-                                <span className="flex items-center gap-2">
-                                    Notes
-                                    <span className="bg-slate-100 text-slate-600 text-xs py-0.5 px-2 rounded-full hidden sm:inline-block">{(currentTopic.pdf_url || materials.some(m => m.type === 'pdf')) ? '1' : '0'}</span>
-                                </span>
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('qa')}
-                                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'qa' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Q&A
-                            </button>
+                    {/* LECTURE MATERIALS */}
+                    {(currentTopic.pdf_url || materials.some(m => m.type === 'pdf')) && (
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-100">
+                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                    <FileText size={18} className="text-indigo-600" />
+                                    Lecture Materials
+                                </h3>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                {currentTopic.pdf_url && (
+                                    <div className="flex items-center p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-indigo-200 transition-colors group">
+                                        <div className="h-10 w-10 bg-red-50 rounded-lg flex items-center justify-center text-red-500 mr-4 group-hover:scale-110 transition-transform">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-slate-800">Primary Lecture Notes</h4>
+                                            <p className="text-xs text-slate-500">PDF • Contains key formulas and definitions</p>
+                                        </div>
+                                        <button
+                                            onClick={() => window.open(`/secure-viewer/topic/${currentTopic.id}`, '_blank')}
+                                            className="px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition-colors"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                )}
+                                {materials.filter(m => m.type === 'pdf').map(m => (
+                                    <div key={m.id} className="flex items-center p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-indigo-200 transition-colors group">
+                                        <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 mr-4 group-hover:scale-110 transition-transform">
+                                            <BookOpen size={20} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-slate-800">{m.title}</h4>
+                                            <p className="text-xs text-slate-500">Supplemental Material</p>
+                                        </div>
+                                        <button
+                                            onClick={() => window.open(`/secure-viewer/material/${m.id}`, '_blank')}
+                                            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-
-                        <div className="p-6 md:p-8">
-                            {activeTab === 'overview' && (
-                                <div className="space-y-6 animate-in fade-in duration-300">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-900 mb-2">About this Lesson</h3>
-                                        <p className="text-slate-600 leading-relaxed">
-                                            {currentTopic.description || "In this detailed lecture, we cover the core concepts of this topic. This module is designed to build a strong foundation for your exams."}
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <Target className="text-indigo-600" size={20} />
-                                                <h4 className="font-bold text-slate-700">Learning Objectives</h4>
-                                            </div>
-                                            <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside ml-1">
-                                                <li>Master key terminology</li>
-                                                <li>Understand core principles</li>
-                                                <li>Apply concepts to practice problems</li>
-                                            </ul>
-                                        </div>
-                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <CheckCircle className="text-green-600" size={20} />
-                                                <h4 className="font-bold text-slate-700">Prerequisites</h4>
-                                            </div>
-                                            <p className="text-sm text-slate-600">
-                                                Basic understanding of the previous module is recommended but not required.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'notes' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <h3 className="text-lg font-bold text-slate-900">Lecture Materials</h3>
-                                    {(!currentTopic.pdf_url && !materials.some(m => m.type === 'pdf')) ? (
-                                        <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                            <FileText className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-                                            <p className="text-slate-500 font-medium">No notes available for this topic yet.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid gap-3">
-                                            {currentTopic.pdf_url && (
-                                                <div className="flex items-center p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-200 transition-colors group">
-                                                    <div className="h-10 w-10 bg-red-50 rounded-lg flex items-center justify-center text-red-500 mr-4 group-hover:scale-110 transition-transform">
-                                                        <FileText size={20} />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h4 className="font-bold text-slate-800">Primary Lecture Notes</h4>
-                                                        <p className="text-xs text-slate-500">PDF • Contains key formulas and definitions</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => window.open(`/secure-viewer/topic/${currentTopic.id}`, '_blank')}
-                                                        className="px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition-colors"
-                                                    >
-                                                        View
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {materials.filter(m => m.type === 'pdf').map(m => (
-                                                <div key={m.id} className="flex items-center p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-200 transition-colors group">
-                                                    <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 mr-4 group-hover:scale-110 transition-transform">
-                                                        <BookOpen size={20} />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h4 className="font-bold text-slate-800">{m.title}</h4>
-                                                        <p className="text-xs text-slate-500">Supplemental Material</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => window.open(`/secure-viewer/material/${m.id}`, '_blank')}
-                                                        className="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors"
-                                                    >
-                                                        View
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {activeTab === 'qa' && (
-                                <div className="text-center py-12 animate-in fade-in duration-300">
-                                    <div className="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <MessageCircle className="h-10 w-10 text-indigo-500" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-2">Q&A Coming Soon</h3>
-                                    <p className="text-slate-600 max-w-md mx-auto mb-6">
-                                        We are building a community space for you to ask questions and discuss this topic with peers and instructors.
-                                    </p>
-                                    <button disabled className="px-6 py-3 bg-slate-100 text-slate-400 font-bold rounded-xl cursor-not-allowed">
-                                        Post a Question
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    )}
 
                 </div>
 
