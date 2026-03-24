@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Exam } from "@/data/mockData";
 
 interface ExamCardProps {
-  exam: Exam & { thumbnail_url?: string };
+  exam: Exam & { thumbnail_url?: string; expiry_date?: string | null };
   index: number;
   isPurchased?: boolean;
   onPurchase?: (exam: Exam) => void;
@@ -60,7 +60,10 @@ const ExamCard = ({ exam, index, isPurchased, onPurchase }: ExamCardProps) => {
         <div className="flex items-center gap-2 text-xs sm:text-sm mb-5">
           <Clock className="w-3.5 h-3.5 text-primary" />
           <span className="text-muted-foreground">
-            {exam.validity_days ? `${exam.validity_days} Days Validity` : 'Lifetime Access'}
+            {exam.expiry_date
+              ? `Expires: ${new Date(exam.expiry_date).toLocaleDateString()}`
+              : (exam.validity_days ? `${exam.validity_days} Days Validity` : 'Lifetime Access')
+            }
           </span>
         </div>
 

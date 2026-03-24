@@ -10,6 +10,7 @@ interface PlanTemplate {
   description: string;
   price: number;
   validity_days: number | null;
+  expiry_date: string | null;
   subjects: string[];
   is_active: boolean;
   display_order: number;
@@ -29,7 +30,7 @@ const PlanTemplates = () => {
   const loadPlans = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getPlanTemplates(showInactive);
+      const data = await adminService.getPlanTemplates();
       setPlans(data);
     } catch (error) {
       logger.error('Error loading plans:', error);
@@ -150,7 +151,10 @@ const PlanTemplates = () => {
                     <div className="mt-2 flex items-baseline gap-1">
                       <span className="text-3xl font-bold text-blue-600">₹{plan.price}</span>
                       <span className="text-gray-500">
-                        / {plan.validity_days ? `${plan.validity_days} days` : 'lifetime'}
+                        {plan.expiry_date
+                          ? ` / Expires: ${new Date(plan.expiry_date).toLocaleDateString()}`
+                          : ` / ${plan.validity_days ? `${plan.validity_days} days` : 'lifetime'}`
+                        }
                       </span>
                     </div>
                   </div>

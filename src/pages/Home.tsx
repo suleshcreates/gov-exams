@@ -23,6 +23,7 @@ interface PlanTemplate {
   description: string;
   price: number;
   validity_days: number | null;
+  expiry_date?: string | null;
   subjects: string[];
   is_active: boolean;
   display_order: number;
@@ -35,6 +36,7 @@ interface Subject {
   description: string;
   price?: number;
   validity_days?: number | null;
+  expiry_date?: string | null;
   thumbnail_url?: string | null;
   created_at: string;
 }
@@ -348,7 +350,7 @@ const Home = () => {
       {/* Academy Journey Timeline */}
       <AcademyJourney />
 
-      {/* Available Subjects */}
+      {/* Available Subjects (Moved Below Motivation) */}
       <section id="exams-section" className="py-20 bg-background">
         <div className="container mx-auto px-6">
           <motion.div
@@ -418,6 +420,7 @@ const Home = () => {
                             isPaid: true,
                             questionSets: [],
                             validity_days: subject.validity_days,
+                            expiry_date: subject.expiry_date,
                             thumbnail_url: subject.thumbnail_url || null
                           }}
                           index={index}
@@ -451,7 +454,8 @@ const Home = () => {
                 name: selectedSubject.name,
                 price: selectedSubject.price || 0,
                 subjects: [selectedSubject.id], // Array with single subject ID
-                validity_days: null, // Lifetime for single subject usually? Or default. Let's say null=lifetime.
+                validity_days: selectedSubject.validity_days || null,
+                expiry_date: selectedSubject.expiry_date || null,
                 type: 'subject'
               }}
               onSuccess={handlePaymentSuccess}
@@ -560,7 +564,10 @@ const Home = () => {
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {plan.validity_days ? `${plan.validity_days} days access` : 'Lifetime access'}
+                            {plan.expiry_date
+                              ? `Expires ${new Date(plan.expiry_date).toLocaleDateString()}`
+                              : (plan.validity_days ? `${plan.validity_days} days access` : 'Lifetime access')
+                            }
                           </p>
                         </div>
 
@@ -712,9 +719,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      {/* Testimonials Section */}
-      <TestimonialsSection />
 
       {/* FAQ Section */}
       <FAQSection />

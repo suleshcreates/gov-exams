@@ -24,7 +24,8 @@ const PlanTemplateEditor = () => {
     name: '',
     description: '',
     price: 0,
-    validity_days: 30,
+    validity_days: null as number | null,
+    expiry_date: null as string | null,
     subjects: [] as string[],
     badge: '',
     display_order: 0,
@@ -43,7 +44,7 @@ const PlanTemplateEditor = () => {
       setSubjects(subjectsData);
 
       if (isEditing) {
-        const plans = await adminService.getPlanTemplates(true);
+        const plans = await adminService.getPlanTemplates();
         const plan = plans.find(p => p.id === planId);
         if (plan) {
           const planSubjects = Array.isArray(plan.subjects)
@@ -54,7 +55,8 @@ const PlanTemplateEditor = () => {
             name: plan.name,
             description: plan.description || '',
             price: plan.price,
-            validity_days: plan.validity_days || 30,
+            validity_days: plan.validity_days || null,
+            expiry_date: plan.expiry_date ? new Date(plan.expiry_date).toISOString().slice(0, 16) : null,
             subjects: planSubjects,
             badge: plan.badge || '',
             display_order: plan.display_order,
@@ -115,6 +117,8 @@ const PlanTemplateEditor = () => {
 
       const dataToSave = {
         ...formData,
+        validity_days: null, // Fixed expiry overrides
+        expiry_date: formData.expiry_date ? new Date(formData.expiry_date).toISOString() : null,
         subjects: examIds  // Save UUIDs directly
       };
 
@@ -238,17 +242,15 @@ const PlanTemplateEditor = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Validity (days)
+                    Expiry Date & Time
                   </label>
                   <input
-                    type="number"
-                    value={formData.validity_days || ''}
-                    onChange={(e) => setFormData({ ...formData, validity_days: e.target.value ? parseInt(e.target.value) : null as any })}
+                    type="datetime-local"
+                    value={formData.expiry_date || ''}
+                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    min="1"
-                    placeholder="Leave empty for lifetime"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Empty = Lifetime access</p>
+                  <p className="mt-1 text-xs text-gray-500">Leave empty for lifetime access</p>
                 </div>
               </div>
 
@@ -367,7 +369,7 @@ const PlanTemplateEditor = () => {
                 <div className="mb-3 flex items-baseline gap-1">
                   <span className="text-3xl font-bold text-blue-600">₹{formData.price}</span>
                   <span className="text-gray-500 text-sm">
-                    / {formData.validity_days ? `${formData.validity_days} days` : 'lifetime'}
+                    {formData.expiry_date ? ` / Expires: ${new Date(formData.expiry_date).toLocaleDateString()}` : ' / lifetime'}
                   </span>
                 </div>
 

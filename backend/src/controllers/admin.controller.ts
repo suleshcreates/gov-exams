@@ -279,7 +279,7 @@ export async function createSubjectController(
     res: Response
 ): Promise<void> {
     try {
-        const { name, description, price, validity_days, thumbnail_url } = req.body;
+        const { name, description, price, validity_days, thumbnail_url, expiry_date } = req.body;
 
         if (!name) {
             res.status(400).json({ success: false, error: 'Name is required' });
@@ -293,7 +293,8 @@ export async function createSubjectController(
                 description: description || '',
                 price: price || 0,
                 validity_days: validity_days !== undefined ? validity_days : null,
-                thumbnail_url: thumbnail_url || null
+                thumbnail_url: thumbnail_url || null,
+                expiry_date: expiry_date || null
             }])
             .select()
             .single();
@@ -317,7 +318,7 @@ export async function updateSubjectController(
 ): Promise<void> {
     try {
         const { id } = req.params;
-        const { name, description, price, validity_days, thumbnail_url } = req.body;
+        const { name, description, price, validity_days, thumbnail_url, expiry_date } = req.body;
 
         const { data, error } = await supabaseAdmin
             .from('subjects')
@@ -326,7 +327,8 @@ export async function updateSubjectController(
                 description,
                 price: price || 0,
                 validity_days: validity_days !== undefined ? validity_days : null,
-                thumbnail_url: thumbnail_url !== undefined ? thumbnail_url : null
+                thumbnail_url: thumbnail_url !== undefined ? thumbnail_url : null,
+                expiry_date: expiry_date !== undefined ? expiry_date : null
             })
             .eq('id', id)
             .select()
@@ -714,7 +716,7 @@ export async function createPlanTemplateController(
     res: Response
 ): Promise<void> {
     try {
-        const { name, description, price, validity_days, subjects, badge, display_order } = req.body;
+        const { name, description, price, validity_days, subjects, badge, display_order, expiry_date } = req.body;
 
         if (!name || price === undefined) {
             res.status(400).json({ success: false, error: 'Name and price are required' });
@@ -732,6 +734,7 @@ export async function createPlanTemplateController(
                 badge: badge || null,
                 display_order: display_order || 0,
                 is_active: true,
+                expiry_date: expiry_date || null
             }])
             .select()
             .single();

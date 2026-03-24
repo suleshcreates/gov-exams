@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Loader2, ChevronDown, Video, FileText, Trash2,
-  FolderOpen, Play, FileQuestion
+  FolderOpen, Play, FileQuestion, Plus, List, ArrowRight, Edit2, Check, X
 } from "lucide-react";
 import { adminService } from "../lib/adminService";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 interface Subject {
   id: string;
@@ -24,14 +24,32 @@ interface Topic {
   order_index: number;
 }
 
+interface QuestionSet {
+  id: string;
+  subject_id: string;
+  topic_id?: string;
+  set_number: number;
+  time_limit_minutes: number;
+  questions_count?: number;
+}
+
 export default function AdminSubjectContent() {
-  const navigate = useNavigate();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [selectedTopicId, setSelectedTopicId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [topicsLoading, setTopicsLoading] = useState(false);
+
+  // Question sets for selected topic
+  const [questionSets, setQuestionSets] = useState<QuestionSet[]>([]);
+  const [setsLoading, setSetsLoading] = useState(false);
+  const [creatingSets, setCreatingSets] = useState(false);
+  const [newSetTime, setNewSetTime] = useState(30);
+
+  // Time editing state for existing sets
+  const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
+  const [editTimeValue, setEditTimeValue] = useState(30);
 
   // Upload states
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -48,12 +66,23 @@ export default function AdminSubjectContent() {
   useEffect(() => {
     if (selectedSubjectId) {
       loadTopics(selectedSubjectId);
-      setSelectedTopicId(""); // Reset topic selection
+      setSelectedTopicId("");
+      setQuestionSets([]);
     } else {
       setTopics([]);
       setSelectedTopicId("");
+      setQuestionSets([]);
     }
   }, [selectedSubjectId]);
+
+  // Load question sets when topic changes
+  useEffect(() => {
+    if (selectedTopicId && selectedSubjectId) {
+      loadQuestionSets();
+    } else {
+      setQuestionSets([]);
+    }
+  }, [selectedTopicId]);
 
   const loadSubjects = async () => {
     try {
@@ -79,7 +108,58 @@ export default function AdminSubjectContent() {
     }
   };
 
+  const loadQuestionSets = async () => {
+    try {
+      setSetsLoading(true);
+      const allSets = await adminService.getQuestionSets(selectedSubjectId);
+      const topicSets = allSets.filter((s: any) => s.topic_id === selectedTopicId);
+      setQuestionSets(topicSets);
+    } catch (error) {
+      toast.error("Failed to load question sets");
+    } finally {
+      setSetsLoading(false);
+    }
+  };
+
   const selectedTopic = topics.find(t => t.id === selectedTopicId);
+
+  // Create a new question set for the topic
+  const handleCreateQuestionSet = async () => {
+    if (!selectedTopicId || !selectedSubjectId) return;
+
+    try {
+      setCreatingSets(true);
+      const nextSetNumber = questionSets.length + 1;
+      await adminService.createQuestionSet({
+        subject_id: selectedSubjectId,
+        topic_id: selectedTopicId,
+        exam_id: selectedTopicId.substring(0, 36),
+        set_number: nextSetNumber,
+        time_limit_minutes: newSetTime
+      });
+      toast.success(`Question Set ${nextSetNumber} created`);
+      loadQuestionSets();
+    } catch (error) {
+      toast.error("Failed to create question set");
+    } finally {
+      setCreatingSets(false);
+    }
+  };
+
+  const handleUpdateSetTime = async (setId: string) => {
+    if (!editTimeValue || editTimeValue < 1) return;
+    
+    try {
+      await adminService.updateQuestionSet(setId, {
+        time_limit_minutes: editTimeValue
+      });
+      toast.success("Time limit updated");
+      setEditingTimeId(null);
+      loadQuestionSets();
+    } catch (error) {
+      toast.error("Failed to update time limit");
+    }
+  };
 
   // Handle Video Upload
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +179,6 @@ export default function AdminSubjectContent() {
         (progress) => setVideoProgress(Math.round(progress))
       );
 
-      // Update the topic with the video URL
       await adminService.updateTopic(selectedTopicId, {
         video_url: videoUrl,
         video_duration: 0,
@@ -142,7 +221,6 @@ export default function AdminSubjectContent() {
         (progress) => setPdfProgress(Math.round(progress))
       );
 
-      // Update the topic with the PDF URL
       await adminService.updateTopic(selectedTopicId, {
         pdf_url: pdfUrl,
         video_url: selectedTopic?.video_url || "",
@@ -159,31 +237,6 @@ export default function AdminSubjectContent() {
     } finally {
       setUploadingPDF(false);
       setPdfProgress(0);
-    }
-  };
-
-  // Handle navigating to question set manager
-  const handleManageQuestions = async () => {
-    if (!selectedTopicId || !selectedSubjectId) return;
-
-    try {
-      const sets = await adminService.getQuestionSets(selectedSubjectId);
-      let topicSet = sets.find((s: any) => s.topic_id === selectedTopicId);
-
-      if (!topicSet) {
-        topicSet = await adminService.createQuestionSet({
-          subject_id: selectedSubjectId,
-          topic_id: selectedTopicId,
-          exam_id: selectedTopicId.substring(0, 36),
-          set_number: 1,
-          time_limit_minutes: 0
-        });
-        toast.success("Question set created for topic");
-      }
-
-      navigate(`/admin/question-sets/${topicSet.id}/questions`);
-    } catch (error) {
-      toast.error("Failed to access questions");
     }
   };
 
@@ -366,20 +419,119 @@ export default function AdminSubjectContent() {
                 </div>
               </div>
 
-              {/* Question Set Card */}
+              {/* Question Sets Card — properly shows sets and create button */}
               <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                <div className="p-4 bg-green-50 border-b border-green-100 flex items-center gap-2">
-                  <FileQuestion className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold text-green-900">Question Set</h3>
+                <div className="p-4 bg-green-50 border-b border-green-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileQuestion className="w-5 h-5 text-green-600" />
+                    <h3 className="font-semibold text-green-900">Question Sets</h3>
+                  </div>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                    {questionSets.length} set{questionSets.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
-                <div className="p-4">
-                  <p className="text-sm text-gray-500 mb-3">Manage MCQ questions for this topic</p>
-                  <button
-                    onClick={handleManageQuestions}
-                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                  >
-                    Open Question Manager
-                  </button>
+                <div className="p-4 space-y-3">
+                  {setsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-green-500" />
+                    </div>
+                  ) : (
+                    <>
+                      {/* Existing Sets */}
+                      {questionSets.length > 0 && (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {questionSets.map((qSet) => (
+                            <div key={qSet.id} className="flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                              <div className="flex items-center gap-2">
+                                <List className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">Set {qSet.set_number}</span>
+                                {editingTimeId === qSet.id ? (
+                                  <div className="flex items-center gap-1 bg-white border border-gray-200 rounded px-1">
+                                    <input
+                                      type="number"
+                                      value={editTimeValue}
+                                      onChange={(e) => setEditTimeValue(Math.max(1, parseInt(e.target.value) || 1))}
+                                      className="w-12 text-xs py-0.5 outline-none"
+                                      min={1}
+                                      autoFocus
+                                    />
+                                    <span className="text-[10px] text-gray-400">m</span>
+                                    <button onClick={() => handleUpdateSetTime(qSet.id)} className="text-green-600 hover:text-green-700 p-0.5">
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button onClick={() => setEditingTimeId(null)} className="text-gray-400 hover:text-gray-600 p-0.5">
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1 group">
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                      {qSet.time_limit_minutes} min
+                                    </span>
+                                    <button 
+                                      onClick={() => {
+                                        setEditTimeValue(qSet.time_limit_minutes);
+                                        setEditingTimeId(qSet.id);
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition-opacity p-0.5"
+                                      title="Edit Time Limit"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Link
+                                  to={`/admin/question-sets/${qSet.id}/questions`}
+                                  className="flex items-center gap-1 text-xs bg-blue-600 text-white px-2.5 py-1 rounded hover:bg-blue-700 font-medium"
+                                >
+                                  Add Questions <ArrowRight className="w-3 h-3" />
+                                </Link>
+                                <Link
+                                  to={`/admin/subjects/${selectedSubjectId}/question-sets/${qSet.id}/bulk-import`}
+                                  className="flex items-center gap-1 text-xs bg-green-600 text-white px-2.5 py-1 rounded hover:bg-green-700 font-medium"
+                                >
+                                  <Upload className="w-3 h-3" /> Bulk
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {questionSets.length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-2">No question sets yet</p>
+                      )}
+
+                      {/* Create New Set */}
+                      <div className="border-t border-gray-100 pt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-600 whitespace-nowrap">Time Limit:</label>
+                          <input
+                            type="number"
+                            value={newSetTime}
+                            onChange={(e) => setNewSetTime(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            min={1}
+                          />
+                          <span className="text-xs text-gray-500">minutes</span>
+                        </div>
+                        <button
+                          onClick={handleCreateQuestionSet}
+                          disabled={creatingSets}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium disabled:opacity-50"
+                        >
+                          {creatingSets ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Plus className="w-4 h-4" />
+                          )}
+                          {creatingSets ? "Creating..." : "Create Question Set"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

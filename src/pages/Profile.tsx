@@ -513,7 +513,12 @@ const Profile = () => {
                     ))}
                     {history.length > 5 && (
                       <div className="pt-2 text-center">
-                        <button className="text-sm text-primary font-medium hover:underline">View All History</button>
+                        <button 
+                            onClick={() => navigate('/history')}
+                            className="text-sm text-primary font-medium hover:underline"
+                        >
+                            View All History
+                        </button>
                       </div>
                     )}
                   </div>

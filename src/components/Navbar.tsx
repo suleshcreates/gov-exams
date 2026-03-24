@@ -12,23 +12,6 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { auth, signOut } = useAuth();
 
-  // Track if we're on the hero section (top of home page)
-  const [isOnHero, setIsOnHero] = useState(true);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // Consider "hero" the first 500px of scroll on home page
-      const scrolled = window.scrollY > 100;
-      setIsOnHero(!scrolled && location.pathname === '/');
-    };
-
-    // Initial check
-    handleScroll();
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [location.pathname]);
-
   const onLogout = async () => {
     await signOut();
     window.location.href = "/login";
@@ -57,15 +40,7 @@ const Navbar = () => {
   ];
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md transition-colors duration-300 ${
-        isOnHero
-          ? 'bg-transparent border-b border-white/10'
-          : 'bg-gray-900/95 border-b border-gray-700/50 shadow-lg'
-      }`}
-    >
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg">
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
@@ -119,9 +94,7 @@ const Navbar = () => {
                         whileTap={{ scale: 0.95 }}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 ${isActive
                           ? "gradient-primary text-white neon-border shadow-lg shadow-primary/30"
-                          : isOnHero
-                            ? "bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 hover:shadow-lg hover:shadow-black/20 border border-white/20"
-                            : "glass-card hover:bg-white/10 hover:shadow-lg hover:shadow-primary/10"
+                          : "glass-card hover:bg-white/10 hover:shadow-lg hover:shadow-primary/10 text-gray-200"
                           }`}
                       >
                         <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
@@ -136,10 +109,7 @@ const Navbar = () => {
                 })}
                 <button
                   onClick={onLogout}
-                  className={`ml-2 px-6 py-2.5 rounded-full font-bold transition ${isOnHero
-                    ? "bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 border border-white/20"
-                    : "glass-card border hover:bg-white/10"
-                    }`}
+                  className="ml-2 px-6 py-2.5 rounded-full font-bold transition glass-card border hover:bg-white/10 text-gray-200"
                 >
                   Logout
                 </button>
@@ -217,7 +187,7 @@ const Navbar = () => {
           )}
         </AnimatePresence>
       </div>
-    </motion.nav>
+    </nav>
   );
 };
 

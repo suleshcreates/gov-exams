@@ -22,7 +22,7 @@ const Subjects = () => {
     name: '',
     description: '',
     price: 0,
-    validityDays: 365,
+    expiryDate: '',
     thumbnailUrl: ''
   });
   const [saving, setSaving] = useState(false);
@@ -47,16 +47,26 @@ const Subjects = () => {
   const handleOpenModal = (subject?: Subject) => {
     if (subject) {
       setEditingSubject(subject);
+      // Convert validity_days to an expiry date from now for display
+      let expiryStr = '';
+      if (subject.validity_days) {
+        const d = new Date();
+        d.setDate(d.getDate() + subject.validity_days);
+        expiryStr = d.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+      }
       setFormData({
         name: subject.name,
         description: subject.description || '',
         price: subject.price || 0,
-        validityDays: subject.validity_days || 365,
+        expiryDate: expiryStr,
         thumbnailUrl: subject.thumbnail_url || ''
       });
     } else {
       setEditingSubject(null);
-      setFormData({ name: '', description: '', price: 0, validityDays: 365, thumbnailUrl: '' });
+      // Default expiry = 1 year from now
+      const defaultExpiry = new Date();
+      defaultExpiry.setFullYear(defaultExpiry.getFullYear() + 1);
+      setFormData({ name: '', description: '', price: 0, expiryDate: defaultExpiry.toISOString().slice(0, 16), thumbnailUrl: '' });
     }
     setShowModal(true);
   };
@@ -64,7 +74,7 @@ const Subjects = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingSubject(null);
-    setFormData({ name: '', description: '', price: 0, validityDays: 365, thumbnailUrl: '' });
+    setFormData({ name: '', description: '', price: 0, expiryDate: '', thumbnailUrl: '' });
   };
 
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,16 +109,18 @@ const Subjects = () => {
           formData.name,
           formData.description,
           formData.price,
-          formData.validityDays,
-          formData.thumbnailUrl
+          null, // validityDays
+          formData.thumbnailUrl,
+          formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null
         );
       } else {
         await adminService.createSubject(
           formData.name,
           formData.description,
           formData.price,
-          formData.validityDays,
-          formData.thumbnailUrl
+          null, // validityDays
+          formData.thumbnailUrl,
+          formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null
         );
       }
       handleCloseModal();
@@ -257,16 +269,14 @@ const Subjects = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Validity (Days)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date & Time</label>
                     <input
-                      type="number"
-                      value={formData.validityDays}
-                      onChange={(e) => setFormData({ ...formData, validityDays: Number(e.target.value) })}
+                      type="datetime-local"
+                      value={formData.expiryDate}
+                      onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="365"
-                      min="1"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Default: 365 days</p>
+                    <p className="text-xs text-gray-500 mt-1">When access expires for purchasers</p>
                   </div>
                 </div>
 

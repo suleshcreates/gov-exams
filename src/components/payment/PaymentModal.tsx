@@ -16,6 +16,7 @@ interface PaymentModalProps {
         price: number;
         subjects: string[];
         validity_days: number | null;
+        expiry_date?: string | null;
         type?: 'plan' | 'subject'; // Distinguish type
     };
     onSuccess: () => void;
@@ -99,6 +100,7 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
                                 pricePaid: plan.price,
                                 examIds: plan.subjects,
                                 validityDays: plan.validity_days,
+                                expiryDate: plan.expiry_date,
                                 resource_type: plan.type || 'plan',
                                 resource_id: plan.type === 'subject' ? plan.id : null, // Track subject ID here
                                 notes: {
@@ -178,6 +180,15 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">Plan</span>
                             <span className="font-semibold">{plan.name}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200">
+                            <span className="text-gray-600">Validity</span>
+                            <span className="font-medium text-sm">
+                                {plan.expiry_date 
+                                    ? `Expires ${new Date(plan.expiry_date).toLocaleDateString()}`
+                                    : (plan.validity_days ? `${plan.validity_days} days` : 'Lifetime')
+                                }
+                            </span>
                         </div>
                         <div className="flex justify-between items-center text-lg font-bold">
                             <span>Total</span>

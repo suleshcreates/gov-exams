@@ -94,6 +94,7 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             pricePaid,
             examIds,
             validityDays,
+            expiryDate, // newly added fixed expiry
             // For single resource purchases (PYQ/Special Exam)
             resource_type,
             resource_id,
@@ -146,10 +147,12 @@ export const verifyPaymentController = async (req: Request, res: Response) => {
             });
         }
 
-        // Calculate expiry date
-        const expiresAt = validityDays
-            ? new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString()
-            : undefined;
+        // Calculate expiry date: Fixed expiry takes precedence over relative days
+        const expiresAt = expiryDate 
+            ? new Date(expiryDate).toISOString()
+            : (validityDays 
+                ? new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString()
+                : undefined);
 
         let data, error;
 

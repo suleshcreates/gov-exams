@@ -268,97 +268,107 @@ const History = () => {
                     </button>
                   </div>
                 ) : (
-                  history.map((item: any, index: number) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      whileHover={{ x: 8 }}
-                      className="glass-card rounded-2xl p-4 sm:p-6 neon-border group cursor-pointer"
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 sm:gap-6">
-                        <div className="flex-1 w-full">
-                          <h3 className="text-lg sm:text-xl font-semibold mb-2 group-hover:gradient-text transition-all">
-                            {item.exam_title || "Topic Exam"}
-                          </h3>
-                          <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              {new Date(item.created_at).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
+                  history.map((item: any, index: number) => {
+                    const correctAns = item.score || 0;
+                    const wrongAns = (item.total_questions || item.total || 0) - correctAns;
+                    const subjectName = item.question_sets?.topics?.subjects?.name || 'Subject';
+                    const topicName = item.question_sets?.topics?.title || item.exam_title || 'Topic';
+
+                    return (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 + index * 0.1 }}
+                        className="glass-card rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 neon-border group cursor-pointer"
+                        onClick={() => {
+                          if (item.is_special_group) {
+                            navigate(`/special-exam/${item.exam_id}`);
+                          } else {
+                            navigate(`/review/${item.id}`);
+                          }
+                        }}
+                      >
+                        <div className="p-5 sm:p-6">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-4 border-b border-border/50">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold">
+                                  {subjectName}
+                                </span>
+                                <span className="text-muted-foreground text-xs">•</span>
+                                <span className="text-muted-foreground text-xs sm:text-sm font-medium">
+                                  {topicName}
+                                </span>
+                              </div>
+                              <h3 className="text-lg sm:text-xl font-bold group-hover:text-primary transition-colors">
+                                {item.exam_title || "Topic Exam Attempt"}
+                              </h3>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4" />
-                              {item.time_taken || "N/A"}
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-lg">
+                                <Calendar className="w-4 h-4 text-primary/70" />
+                                {new Date(item.created_at).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </div>
+                              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-lg">
+                                <Clock className="w-4 h-4 text-accent/70" />
+                                {item.time_taken || "N/A"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="bg-background/40 rounded-xl p-3 text-center">
+                              <div className="text-xs text-muted-foreground mb-1 uppercase font-semibold tracking-wider">Score</div>
+                              <div className="text-xl sm:text-2xl font-bold text-primary">
+                                {correctAns}<span className="text-sm text-muted-foreground font-medium">/{item.total_questions || item.total}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-emerald-500/10 rounded-xl p-3 text-center border border-emerald-500/20">
+                              <div className="text-xs text-emerald-600/80 mb-1 uppercase font-semibold tracking-wider">Correct</div>
+                              <div className="text-xl sm:text-2xl font-bold text-emerald-600">
+                                {correctAns}
+                              </div>
+                            </div>
+
+                            <div className="bg-destructive/10 rounded-xl p-3 text-center border border-destructive/20">
+                              <div className="text-xs text-destructive/80 mb-1 uppercase font-semibold tracking-wider">Wrong</div>
+                              <div className="text-xl sm:text-2xl font-bold text-destructive">
+                                {wrongAns}
+                              </div>
+                            </div>
+
+                            <div className="bg-accent/10 rounded-xl p-3 text-center border border-accent/20">
+                              <div className="text-xs text-accent/80 mb-1 uppercase font-semibold tracking-wider">Accuracy</div>
+                              <div className="text-xl sm:text-2xl font-bold text-accent">
+                                {item.accuracy}%
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between w-full sm:w-auto sm:gap-8">
-                          <div className="text-center">
-                            <div className="text-xs sm:text-sm text-muted-foreground mb-1">
-                              Score
-                            </div>
-                            <div className="text-xl sm:text-2xl font-bold gradient-text">
-                              {item.score}/{item.total_questions || item.total}
-                            </div>
-                          </div>
-
-                          <div className="text-center">
-                            <div className="text-xs sm:text-sm text-muted-foreground mb-1">
-                              Accuracy
-                            </div>
-                            <div
-                              className={`text-xl sm:text-2xl font-bold ${item.accuracy >= 85
-                                ? "text-accent"
-                                : item.accuracy >= 60
-                                  ? "text-primary"
-                                  : "text-destructive"
-                                }`}
-                            >
-                              {item.accuracy}%
-                            </div>
-                          </div>
-
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              if (item.is_special_group) {
-                                navigate(`/special-exam/${item.exam_id}`);
-                              } else {
-                                navigate(`/review/${item.id}`);
-                              }
-                            }}
-                            className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full gradient-primary text-white font-medium text-sm sm:text-base hover:opacity-90 transition-opacity"
-                          >
-                            View
-                          </motion.button>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="mt-4 pt-4 border-t border-border/50">
-                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                        {/* Interactive Progress Bar across bottom */}
+                        <div className="h-1.5 w-full bg-muted overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${item.accuracy}%` }}
-                            transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
-                            className={`h-full rounded-full ${item.accuracy >= 85
-                              ? "gradient-accent"
+                            transition={{ duration: 1, delay: 0.2 + index * 0.1 }}
+                            className={`h-full ${item.accuracy >= 85
+                              ? "bg-accent"
                               : item.accuracy >= 60
-                                ? "gradient-primary"
+                                ? "bg-primary"
                                 : "bg-destructive"
                               }`}
                           />
                         </div>
-                      </div>
-                    </motion.div>
-                  ))
+                      </motion.div>
+                    );
+                  })
                 )}
               </motion.div>
             )}

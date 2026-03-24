@@ -15,6 +15,7 @@ interface PlanTemplate {
   description: string;
   price: number;
   validity_days: number | null;
+  expiry_date?: string | null;
   subjects: string[];
   is_active: boolean;
   display_order: number;
@@ -85,9 +86,9 @@ const Plans = () => {
 
       try {
         logger.debug('Loading purchased plans for phone:', auth.user.phone);
-        const plans = await supabaseService.getStudentPlans(auth.user.phone);
+        const { plans } = await supabaseService.getStudentPlans(auth.user.phone);
         logger.debug('Purchased plans loaded:', plans);
-        setPurchasedPlans(plans.map(p => p.plan_template_id || p.plan_id).filter(Boolean));
+        setPurchasedPlans(plans.map((p: any) => p.plan_template_id || p.plan_id).filter(Boolean));
       } catch (error) {
         logger.error("Error loading purchased plans:", error);
       }
@@ -245,7 +246,10 @@ const Plans = () => {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {plan.validity_days ? `${plan.validity_days} days access` : 'Lifetime access'}
+                        {plan.expiry_date
+                          ? `Expires ${new Date(plan.expiry_date).toLocaleDateString()}`
+                          : (plan.validity_days ? `${plan.validity_days} days access` : 'Lifetime access')
+                        }
                       </p>
                     </div>
 
