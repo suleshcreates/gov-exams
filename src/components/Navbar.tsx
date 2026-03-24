@@ -58,8 +58,15 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', controlNavbar);
   }, [lastScrollY]);
 
+  const isHome = location.pathname === "/";
+  const isAtTop = isHome && lastScrollY < 20;
+
+  const navContainerClasses = isAtTop
+    ? "bg-transparent border-transparent"
+    : "bg-gray-900 border-b border-gray-700 shadow-lg";
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navContainerClasses} ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
@@ -90,7 +97,11 @@ const Navbar = () => {
                     </button>
                     <button 
                       onClick={() => openAuthModal('signup')}
-                      className="px-6 py-2.5 rounded-full glass-card border font-bold hover:bg-white/10 transition text-gray-200"
+                      className={`px-6 py-2.5 rounded-full font-bold transition border ${
+                        isAtTop 
+                          ? "border-white/20 hover:bg-white/10 text-white"
+                          : "glass-card hover:bg-white/10 text-gray-200"
+                      }`}
                     >
                       Sign Up
                     </button>
@@ -113,7 +124,9 @@ const Navbar = () => {
                         whileTap={{ scale: 0.95 }}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 ${isActive
                           ? "gradient-primary text-white neon-border shadow-lg shadow-primary/30"
-                          : "glass-card hover:bg-white/10 hover:shadow-lg hover:shadow-primary/10 text-gray-200"
+                          : isAtTop 
+                            ? "hover:bg-white/10 text-white font-semibold"
+                            : "glass-card hover:bg-white/10 hover:shadow-lg hover:shadow-primary/10 text-gray-200"
                           }`}
                       >
                         <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
@@ -128,7 +141,11 @@ const Navbar = () => {
                 })}
                 <button
                   onClick={onLogout}
-                  className="ml-2 px-6 py-2.5 rounded-full font-bold transition glass-card border hover:bg-white/10 text-gray-200"
+                  className={`ml-2 px-6 py-2.5 rounded-full font-bold transition border ${
+                    isAtTop 
+                      ? "border-transparent hover:bg-white/10 text-white"
+                      : "glass-card hover:bg-white/10 text-gray-200"
+                  }`}
                 >
                   Logout
                 </button>

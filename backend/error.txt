@@ -1,0 +1,5 @@
+{
+  "message": "Could not find a relationship between 'exam_results' and 'question_sets' in the schema cache",
+  "details": "Searched for a foreign key relationship between 'exam_results' and 'question_sets' in the schema 'public', but no matches were found.",
+  "hint": "Perhaps you meant 'special_exam_results' instead of 'exam_results'."
+}

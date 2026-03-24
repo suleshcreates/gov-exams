@@ -461,21 +461,10 @@ export const getStudentExamHistoryController = async (req: Request, res: Respons
             fs.appendFileSync('history_debug.log', `[${new Date().toISOString()}] Start History Fetch. User: ${userPhone}, ID: ${userId}\n`);
         } catch (e) { }
 
-        // 1. Fetch Regular Exam Results with joined data
+        // 1. Fetch Regular Exam Results
         const { data: regularHistory, error: regularError } = await supabase
             .from('exam_results')
-            .select(`
-                *,
-                question_sets:set_id (
-                    name,
-                    topics:topic_id (
-                        title,
-                        subjects:subject_id (
-                            name
-                        )
-                    )
-                )
-            `)
+            .select('*')
             .eq('student_phone', userPhone)
             .order('created_at', { ascending: false });
 
