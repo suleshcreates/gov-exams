@@ -109,13 +109,7 @@ const AdminLogin = () => {
                     </button>
                 </form>
 
-                <div className="mt-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
-                    <p className="text-sm font-medium text-primary mb-2">Default Admin Credentials:</p>
-                    <p className="text-sm text-primary/80">Email: admin@govexams.info</p>
-                    <p className="text-sm text-primary/80">Password: pass@123</p>
-                </div>
-
-                <div className="mt-4 text-center text-sm text-gray-600">
+                <div className="mt-6 text-center text-sm text-gray-500">
                     <p>Admin access only</p>
                 </div>
             </div>

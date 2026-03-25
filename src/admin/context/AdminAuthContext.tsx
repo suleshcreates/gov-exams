@@ -95,7 +95,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('admin_access_token');
         localStorage.removeItem('admin_refresh_token');
       }
-    }, 90 * 60 * 1000); // 90 minutes
+    }, 50 * 60 * 1000); // 50 minutes (within 1h JWT window)
 
     return () => clearInterval(interval);
   }, [admin, refreshToken]);

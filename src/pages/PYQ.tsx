@@ -166,8 +166,16 @@ const PYQ = () => {
                                     className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all border group"
                                 >
                                     {/* Thumbnail */}
-                                    <div className="h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 relative flex items-center justify-center">
-                                        <FileType className="w-12 h-12 text-primary/40 group-hover:scale-110 transition-transform" />
+                                    <div className="h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 relative flex items-center justify-center overflow-hidden">
+                                        {pyq.thumbnail_url ? (
+                                            <img
+                                                src={pyq.thumbnail_url}
+                                                alt={pyq.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <FileType className="w-12 h-12 text-primary/40 group-hover:scale-110 transition-transform" />
+                                        )}
 
                                         {/* Price/Status Badge */}
                                         <div className="absolute top-2 right-2">

@@ -195,7 +195,7 @@ const ExamStart = () => {
     window.addEventListener("popstate", preventBackNavigation);
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasSubmittedRef.current) {
+      if (!hasSubmittedRef.current && questions.length > 0) {
         event.preventDefault();
         event.returnValue = "";
       }
@@ -206,7 +206,7 @@ const ExamStart = () => {
       window.removeEventListener("popstate", preventBackNavigation);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, []);
+  }, [questions.length]);
 
   // Load questions from database
   useEffect(() => {

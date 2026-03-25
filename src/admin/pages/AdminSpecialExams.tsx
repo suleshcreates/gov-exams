@@ -25,6 +25,7 @@ const AdminSpecialExams = () => {
     const [editingExam, setEditingExam] = useState<SpecialExam | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [showNewCategory, setShowNewCategory] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -275,13 +276,50 @@ const AdminSpecialExams = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <input
-                                        type="text"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg"
-                                        placeholder="e.g., MPSC"
-                                    />
+                                    {(() => {
+                                        const existingCategories = [...new Set(exams.map(e => e.category).filter(Boolean))];
+                                        const isCustom = showNewCategory || (formData.category !== '' && !existingCategories.includes(formData.category));
+
+                                        return isCustom ? (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={formData.category}
+                                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                    className="flex-1 px-3 py-2 border rounded-lg"
+                                                    placeholder="New category name"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setShowNewCategory(false); setFormData({ ...formData, category: '' }); }}
+                                                    className="px-2 py-2 text-gray-400 hover:text-gray-600"
+                                                    title="Cancel"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={formData.category}
+                                                onChange={(e) => {
+                                                    if (e.target.value === '__new__') {
+                                                        setShowNewCategory(true);
+                                                        setFormData({ ...formData, category: '' });
+                                                    } else {
+                                                        setFormData({ ...formData, category: e.target.value });
+                                                    }
+                                                }}
+                                                className="w-full px-3 py-2 border rounded-lg bg-white"
+                                            >
+                                                <option value="">Select category</option>
+                                                {existingCategories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                                <option value="__new__">+ Add New Category</option>
+                                            </select>
+                                        );
+                                    })()}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>

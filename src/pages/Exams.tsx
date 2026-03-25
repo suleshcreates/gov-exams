@@ -194,7 +194,7 @@ const Exams = () => {
                         variants={containerVariants}
                         initial="hidden"
                         animate="visible"
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
                     >
                         {filteredExams.map((exam, index) => {
                             const hasAccess = userAccess[exam.id];
@@ -202,40 +202,40 @@ const Exams = () => {
                                 <motion.div
                                     key={exam.id}
                                     variants={itemVariants}
-                                    whileHover={{ y: -8 }}
-                                    className="group relative bg-white rounded-[32px] p-6 border border-slate-100 shadow-xl shadow-slate-200/40 hover:shadow-2xl hover:shadow-slate-300/50 transition-all duration-500"
+                                    whileHover={{ y: -4 }}
+                                    className="group relative bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300"
                                 >
-                                    {/* THUMBNAIL CONTAINER */}
-                                    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6 bg-slate-100">
+                                    {/* THUMBNAIL */}
+                                    <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
                                         {exam.thumbnail_url ? (
                                             <img
                                                 src={exam.thumbnail_url}
                                                 alt={exam.title}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-                                                <BookOpen className="w-16 h-16 text-slate-300" />
+                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-red-100">
+                                                <BookOpen className="w-10 h-10 text-orange-300" />
                                             </div>
                                         )}
 
-                                        {/* Status Overlays */}
-                                        <div className="absolute top-4 right-4 flex gap-2">
+                                        {/* Badges */}
+                                        <div className="absolute top-3 right-3 flex gap-2">
                                             {hasAccess ? (
-                                                <div className="bg-green-500/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg">
-                                                    <CheckCircle className="w-3.5 h-3.5" />
+                                                <div className="bg-green-500 text-white px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center gap-1 shadow-lg">
+                                                    <CheckCircle className="w-3 h-3" />
                                                     OWNED
                                                 </div>
                                             ) : (
-                                                <div className="bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-lg">
+                                                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-lg text-xs font-black shadow-lg">
                                                     ₹{exam.price}
                                                 </div>
                                             )}
                                         </div>
 
                                         {exam.category && (
-                                            <div className="absolute bottom-4 left-4">
-                                                <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                            <div className="absolute bottom-3 left-3">
+                                                <div className="bg-black/50 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">
                                                     {exam.category}
                                                 </div>
                                             </div>
@@ -243,48 +243,33 @@ const Exams = () => {
                                     </div>
 
                                     {/* CONTENT */}
-                                    <div className="space-y-4">
-                                        <div className="space-y-1">
-                                            <h3 className="text-2xl font-black text-slate-800 tracking-tight group-hover:text-orange-600 transition-colors line-clamp-1">
+                                    <div className="p-4 space-y-3">
+                                        <div>
+                                            <h3 className="text-base font-bold text-slate-800 group-hover:text-orange-600 transition-colors line-clamp-1">
                                                 {exam.title}
                                             </h3>
-                                            <p className="text-sm text-slate-500 line-clamp-2 font-medium leading-relaxed">
-                                                {exam.description || 'Elevate your knowledge with this comprehensive sequential practice series.'}
+                                            <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
+                                                {exam.description || 'Comprehensive practice series'}
                                             </p>
                                         </div>
 
-                                        {/* STATS */}
-                                        <div className="flex items-center gap-4 pt-2">
-                                            <div className="flex items-center gap-1.5 text-slate-400">
-                                                <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                                                    <FileText className="w-4 h-4 text-orange-500" />
-                                                </div>
-                                                <span className="text-xs font-bold">{exam.total_questions} MCQs</span>
+                                        {/* Stats row */}
+                                        <div className="flex items-center gap-3 text-slate-400">
+                                            <div className="flex items-center gap-1">
+                                                <FileText className="w-3.5 h-3.5 text-orange-400" />
+                                                <span className="text-[11px] font-bold">{exam.total_questions} MCQs</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-slate-400">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                                                    <Clock className="w-4 h-4 text-blue-500" />
-                                                </div>
-                                                <span className="text-xs font-bold">{exam.time_limit_minutes}m/set</span>
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="w-3.5 h-3.5 text-blue-400" />
+                                                <span className="text-[11px] font-bold">{exam.time_limit_minutes}m/set</span>
                                             </div>
                                         </div>
 
-                                        {/* PROGRESS DOTS */}
-                                        <div className="flex gap-1.5 pt-2">
-                                            {Array.from({ length: 5 }).map((_, i) => (
-                                                <div
-                                                    key={i}
-                                                    className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${hasAccess ? 'bg-orange-100 group-hover:bg-orange-200' : 'bg-slate-100 group-hover:bg-slate-200'
-                                                        }`}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {/* ACTION BUTTON */}
-                                        <Link to={`/special-exam/${exam.id}`} className="block pt-2">
-                                            <button className={`w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-[0.98] ${hasAccess
-                                                ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl shadow-slate-200'
-                                                : 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-xl shadow-orange-200 hover:shadow-orange-300'
+                                        {/* Action */}
+                                        <Link to={`/special-exam/${exam.id}`} className="block">
+                                            <button className={`w-full py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] ${hasAccess
+                                                ? 'bg-slate-900 text-white hover:bg-slate-800'
+                                                : 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md hover:shadow-lg'
                                                 }`}>
                                                 {hasAccess ? 'Continue Series' : 'Unlock Now'}
                                             </button>

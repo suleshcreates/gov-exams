@@ -5,47 +5,47 @@ import logger from './logger';
 export const planUtils = {
   /**
    * Check if user has access to a specific exam
+   * Checks both plan-based access AND individual subject purchases
    */
   async hasExamAccess(studentPhone: string | null, examId: string): Promise<boolean> {
     try {
       if (!studentPhone) {
-        logger.debug('No phone number provided, access denied');
         return false;
       }
-      const plans = await supabaseService.getActiveStudentPlans(studentPhone);
-      console.log(`🔍 [planUtils] Checking access for exam:`, examId);
-      console.log(`📋 [planUtils] Found ${plans.length} active plans:`, plans);
 
-      // Log each plan's exam_ids for debugging
-      plans.forEach((plan, index) => {
-        console.log(`📦 [planUtils] Plan ${index + 1}:`, {
-          plan_name: plan.plan_name,
-          exam_ids: plan.exam_ids,
-          subjects: (plan as any).subjects,
-          exam_ids_type: typeof plan.exam_ids,
-          is_array: Array.isArray(plan.exam_ids),
-          looking_for: examId,
-          includes_in_exam_ids: Array.isArray(plan.exam_ids) ? plan.exam_ids.includes(examId) : false,
-          includes_in_subjects: (plan as any).subjects && Array.isArray((plan as any).subjects) ? (plan as any).subjects.includes(examId) : false
-        });
+      // Get token for API call
+      const token = localStorage.getItem('access_token');
+      if (!token) return false;
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/plans/my-plans`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
-      const hasAccess = plans.some(plan => {
-        // Check exam_ids field (standard field for purchased plans)
-        if (Array.isArray(plan.exam_ids) && plan.exam_ids.includes(examId)) {
-          return true;
-        }
+      if (!response.ok) return false;
+      const data = await response.json();
 
-        // Also check if plan has a 'subjects' field (from admin panel plan templates)
-        // @ts-ignore - subjects might not be in type but could exist in database
-        if (plan.subjects && Array.isArray(plan.subjects) && plan.subjects.includes(examId)) {
-          return true;
-        }
+      const plans = data.plans || [];
+      const purchasedSubjects = data.purchased_subjects || [];
 
+      // 1. Check plans (exam_ids or subjects field)
+      const planAccess = plans.some((plan: any) => {
+        if (Array.isArray(plan.exam_ids) && plan.exam_ids.includes(examId)) return true;
+        if (plan.subjects && Array.isArray(plan.subjects) && plan.subjects.includes(examId)) return true;
         return false;
       });
-      logger.debug(`Access result: ${hasAccess}`);
-      return hasAccess;
+
+      if (planAccess) return true;
+
+      // 2. Check individual subject purchases
+      const subjectAccess = purchasedSubjects.some((purchase: any) => {
+        if (purchase.expires_at && new Date(purchase.expires_at) < new Date()) return false;
+        return purchase.subject_id === examId;
+      });
+
+      return subjectAccess;
     } catch (error) {
       logger.error('Error checking exam access:', error);
       return false;

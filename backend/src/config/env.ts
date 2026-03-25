@@ -55,7 +55,7 @@ export const env: EnvironmentConfig = {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     JWT_SECRET: process.env.JWT_SECRET!,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET!,
-    JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '15m',
+    JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '1h',
     JWT_REFRESH_EXPIRY: process.env.JWT_REFRESH_EXPIRY || '30d',
     RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID!,
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET!,

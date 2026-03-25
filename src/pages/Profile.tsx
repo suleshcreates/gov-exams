@@ -522,7 +522,7 @@ const Profile = () => {
                           </div>
                           <div>
                             <h4 className="font-semibold text-sm text-foreground">{exam.exam_title || exam.set_name || 'Exam'}</h4>
-                            <p className="text-xs text-muted-foreground">{new Date(exam.completed_at).toLocaleDateString()}</p>
+                            <p className="text-xs text-muted-foreground">{exam.completed_at && !isNaN(new Date(exam.completed_at).getTime()) ? new Date(exam.completed_at).toLocaleDateString() : 'N/A'}</p>
                           </div>
                         </div>
                         <span className={`text-xs font-bold px-2 py-1 rounded ${exam.score >= 35 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>

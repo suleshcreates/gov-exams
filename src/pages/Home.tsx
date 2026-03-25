@@ -69,6 +69,99 @@ const heroSlides = [
   },
 ];
 
+// Special Exams Showcase Component
+const SpecialExamsShowcase = () => {
+  const [specialExams, setSpecialExams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/public/special-exams`);
+        const data = await res.json();
+        setSpecialExams((data || []).filter((e: any) => e.is_active).slice(0, 6));
+      } catch (e) {
+        console.error('Error loading special exams:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  if (loading || specialExams.length === 0) return null;
+
+  return (
+    <section className="py-16 bg-gradient-to-br from-orange-50/50 via-background to-red-50/50">
+      <div className="container mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center mb-10"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-xs font-bold mb-4">
+            <Sparkles className="w-4 h-4" />
+            PREMIUM PRACTICE
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-3 text-foreground">
+            Special <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Exam Series</span>
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
+            Premium multi-set exams designed to boost your preparation
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-6xl mx-auto mb-8">
+          {specialExams.map((exam, index) => (
+            <motion.div
+              key={exam.id}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Link
+                to={`/special-exam/${exam.id}`}
+                className="group block bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="relative h-24 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center overflow-hidden">
+                  {exam.thumbnail_url ? (
+                    <img src={exam.thumbnail_url} alt={exam.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  ) : (
+                    <Trophy className="w-8 h-8 text-white/60" />
+                  )}
+                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur text-slate-900 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                    ₹{exam.price}
+                  </div>
+                </div>
+                <div className="p-3">
+                  <h3 className="text-xs font-bold text-slate-800 line-clamp-2 mb-1 group-hover:text-orange-600 transition-colors leading-tight">
+                    {exam.title}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium">{exam.total_questions || '100'} MCQs</p>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Link to="/exams">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all"
+            >
+              View All Special Exams <ArrowRight className="w-4 h-4 inline ml-1" />
+            </motion.button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const Home = () => {
   const { auth, openAuthModal } = useAuth();
   const location = useLocation();
@@ -346,6 +439,9 @@ const Home = () => {
 
       {/* Motivational Section */}
       <MotivationSection />
+
+      {/* Special Exams Showcase */}
+      <SpecialExamsShowcase />
 
       {/* Available Subjects (Moved Below Motivation) */}
       <section id="exams-section" className="py-20 bg-background">
