@@ -125,11 +125,12 @@ const SpecialExamsShowcase = () => {
             >
               {/* Thumbnail */}
               {exam.thumbnail_url ? (
-                <div className="h-44 w-full overflow-hidden">
+                <div className="h-36 w-full overflow-hidden relative">
                   <img src={exam.thumbnail_url} alt={exam.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent" />
                 </div>
               ) : (
-                <div className="h-44 w-full bg-gradient-to-br from-orange-500/10 via-red-500/5 to-orange-500/10 flex items-center justify-center">
+                <div className="h-36 w-full bg-gradient-to-br from-orange-500/10 via-red-500/5 to-orange-500/10 flex items-center justify-center">
                   <Trophy className="w-12 h-12 text-orange-300" />
                 </div>
               )}
@@ -314,6 +315,10 @@ const Home = () => {
   };
 
   const handleUnlockClick = (subject: Subject) => {
+    if (!auth.isAuthenticated) {
+      openAuthModal('login');
+      return;
+    }
     setSelectedSubject(subject);
     setIsPaymentModalOpen(true);
   };
@@ -538,6 +543,8 @@ const Home = () => {
                               name: exam.title,
                               description: exam.description,
                               price: exam.price,
+                              validity_days: subject.validity_days,
+                              expiry_date: subject.expiry_date,
                               created_at: new Date().toISOString()
                             });
                           }}

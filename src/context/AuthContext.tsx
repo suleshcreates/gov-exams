@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
   }, []);
 
-  // Session validation polling - check every 30 seconds if session is still valid
+  // Session validation polling - check every 5 minutes if session is still valid
   useEffect(() => {
     if (!user) return; // Only run if user is logged in
 
@@ -85,29 +85,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const response = await api.getProfile();
 
-        if (!response.success) {
+        if (!response.success && response.error === 'Unauthorized') {
           logger.warn('[AuthContext] Session invalidated - logging out');
-          // Session is no longer valid (logged in on another device)
+          // Session is no longer valid (logged in on another device or token expired)
           api.clearTokens();
           setUser(null);
           window.location.href = '/';
         }
+        // If response fails for other reasons (network error, server down), DON'T logout
       } catch (error) {
-        logger.error('[AuthContext] Session validation error:', error);
-        // On error, consider session invalid
-        api.clearTokens();
-        setUser(null);
-        window.location.href = '/';
+        // Network errors should NOT trigger logout — user might just have poor connectivity
+        logger.warn('[AuthContext] Session validation network error (ignoring):', error);
       }
     };
 
-    // Check immediately
-    validateSession();
+    // Check after a delay (not immediately on mount to avoid race conditions)
+    const initialTimeout = setTimeout(validateSession, 10000);
 
-    // Then check every 30 seconds
-    const interval = setInterval(validateSession, 30000);
+    // Then check every 5 minutes
+    const interval = setInterval(validateSession, 300000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, [user]);
 
   // Load user profile from backend

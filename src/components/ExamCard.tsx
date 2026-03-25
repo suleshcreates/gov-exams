@@ -32,12 +32,13 @@ const ExamCard = ({ exam, index, isPurchased, onPurchase }: ExamCardProps) => {
 
       {/* Thumbnail */}
       {exam.thumbnail_url ? (
-        <div className="h-44 w-full overflow-hidden">
+        <div className="h-44 w-full overflow-hidden relative">
           <img
             src={exam.thumbnail_url}
             alt={exam.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
       ) : (
         <div className="h-44 w-full bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 flex items-center justify-center">
