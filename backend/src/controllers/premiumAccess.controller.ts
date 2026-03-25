@@ -141,12 +141,16 @@ export const getCategoriesController = async (req: Request, res: Response) => {
             .select('category')
             .not('category', 'is', null);
 
-        const allCategories = new Set([
-            ...(examCategories || []).map(e => e.category),
-            ...(pyqCategories || []).map(p => p.category)
-        ]);
+        // Case-insensitive dedup: normalize to lowercase for comparison, keep first seen casing
+        const seen = new Map<string, string>();
+        [...(examCategories || []).map(e => e.category), ...(pyqCategories || []).map(p => p.category)]
+            .filter(Boolean)
+            .forEach(cat => {
+                const key = cat.toLowerCase().trim();
+                if (!seen.has(key)) seen.set(key, cat);
+            });
 
-        return res.status(200).json(Array.from(allCategories).filter(Boolean));
+        return res.status(200).json(Array.from(seen.values()));
     } catch (err: any) {
         logger.error('Server error fetching categories:', err);
         return res.status(500).json({ error: 'Internal server error' });

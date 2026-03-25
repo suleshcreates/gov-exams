@@ -75,7 +75,7 @@ const Exams = () => {
 
     const filteredExams = selectedCategory === 'all'
         ? exams
-        : exams.filter(e => e.category === selectedCategory);
+        : exams.filter(e => e.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
 
     // Animation Variants
     const containerVariants = {

@@ -92,56 +92,79 @@ const SpecialExamsShowcase = () => {
   if (loading || specialExams.length === 0) return null;
 
   return (
-    <section className="py-16 bg-gradient-to-br from-orange-50/50 via-background to-red-50/50">
+    <section className="py-20 bg-gradient-to-br from-orange-50/50 via-background to-red-50/50">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center mb-10"
+          className="text-center mb-12"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-xs font-bold mb-4">
             <Sparkles className="w-4 h-4" />
             PREMIUM PRACTICE
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-3 text-foreground">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 text-foreground">
             Special <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Exam Series</span>
           </h2>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Premium multi-set exams designed to boost your preparation
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-6xl mx-auto mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto mb-10">
           {specialExams.map((exam, index) => (
             <motion.div
               key={exam.id}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: index * 0.08 }}
+              whileHover={{ y: -8, scale: 1.02 }}
+              className="group glass-card rounded-2xl neon-border relative overflow-hidden"
             >
-              <Link
-                to={`/special-exam/${exam.id}`}
-                className="group block bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="relative h-24 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center overflow-hidden">
-                  {exam.thumbnail_url ? (
-                    <img src={exam.thumbnail_url} alt={exam.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  ) : (
-                    <Trophy className="w-8 h-8 text-white/60" />
-                  )}
-                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur text-slate-900 px-2 py-0.5 rounded-lg text-[10px] font-black">
-                    ₹{exam.price}
+              {/* Thumbnail */}
+              {exam.thumbnail_url ? (
+                <div className="h-44 w-full overflow-hidden">
+                  <img src={exam.thumbnail_url} alt={exam.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>
+              ) : (
+                <div className="h-44 w-full bg-gradient-to-br from-orange-500/10 via-red-500/5 to-orange-500/10 flex items-center justify-center">
+                  <Trophy className="w-12 h-12 text-orange-300" />
+                </div>
+              )}
+
+              <div className="p-4 sm:p-6">
+                {/* Title */}
+                <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:gradient-text transition-all mb-1 line-clamp-2">
+                  {exam.title}
+                </h3>
+
+                {/* Description */}
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                  {exam.description || 'Comprehensive sequential practice series for exam preparation.'}
+                </p>
+
+                {/* Price + Stats row */}
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-2xl font-extrabold text-primary">₹{exam.price}</span>
+                  <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
+                    <span>{exam.total_questions || 100} MCQs</span>
+                    <span>{exam.time_limit_minutes || 30}m/set</span>
                   </div>
                 </div>
-                <div className="p-3">
-                  <h3 className="text-xs font-bold text-slate-800 line-clamp-2 mb-1 group-hover:text-orange-600 transition-colors leading-tight">
-                    {exam.title}
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-medium">{exam.total_questions || '100'} MCQs</p>
-                </div>
-              </Link>
+
+                {/* CTA */}
+                <Link to={`/special-exam/${exam.id}`}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full px-5 py-2.5 rounded-full gradient-accent text-white font-medium neon-glow text-sm"
+                  >
+                    View Details
+                  </motion.button>
+                </Link>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -459,18 +482,7 @@ const Home = () => {
               Select your subject and choose from 5 different question sets. Each set contains 20 carefully curated MCQs.
             </p>
           </motion.div>
-          {!auth.isAuthenticated ? (
-            <div className="w-full flex flex-col items-center justify-center py-16">
-              <p className="text-lg mb-6">Login to view available exam sets.</p>
-              <button 
-                onClick={() => openAuthModal('login')} 
-                className="px-8 py-4 rounded-full gradient-primary text-white font-bold text-lg hover:scale-105 transition-transform neon-glow"
-              >
-                Login to View Exams
-              </button>
-            </div>
-          ) : (
-            <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait">
               {examsLoading ? (
                 <motion.div
                   key="exams-skeleton"
@@ -536,7 +548,6 @@ const Home = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          )}
 
           {/* Payment Modal for Single Subject */}
           {selectedSubject && (
