@@ -289,7 +289,7 @@ const Profile = () => {
                     </Link> */}
               </div>
 
-              {activePlans.length === 0 && individualSubjects.length === 0 ? (
+              {activePlans.length === 0 && individualSubjects.length === 0 && premiumPurchases.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -435,6 +435,63 @@ const Profile = () => {
                       </motion.div>
                     );
                   })}
+
+                  {/* PREMIUM PURCHASES (Special Exams & PYQ) */}
+                  {premiumPurchases.map((purchase: any) => {
+                    const isSpecialExam = purchase.resource_type === 'special_exam';
+                    const label = purchase.resource_name || (isSpecialExam ? 'Special Exam' : 'PYQ / PDF');
+                    const isExpired = purchase.expires_at && new Date(purchase.expires_at) < new Date();
+
+                    return (
+                      <motion.div
+                        key={`premium-${purchase.id}`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`bg-white rounded-xl border ${isExpired ? 'border-destructive/30' : 'border-border'} shadow-sm overflow-hidden flex flex-col sm:flex-row group hover:shadow-md transition-shadow`}
+                      >
+                        <div className={`w-full sm:w-2 ${isExpired ? 'bg-destructive/50' : isSpecialExam ? 'bg-gradient-to-b from-orange-500 to-red-500' : 'bg-gradient-to-b from-blue-500 to-indigo-500'}`}></div>
+
+                        <div className="p-5 flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-foreground">
+                              {label}
+                            </h3>
+                            <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              isExpired 
+                                ? 'bg-destructive/10 text-destructive border-destructive/20'
+                                : isSpecialExam 
+                                  ? 'bg-orange-100 text-orange-700 border-orange-200' 
+                                  : 'bg-blue-100 text-blue-700 border-blue-200'
+                            }`}>
+                              {isExpired ? 'EXPIRED' : isSpecialExam ? 'SPECIAL EXAM' : 'PYQ / PDF'}
+                            </span>
+                            {purchase.purchased_at && (
+                              <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Purchased: {new Date(purchase.purchased_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="shrink-0">
+                            {!isExpired ? (
+                              <Link
+                                to={isSpecialExam ? `/special-exam/${purchase.resource_id}` : '/pyq'}
+                                className="inline-flex items-center gap-1.5 px-5 py-2 bg-accent/10 text-accent-foreground hover:bg-accent hover:text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-accent/20 hover:border-accent"
+                              >
+                                {isSpecialExam ? 'Continue Exam' : 'View PDF'}
+                                <ChevronRight className="w-4 h-4" />
+                              </Link>
+                            ) : (
+                              <button disabled className="px-5 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-semibold cursor-not-allowed">
+                                Access Expired
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -488,7 +545,27 @@ const Profile = () => {
                           </tr>
                         );
                       })}
-                      {purchasedPlans.length === 0 && purchasedSubjects.length === 0 && (
+                      {/* PREMIUM PURCHASES (Special Exams & PYQ) */}
+                      {premiumPurchases.map((purchase: any) => (
+                        <tr key={`premium-${purchase.id}`} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-foreground">{purchase.resource_name || (purchase.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ / PDF')}</td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                              purchase.resource_type === 'special_exam' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {purchase.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{purchase.purchased_at ? new Date(purchase.purchased_at).toLocaleDateString() : 'N/A'}</td>
+                          <td className="px-4 py-3 text-right font-mono text-foreground">₹{purchase.price_paid || 0}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                              Success
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {purchasedPlans.length === 0 && purchasedSubjects.length === 0 && premiumPurchases.length === 0 && (
                         <tr>
                           <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                             No purchase history found.
