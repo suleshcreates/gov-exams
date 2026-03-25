@@ -83,7 +83,39 @@ export const getUserPremiumAccessController = async (req: Request, res: Response
             return res.status(500).json({ error: error.message });
         }
 
-        return res.status(200).json(data);
+        // Enrich with resource names and prices
+        const enriched = await Promise.all((data || []).map(async (record: any) => {
+            try {
+                if (record.resource_type === 'special_exam') {
+                    const { data: exam } = await supabase
+                        .from('special_exams')
+                        .select('title, price')
+                        .eq('id', record.resource_id)
+                        .single();
+                    return {
+                        ...record,
+                        resource_name: exam?.title || 'Special Exam',
+                        price_paid: record.amount_paid || exam?.price || 0
+                    };
+                } else if (record.resource_type === 'pyq') {
+                    const { data: pyq } = await supabase
+                        .from('pyq_pdfs')
+                        .select('title, price')
+                        .eq('id', record.resource_id)
+                        .single();
+                    return {
+                        ...record,
+                        resource_name: pyq?.title || 'PYQ / PDF',
+                        price_paid: record.amount_paid || pyq?.price || 0
+                    };
+                }
+            } catch (e) {
+                // If enrichment fails, return original record
+            }
+            return { ...record, resource_name: record.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ / PDF', price_paid: record.amount_paid || 0 };
+        }));
+
+        return res.status(200).json(enriched);
     } catch (err: any) {
         logger.error('Server error fetching user premium access:', err);
         return res.status(500).json({ error: 'Internal server error' });
