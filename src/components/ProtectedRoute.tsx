@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { auth } = useAuth();
+  const { auth, openAuthModal } = useAuth();
 
   useEffect(() => {
     // Don't redirect while loading
@@ -18,10 +18,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       return;
     }
 
-    // Not authenticated - redirect to login
+    // Not authenticated - show modal and redirect to home
     if (!auth.isAuthenticated || !auth.user) {
-      logger.debug('[ProtectedRoute] Not authenticated, redirecting to login');
-      navigate('/login', { replace: true, state: { from: location } });
+      logger.debug('[ProtectedRoute] Not authenticated, redirecting to home and opening login modal');
+      navigate('/', { replace: true, state: { from: location } });
+      setTimeout(() => {
+        openAuthModal('login');
+      }, 100);
       return;
     }
 

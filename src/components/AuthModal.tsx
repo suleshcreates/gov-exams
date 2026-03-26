@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 const AuthModal = () => {
-  const { authModalType, openAuthModal, closeAuthModal, signIn, signUp, resetPassword } = useAuth();
+  const { authModalType, openAuthModal, closeAuthModal, signIn, signUp, requestOTP, verifyOTPAndSignup, resetPassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -22,7 +22,9 @@ const AuthModal = () => {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
-  
+  const [showOTP, setShowOTP] = useState(false);
+  const [otp, setOtp] = useState('');
+
   // Forgot Password specific
   const [resetToken, setResetToken] = useState('');
 
@@ -35,6 +37,8 @@ const AuthModal = () => {
     setUsername('');
     setPhone('');
     setResetToken('');
+    setShowOTP(false);
+    setOtp('');
   }, [authModalType]);
 
   if (!authModalType) return null;
@@ -75,16 +79,37 @@ const AuthModal = () => {
     setError('');
 
     try {
-      await signUp({ fullName, username, phone, email: identifier, password });
-      toast({ title: 'Account Created!', description: 'Please check your email to verify your account.' });
-      closeAuthModal();
-      navigate('/login'); // We might want to just show a success message instead of redirecting
+      await requestOTP(identifier, fullName);
+      setShowOTP(true);
+      toast({ title: 'OTP Sent', description: 'Please check your email for the verification code.' });
     } catch (err: any) {
-      if (err.message?.includes('User already registered')) {
+      if (err.message?.includes('User already registered') || err.message?.includes('already exists')) {
         setError('This email is already registered. Please sign in instead.');
       } else {
-        setError(err.message || 'Failed to create account');
+        setError(err.message || 'Failed to send verify code');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp.trim()) {
+      setError('Please enter the verification code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await verifyOTPAndSignup(identifier, otp, { fullName, username, phone, email: identifier, password });
+      toast({ title: 'Account Verified!', description: 'Your account has been successfully created.' });
+      closeAuthModal();
+      // Optionally navigate to dashboard or refresh since auth state updates globally
+    } catch (err: any) {
+      setError(err.message || 'Invalid or expired OTP');
     } finally {
       setLoading(false);
     }
@@ -222,7 +247,7 @@ const AuthModal = () => {
               </form>
             )}
 
-            {authModalType === 'signup' && (
+            {authModalType === 'signup' && !showOTP && (
               <form onSubmit={handleSignup} className="space-y-4">
                 <div>
                   <div className="relative">
@@ -315,6 +340,51 @@ const AuthModal = () => {
                     Log In
                   </button>
                 </p>
+              </form>
+            )}
+
+            {authModalType === 'signup' && showOTP && (
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div className="text-center mb-6">
+                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                    <Mail className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Verify Your Email</h3>
+                  <p className="text-sm text-gray-500 mt-2">
+                    We've sent a 6-digit verification code to<br/>
+                    <span className="font-semibold text-gray-700">{identifier}</span>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Enter Verification Code</label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    className="w-full text-center tracking-[0.5em] text-2xl py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none font-mono"
+                    placeholder="000000"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowOTP(false)}
+                    className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || otp.length < 6}
+                    className="flex-1 py-3 px-4 gradient-primary text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                  >
+                    {loading ? 'Verifying...' : 'Verify & Sign Up'}
+                  </button>
+                </div>
               </form>
             )}
 

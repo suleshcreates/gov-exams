@@ -24,6 +24,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
   verifyOTP: (email: string, otp: string) => { valid: boolean; message: string };
+  requestOTP: (email: string, name: string) => Promise<any>;
+  verifyOTPAndSignup: (email: string, otp: string, data: SignUpData) => Promise<void>;
   resetPassword: (email: string, newPassword: string, resetToken: string) => Promise<void>;
   authModalType: 'login' | 'signup' | 'forgot-password' | null;
   openAuthModal: (type: 'login' | 'signup' | 'forgot-password') => void;
@@ -131,7 +133,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Sign up new user
+  // Request OTP for new signup
+  const requestOTP = async (email: string, name: string) => {
+    logger.debug('[AuthContext] Requesting OTP for:', email);
+    const response = await api.requestOTP(email, name);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to send OTP');
+    }
+    return response;
+  };
+
+  // Verify OTP and complete signup
+  const verifyOTPAndSignup = async (email: string, otp: string, data: SignUpData) => {
+    logger.debug('[AuthContext] Verifying OTP and completing signup for:', email);
+    const response = await api.verifyOTPAndSignup(email, otp, {
+      name: data.fullName,
+      email: data.email,
+      username: data.username,
+      phone: data.phone,
+      password: data.password,
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || 'Invalid OTP or failed to sign up');
+    }
+
+    if (response.user) {
+      setUser(response.user);
+    }
+  };
+
+  // Sign up new user (Legacy direct signup)
   const signUp = async (data: SignUpData) => {
     try {
       logger.debug('[AuthContext] Creating new account for:', data.email);
@@ -254,13 +286,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ auth, signUp, signIn, signOut, refreshUser,        verifyOTP,
-        resetPassword,
-        authModalType,
-        openAuthModal,
-        closeAuthModal
-      }}
-    >  {children}
+    <AuthContext.Provider value={{ auth, signUp, signIn, signOut, refreshUser, verifyOTP, requestOTP, verifyOTPAndSignup, resetPassword, authModalType, openAuthModal, closeAuthModal }}>
+      {children}
     </AuthContext.Provider>
   );
 };
