@@ -119,7 +119,7 @@ export async function signup(
         // Check if student record exists (e.g., from OTP request)
         const { data: existingStudent } = await supabaseAdmin
             .from('students')
-            .select('id')
+            .select('email')
             .eq('email', email)
             .maybeSingle();
 
