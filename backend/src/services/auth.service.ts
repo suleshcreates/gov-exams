@@ -114,26 +114,60 @@ export async function signup(
         const authUserId = authData.user.id;
         const passwordHash = await hashPassword(password);
 
-        logger.info(`Updating OTP record for: ${email}`);
-        const { data: student, error: updateError } = await supabaseAdmin
+        logger.info(`Updating or creating OTP record for: ${email}`);
+        
+        // Check if student record exists (e.g., from OTP request)
+        const { data: existingStudent } = await supabaseAdmin
             .from('students')
-            .update({
-                auth_user_id: authUserId,
-                name,
-                username,
-                phone,
-                password_hash: passwordHash,
-                is_verified: true,
-                email_verified: true,
-                verification_code: null,
-                verification_code_expires: null,
-            })
+            .select('id')
             .eq('email', email)
-            .select()
-            .single();
+            .maybeSingle();
 
-        if (updateError || !student) {
-            logger.error('Error updating student profile:', updateError);
+        let student;
+        let dbError;
+
+        if (existingStudent) {
+            const { data, error } = await supabaseAdmin
+                .from('students')
+                .update({
+                    auth_user_id: authUserId,
+                    name,
+                    username,
+                    phone,
+                    password_hash: passwordHash,
+                    is_verified: true,
+                    email_verified: true,
+                    verification_code: null,
+                    verification_code_expires: null,
+                })
+                .eq('email', email)
+                .select()
+                .single();
+            student = data;
+            dbError = error;
+        } else {
+             const { data, error } = await supabaseAdmin
+                .from('students')
+                .insert({
+                    email,
+                    auth_user_id: authUserId,
+                    name,
+                    username,
+                    phone,
+                    password_hash: passwordHash,
+                    is_verified: true,
+                    email_verified: true,
+                    verification_code: null,
+                    verification_code_expires: null,
+                })
+                .select()
+                .single();
+             student = data;
+             dbError = error;
+        }
+
+        if (dbError || !student) {
+            logger.error('Error updating/creating student profile:', dbError);
             await supabaseAdmin.auth.admin.deleteUser(authUserId);
             return {
                 success: false,
