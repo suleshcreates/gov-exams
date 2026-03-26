@@ -34,7 +34,7 @@ import {
     generateUploadUrlController
 } from '../controllers/topic.controller';
 import { createQuestionSetController, updateQuestionSetController, deleteQuestionSetController } from '../controllers/questionSet.controller';
-import { bulkCreateQuestionsController } from '../controllers/question.controller';
+import { bulkCreateQuestionsController, createQuestionController, updateQuestionController, deleteQuestionController, getQuestionsBySetController } from '../controllers/question.controller';
 import {
     createSpecialExamController,
     updateSpecialExamController,
@@ -104,7 +104,11 @@ router.put('/question-sets/:id', updateQuestionSetController);
 router.delete('/question-sets/:id', deleteQuestionSetController);
 
 // Questions Management
+router.get('/questions/:setId', getQuestionsBySetController);
+router.post('/questions', createQuestionController);
 router.post('/questions/bulk', bulkCreateQuestionsController);
+router.put('/questions/:id', updateQuestionController);
+router.delete('/questions/:id', deleteQuestionController);
 
 // Plans Management
 router.get('/plans', getUserPlansController);

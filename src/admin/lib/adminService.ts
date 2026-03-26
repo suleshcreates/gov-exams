@@ -811,14 +811,20 @@ export const adminService = {
   // Questions Management
   async getQuestions(questionSetId: string) {
     try {
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('question_set_id', questionSetId)
-        .order('order_index', { ascending: true });
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/questions/${questionSetId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
-      return data || [];
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to fetch questions');
+      }
+
+      return await response.json();
     } catch (error) {
       logger.error('[adminService] Error fetching questions:', error);
       throw error;
@@ -841,14 +847,22 @@ export const adminService = {
     order_index: number;
   }) {
     try {
-      const { data: question, error } = await supabase
-        .from('questions')
-        .insert([data])
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/questions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      if (error) throw error;
-      return question;
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to create question');
+      }
+
+      return await response.json();
     } catch (error) {
       logger.error('[adminService] Error creating question:', error);
       throw error;
@@ -870,15 +884,22 @@ export const adminService = {
     order_index: number;
   }>) {
     try {
-      const { data: question, error } = await supabase
-        .from('questions')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/questions/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      if (error) throw error;
-      return question;
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to update question');
+      }
+
+      return await response.json();
     } catch (error) {
       logger.error('[adminService] Error updating question:', error);
       throw error;
@@ -887,12 +908,20 @@ export const adminService = {
 
   async deleteQuestion(id: string) {
     try {
-      const { error } = await supabase
-        .from('questions')
-        .delete()
-        .eq('id', id);
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/questions/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to delete question');
+      }
+
       return true;
     } catch (error) {
       logger.error('[adminService] Error deleting question:', error);
