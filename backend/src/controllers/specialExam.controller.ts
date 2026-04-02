@@ -201,21 +201,42 @@ export const assignQuestionSetController = async (req: Request, res: Response) =
     try {
         const { examId, setNumber } = req.params;
         const { question_set_id } = req.body;
+        const setNum = parseInt(setNumber);
 
-        const { data, error } = await supabase
+        // Try to update existing row first
+        const { data: updateData, error: updateError } = await supabase
             .from('special_exam_sets')
             .update({ question_set_id })
             .eq('special_exam_id', examId)
-            .eq('set_number', parseInt(setNumber))
-            .select()
-            .single();
+            .eq('set_number', setNum)
+            .select();
 
-        if (error) {
-            logger.error('Error assigning question set:', error);
-            return res.status(500).json({ error: error.message });
+        if (updateError) {
+            logger.error('Error updating question set assignment:', updateError);
+            return res.status(500).json({ error: updateError.message });
         }
 
-        return res.status(200).json(data);
+        // If no row was updated, insert a new one
+        if (!updateData || updateData.length === 0) {
+            const { data: insertData, error: insertError } = await supabase
+                .from('special_exam_sets')
+                .insert({
+                    special_exam_id: examId,
+                    set_number: setNum,
+                    question_set_id
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                logger.error('Error inserting question set assignment:', insertError);
+                return res.status(500).json({ error: insertError.message });
+            }
+
+            return res.status(201).json(insertData);
+        }
+
+        return res.status(200).json(updateData[0]);
     } catch (err: any) {
         logger.error('Server error assigning question set:', err);
         return res.status(500).json({ error: 'Internal server error' });
