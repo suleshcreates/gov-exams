@@ -10,6 +10,7 @@ interface DashboardMetrics {
   totalExamResults: number;
   totalRevenue: number;
   averageScore: number;
+  revenueByPlan: Record<string, number>;
 }
 
 const Dashboard = () => {
@@ -157,16 +158,24 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center gap-2 mb-4">
             <PieChartIcon className="text-green-600" size={20} />
-            <h2 className="text-lg font-semibold text-gray-900">Revenue by Plan Type</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Revenue Breakdown</h2>
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={[
-                  { name: 'Basic Plans', value: Math.floor((metrics?.totalRevenue || 0) * 0.3), fill: '#3B82F6' },
-                  { name: 'Premium Plans', value: Math.floor((metrics?.totalRevenue || 0) * 0.5), fill: '#10B981' },
-                  { name: 'Individual', value: Math.floor((metrics?.totalRevenue || 0) * 0.2), fill: '#F59E0B' },
-                ]}
+                data={(() => {
+                  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899'];
+                  const breakdown = metrics?.revenueByPlan || {};
+                  const entries = Object.entries(breakdown).filter(([, value]) => value > 0);
+                  if (entries.length === 0) {
+                    return [{ name: 'No Revenue', value: 1, fill: '#E5E7EB' }];
+                  }
+                  return entries.map(([name, value], idx) => ({
+                    name,
+                    value,
+                    fill: COLORS[idx % COLORS.length],
+                  }));
+                })()}
                 cx="50%"
                 cy="50%"
                 labelLine={false}

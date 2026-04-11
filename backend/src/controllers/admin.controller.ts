@@ -61,23 +61,36 @@ export async function getStatsController(
             .from('user_plans')
             .select('price_paid, plan_name');
 
-        // Get revenue from special exam purchases (user_premium_access joined with special_exams?)
-        // Or better, track 'purchases' table if exists. 
-        // For now, rely on user_plans as main revenue source or check 'user_premium_access' if it has price.
-        // The previous code only checked user_plans. I will keep it simple for now or check 'user_premium_access' if requested.
-        // User asked to "save and display this data" (meaning results).
-        // I'll stick to updating RESULT stats.
+        // Get revenue from premium purchases (special exams & PYQ)
+        const { data: premiumData } = await supabaseAdmin
+            .from('user_premium_access')
+            .select('amount_paid, resource_type');
 
-        const totalRevenue = planData
+        // Calculate plan revenue
+        const planRevenue = planData
             ? planData.reduce((acc, curr) => acc + (parseFloat(curr.price_paid) || 0), 0)
             : 0;
 
-        // Calculate revenue by plan type
+        // Calculate premium revenue
+        const premiumRevenue = premiumData
+            ? premiumData.reduce((acc, curr) => acc + (parseFloat(curr.amount_paid) || 0), 0)
+            : 0;
+
+        const totalRevenue = planRevenue + premiumRevenue;
+
+        // Calculate revenue by plan type (includes premium breakdown)
         const revenueByPlan: Record<string, number> = {};
         if (planData) {
             planData.forEach((plan) => {
-                const planName = plan.plan_name || 'Unknown';
+                const planName = plan.plan_name || 'Other Plans';
                 revenueByPlan[planName] = (revenueByPlan[planName] || 0) + (parseFloat(plan.price_paid) || 0);
+            });
+        }
+        // Add premium purchases to the breakdown
+        if (premiumData) {
+            premiumData.forEach((record) => {
+                const category = record.resource_type === 'special_exam' ? 'Special Exams' : 'PYQ / PDFs';
+                revenueByPlan[category] = (revenueByPlan[category] || 0) + (parseFloat(record.amount_paid) || 0);
             });
         }
 
@@ -86,6 +99,7 @@ export async function getStatsController(
             stats: {
                 totalStudents: totalStudents || 0,
                 activePlans: activePlans || 0,
+                premiumPurchases: premiumData?.length || 0,
                 totalResults: totalResults || 0,
                 averageScore: averageScore,
                 totalRevenue: totalRevenue,
