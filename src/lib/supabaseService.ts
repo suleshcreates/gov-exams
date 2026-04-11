@@ -105,39 +105,6 @@ export const supabaseService = {
     return data;
   },
 
-  async updateExamProgress(phone: string, examId: string, completedSetNumber: number) {
-    // Check existing progress
-    const { data: existing } = await supabase
-      .from('exam_progress')
-      .select('*')
-      .eq('student_phone', phone)
-      .eq('exam_id', examId)
-      .single();
-
-    if (existing) {
-      // Only update if new set number is higher
-      if (completedSetNumber > (existing.completed_set_number || 0)) {
-        await supabase
-          .from('exam_progress')
-          .update({
-            completed_set_number: completedSetNumber,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
-      }
-    } else {
-      // Create new progress record
-      await supabase
-        .from('exam_progress')
-        .insert([{
-          student_phone: phone,
-          exam_id: examId,
-          completed_set_number: completedSetNumber,
-          is_unlocked: true // Default to true for first record
-        }]);
-    }
-  },
-
   async getStudentExamResults(phone: string) {
     const { data, error } = await supabase
       .from('exam_results')

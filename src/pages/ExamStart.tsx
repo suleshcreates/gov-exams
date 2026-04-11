@@ -38,6 +38,10 @@ const ExamStart = () => {
   const [resumeSeconds, setResumeSeconds] = useState<number | null>(null);
   const remainingSecondsRef = useRef<number>(0);
   const pausedByVisibilityRef = useRef(false);
+  // Refs to avoid stale closures in event handlers
+  const currentQuestionIndexRef = useRef(0);
+  const flaggedRef = useRef<boolean[]>([]);
+  const isMarathiRef = useRef(false);
   const { selectedLanguage } =
     (location.state as { selectedLanguage?: string } | null) ?? {};
 
@@ -55,6 +59,13 @@ const ExamStart = () => {
 
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentQuestionIndex];
+
+  // Sync refs with state to avoid stale closures in event listeners
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentQuestionIndex;
+    flaggedRef.current = flagged;
+    isMarathiRef.current = isMarathi;
+  }, [currentQuestionIndex, flagged, isMarathi]);
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const finalizeExam = useCallback(
@@ -321,11 +332,11 @@ const ExamStart = () => {
     try {
       const state = {
         answers: answersRef.current,
-        currentQuestionIndex,
-        flagged,
+        currentQuestionIndex: currentQuestionIndexRef.current,
+        flagged: flaggedRef.current,
         remainingSeconds: remainingSecondsRef.current,
         savedAt: Date.now(),
-        isMarathi,
+        isMarathi: isMarathiRef.current,
       };
       localStorage.setItem(getSessionKey(), JSON.stringify(state));
       logger.debug('[EXAM RESUME] State saved', { remainingSeconds: state.remainingSeconds });
@@ -509,10 +520,14 @@ const ExamStart = () => {
     };
     document.addEventListener("cut", handleCut);
 
-    // Monitor fullscreen changes
+    // Monitor fullscreen changes — pause instead of auto-submit
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-        finalizeExam("fullscreen");
+        if (!hasSubmittedRef.current && questions.length > 0) {
+          saveExamState();
+          setIsPaused(true);
+          pausedByVisibilityRef.current = true;
+        }
       }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
