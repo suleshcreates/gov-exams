@@ -54,17 +54,10 @@ const CameraMonitor = ({ onViolation }: CameraMonitorProps) => {
 
     startCamera();
 
-    const visibilityListener = () => {
-      if (document.visibilityState !== "visible") {
-        handleViolation();
-      }
-    };
-
-    document.addEventListener("visibilitychange", visibilityListener);
+    // Removed visibilityListener because ExamStart.tsx already handles visibility changes by pausing the exam.
 
     return () => {
       cancelled = true;
-      document.removeEventListener("visibilitychange", visibilityListener);
       const stream = streamRef.current;
       stream?.getTracks().forEach((track) => {
         track.onended = null;
