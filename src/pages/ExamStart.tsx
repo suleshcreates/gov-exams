@@ -6,7 +6,7 @@ import Timer from "@/components/Timer";
 import ProgressBar from "@/components/ProgressBar";
 import TranslateButton from "@/components/TranslateButton";
 import CameraMonitor from "@/components/CameraMonitor";
-import { Flag, ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { Flag, ChevronLeft, ChevronRight, Send, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabaseService } from "@/lib/supabaseService";
@@ -32,6 +32,12 @@ const ExamStart = () => {
   const answersRef = useRef<(number | null)[]>([]);
   const hasSubmittedRef = useRef(false);
   const startTimeRef = useRef<Date>(new Date());
+
+  // --- Resume Feature State ---
+  const [isPaused, setIsPaused] = useState(false);
+  const [resumeSeconds, setResumeSeconds] = useState<number | null>(null);
+  const remainingSecondsRef = useRef<number>(0);
+  const pausedByVisibilityRef = useRef(false);
   const { selectedLanguage } =
     (location.state as { selectedLanguage?: string } | null) ?? {};
 
@@ -59,6 +65,9 @@ const ExamStart = () => {
 
       hasSubmittedRef.current = true;
       setHasSubmitted(true);
+
+      // Clear any saved resume state since exam is being submitted
+      try { localStorage.removeItem(`exam_session_${examId}_${setId}`); } catch (_) {}
 
       if (reason === "time") {
         toast({
@@ -304,29 +313,103 @@ const ExamStart = () => {
     }
   }, [currentQuestion, isMarathi]);
 
+  // --- localStorage helpers for exam resume ---
+  const getSessionKey = () => `exam_session_${examId}_${setId}`;
+
+  const saveExamState = () => {
+    if (hasSubmittedRef.current || questions.length === 0) return;
+    try {
+      const state = {
+        answers: answersRef.current,
+        currentQuestionIndex,
+        flagged,
+        remainingSeconds: remainingSecondsRef.current,
+        savedAt: Date.now(),
+        isMarathi,
+      };
+      localStorage.setItem(getSessionKey(), JSON.stringify(state));
+      logger.debug('[EXAM RESUME] State saved', { remainingSeconds: state.remainingSeconds });
+    } catch (e) {
+      logger.error('[EXAM RESUME] Failed to save state', e);
+    }
+  };
+
+  const clearSavedExamState = () => {
+    try {
+      localStorage.removeItem(getSessionKey());
+    } catch (_) {}
+  };
+
+  const loadSavedExamState = () => {
+    try {
+      const raw = localStorage.getItem(getSessionKey());
+      if (!raw) return null;
+      const saved = JSON.parse(raw);
+      // Expire saved states older than 2 hours
+      if (Date.now() - saved.savedAt > 2 * 60 * 60 * 1000) {
+        clearSavedExamState();
+        return null;
+      }
+      // Expire if no time remaining
+      if (saved.remainingSeconds <= 0) {
+        clearSavedExamState();
+        return null;
+      }
+      return saved;
+    } catch (_) {
+      return null;
+    }
+  };
+
   useEffect(() => {
     const initialAnswers = new Array(totalQuestions).fill(null);
-    answersRef.current = initialAnswers;
-    setAnswers(initialAnswers);
-    setFlagged(new Array(totalQuestions).fill(false));
+
+    // Check for saved session to restore
+    const saved = loadSavedExamState();
+    if (saved && saved.answers?.length === totalQuestions) {
+      // Restore saved state
+      answersRef.current = saved.answers;
+      setAnswers(saved.answers);
+      setFlagged(saved.flagged || new Array(totalQuestions).fill(false));
+      setCurrentQuestionIndex(saved.currentQuestionIndex || 0);
+      setResumeSeconds(saved.remainingSeconds);
+      remainingSecondsRef.current = saved.remainingSeconds;
+      setIsPaused(true); // Start paused, user must click Resume
+      pausedByVisibilityRef.current = true;
+      setIsMarathi(saved.isMarathi || selectedLanguage === "marathi");
+      logger.info('[EXAM RESUME] Restored saved session', { remainingSeconds: saved.remainingSeconds });
+    } else {
+      answersRef.current = initialAnswers;
+      setAnswers(initialAnswers);
+      setFlagged(new Array(totalQuestions).fill(false));
+      setIsMarathi(selectedLanguage === "marathi");
+      remainingSecondsRef.current = timeLimit * 60;
+    }
+
     hasSubmittedRef.current = false;
     setHasSubmitted(false);
-    startTimeRef.current = new Date(); // Reset start time when exam starts
-
-    setIsMarathi(selectedLanguage === "marathi");
+    startTimeRef.current = new Date();
 
     const disableRightClick = (e: MouseEvent) => e.preventDefault();
     document.addEventListener("contextmenu", disableRightClick);
 
+    // --- RESUME: Save state on visibility loss instead of auto-submitting ---
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        finalizeExam("focus");
+      if (document.hidden && !hasSubmittedRef.current && questions.length > 0) {
+        // Save current exam state and pause
+        saveExamState();
+        setIsPaused(true);
+        pausedByVisibilityRef.current = true;
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const handleBlur = () => {
-      finalizeExam("focus");
+      if (!hasSubmittedRef.current && questions.length > 0) {
+        saveExamState();
+        setIsPaused(true);
+        pausedByVisibilityRef.current = true;
+      }
     };
     window.addEventListener("blur", handleBlur);
 
@@ -686,7 +769,54 @@ const ExamStart = () => {
       </div>
 
       {/* Timer (fixed) */}
-      <Timer initialMinutes={timeLimit} onTimeUp={() => finalizeExam("time")} />
+      <Timer
+        initialMinutes={timeLimit}
+        initialSeconds={resumeSeconds ?? undefined}
+        onTimeUp={() => finalizeExam("time")}
+        onTick={(s) => { remainingSecondsRef.current = s; }}
+        paused={isPaused}
+      />
+
+      {/* Resume Overlay */}
+      {isPaused && (
+        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border rounded-2xl shadow-2xl p-8 max-w-md w-full text-center"
+          >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 flex items-center justify-center">
+              <Clock className="w-8 h-8 text-yellow-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Exam Paused</h2>
+            <p className="text-muted-foreground mb-1">
+              You left the exam window. Your progress has been saved.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Time remaining: <span className="font-semibold text-primary">
+                {Math.floor(remainingSecondsRef.current / 60)}m {remainingSecondsRef.current % 60}s
+              </span>
+            </p>
+            <button
+              onClick={() => {
+                setIsPaused(false);
+                pausedByVisibilityRef.current = false;
+                clearSavedExamState();
+                toast({
+                  title: "Exam Resumed",
+                  description: "Continue from where you left off.",
+                });
+              }}
+              className="w-full px-8 py-3 rounded-xl gradient-primary text-white font-semibold text-lg hover:opacity-90 transition-opacity"
+            >
+              ▶ Resume Exam
+            </button>
+            <p className="text-xs text-muted-foreground mt-4">
+              ⚠ Leaving again will pause the exam. Timer continues only when resumed.
+            </p>
+          </motion.div>
+        </div>
+      )}
 
       {/* Translate toggle (fixed) */}
       <motion.div

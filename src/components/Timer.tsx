@@ -1,31 +1,42 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Clock } from "lucide-react";
 
 interface TimerProps {
   initialMinutes: number;
+  initialSeconds?: number; // Override: if provided, use this instead of initialMinutes * 60
   onTimeUp: () => void;
+  onTick?: (remainingSeconds: number) => void; // Called each second with remaining time
+  paused?: boolean; // Pause the timer (e.g., when exam is paused)
 }
 
-const Timer = ({ initialMinutes, onTimeUp }: TimerProps) => {
-  const [seconds, setSeconds] = useState(initialMinutes * 60);
+const Timer = ({ initialMinutes, initialSeconds: initialSecondsProp, onTimeUp, onTick, paused }: TimerProps) => {
+  const totalInitialSeconds = initialSecondsProp ?? initialMinutes * 60;
+  const [seconds, setSeconds] = useState(totalInitialSeconds);
+  const onTickRef = useRef(onTick);
+  onTickRef.current = onTick;
 
   useEffect(() => {
+    if (paused) return;
     if (seconds <= 0) {
       onTimeUp();
       return;
     }
 
     const interval = setInterval(() => {
-      setSeconds((prev) => prev - 1);
+      setSeconds((prev) => {
+        const next = prev - 1;
+        onTickRef.current?.(next);
+        return next;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [seconds, onTimeUp]);
+  }, [seconds, onTimeUp, paused]);
 
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  const percentage = (seconds / (initialMinutes * 60)) * 100;
+  const percentage = (seconds / totalInitialSeconds) * 100;
   const isLowTime = seconds < 60;
 
   return (
@@ -73,7 +84,9 @@ const Timer = ({ initialMinutes, onTimeUp }: TimerProps) => {
       </div>
 
       <div>
-        <p className="text-xs text-muted-foreground leading-none hidden sm:block">Time Left</p>
+        <p className="text-xs text-muted-foreground leading-none hidden sm:block">
+          {paused ? "Paused" : "Time Left"}
+        </p>
         <p
           className={`text-sm sm:text-base font-semibold ${
             isLowTime ? "text-destructive animate-glow-pulse" : "gradient-text"
