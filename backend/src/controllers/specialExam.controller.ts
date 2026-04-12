@@ -266,7 +266,45 @@ export const checkExamAccessController = async (req: Request, res: Response) => 
         }
 
         const hasAccess = !!data;
-        return res.status(200).json({ hasAccess, accessData: data });
+        
+        // Add attempt checks for Special Exams
+        let attemptsData = {
+            totalSubmissions: 0,
+            setsCount: 5,
+            maxSubmissions: 50,
+            completedExams: 0,
+            maxCompletions: 10,
+            limitReached: false
+        };
+
+        if (hasAccess) {
+            const { count: setsCount } = await supabase
+                .from('special_exam_sets')
+                .select('*', { count: 'exact', head: true })
+                .eq('special_exam_id', id);
+                
+            const actualSetsCount = setsCount || 5;
+
+            const { count: totalSubmissions } = await supabase
+                .from('special_exam_results')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_auth_id', userId)
+                .eq('special_exam_id', id);
+
+            const actualSubmissions = totalSubmissions || 0;
+            const maxAllowedSubmissions = actualSetsCount * 10;
+            
+            attemptsData = {
+                totalSubmissions: actualSubmissions,
+                setsCount: actualSetsCount,
+                maxSubmissions: maxAllowedSubmissions,
+                completedExams: Math.floor(actualSubmissions / actualSetsCount),
+                maxCompletions: 10,
+                limitReached: actualSubmissions >= maxAllowedSubmissions
+            };
+        }
+
+        return res.status(200).json({ hasAccess, accessData: data, attemptsData });
     } catch (err: any) {
         logger.error('Server error checking exam access:', err);
         return res.status(500).json({ error: 'Internal server error' });
@@ -336,6 +374,27 @@ export const submitExamResultController = async (req: Request, res: Response) =>
         const user = (req as any).user;
         const userId = user.auth_user_id || user.id;
         const userEmail = user.email;
+
+        // Verify Attempt Limit First
+        const { count: setsCount } = await supabase
+            .from('special_exam_sets')
+            .select('*', { count: 'exact', head: true })
+            .eq('special_exam_id', examId);
+            
+        const actualSetsCount = setsCount || 5;
+
+        const { count: totalSubmissions } = await supabase
+            .from('special_exam_results')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_auth_id', userId)
+            .eq('special_exam_id', examId);
+
+        const actualSubmissions = totalSubmissions || 0;
+        const maxAllowedSubmissions = actualSetsCount * 10;
+
+        if (actualSubmissions >= maxAllowedSubmissions) {
+            return res.status(403).json({ error: 'Attempt limit reached. You can only complete this curriculum 10 times.' });
+        }
 
         const { data, error } = await supabase
             .from('special_exam_results')

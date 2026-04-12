@@ -42,6 +42,7 @@ const SpecialExamDetail: React.FC = () => {
     const [examSets, setExamSets] = useState<ExamSet[]>([]);
     const [purchasing, setPurchasing] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
+    const [attemptsInfo, setAttemptsInfo] = useState<any>(null);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -75,6 +76,10 @@ const SpecialExamDetail: React.FC = () => {
             });
             const accessData = await accessRes.json();
             setHasAccess(accessData.hasAccess);
+            
+            if (accessData.attemptsData) {
+                setAttemptsInfo(accessData.attemptsData);
+            }
 
             if (accessData.hasAccess) {
                 const resultsRes = await fetch(`${API_URL}/api/student/special-exams/${id}/results`, {
@@ -540,9 +545,10 @@ const SpecialExamDetail: React.FC = () => {
                                                     {set.status === 'unlocked' ? (
                                                         <button
                                                             onClick={() => handleStartSet(set.set_number)}
-                                                            className="w-full sm:w-auto px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95"
+                                                            disabled={Boolean(attemptsInfo?.limitReached)}
+                                                            className="w-full sm:w-auto px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
-                                                            Start Attempt
+                                                            {attemptsInfo?.limitReached ? 'Limit Reached' : 'Start Attempt'}
                                                         </button>
                                                     ) : set.status === 'completed' ? (
                                                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -554,9 +560,10 @@ const SpecialExamDetail: React.FC = () => {
                                                             </button>
                                                             <button
                                                                 onClick={() => handleStartSet(set.set_number)}
-                                                                className="flex-1 sm:flex-none px-4 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-colors"
+                                                                disabled={Boolean(attemptsInfo?.limitReached)}
+                                                                className="flex-1 sm:flex-none px-4 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
-                                                                Re-attempt
+                                                                {attemptsInfo?.limitReached ? 'Limit Reached' : 'Re-attempt'}
                                                             </button>
                                                         </div>
                                                     ) : set.status === 'waiting' ? (
@@ -666,6 +673,26 @@ const SpecialExamDetail: React.FC = () => {
                                 </div>
 
                                 <div className="mt-8 space-y-4">
+                                    {attemptsInfo && (
+                                        <div className="flex items-center justify-between p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                                            <div className="flex items-center gap-3">
+                                                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                                                     <Timer className="w-4 h-4 text-orange-600" />
+                                                 </div>
+                                                 <div>
+                                                     <div className="text-sm font-bold text-slate-800">Exam Attempts</div>
+                                                     <div className="text-xs text-slate-500 font-medium">{attemptsInfo.setsCount} sets / completion</div>
+                                                 </div>
+                                            </div>
+                                            <div className="text-right">
+                                                 <div className={`text-lg font-black ${attemptsInfo.limitReached ? 'text-red-500' : 'text-slate-900'}`}>
+                                                     {attemptsInfo.completedExams} / {attemptsInfo.maxCompletions}
+                                                 </div>
+                                                 <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Completions</div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-3 text-slate-500">
                                         <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
                                             <ShieldCheck className="w-4 h-4 text-indigo-500" />
