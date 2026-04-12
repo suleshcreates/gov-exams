@@ -127,7 +127,7 @@ export const getUserPremiumAccessController = async (req: Request, res: Response
 // ============================================
 export const getAllPremiumAccessController = async (req: Request, res: Response) => {
     try {
-        const { resource_type, page = 1, limit = 20 } = req.query;
+        const { resource_type, page = 1, limit = 20, studentSearch = '' } = req.query;
 
         let query = supabase
             .from('user_premium_access')
@@ -139,6 +139,10 @@ export const getAllPremiumAccessController = async (req: Request, res: Response)
             query = query.eq('resource_type', resource_type);
         }
 
+        if (studentSearch) {
+            query = query.or(`user_email.ilike.%${studentSearch}%`);
+        }
+
         const { data, error, count } = await query;
 
         if (error) {
@@ -146,11 +150,44 @@ export const getAllPremiumAccessController = async (req: Request, res: Response)
             return res.status(500).json({ error: error.message });
         }
 
+        // Enrich with resource names and prices
+        const enriched = await Promise.all((data || []).map(async (record: any) => {
+            try {
+                if (record.resource_type === 'special_exam') {
+                    const { data: exam } = await supabase
+                        .from('special_exams')
+                        .select('title, price')
+                        .eq('id', record.resource_id)
+                        .single();
+                    return {
+                        ...record,
+                        resource_name: exam?.title || 'Special Exam',
+                        price_paid: record.amount_paid || exam?.price || 0
+                    };
+                } else if (record.resource_type === 'pyq') {
+                    const { data: pyq } = await supabase
+                        .from('pyq_pdfs')
+                        .select('title, price')
+                        .eq('id', record.resource_id)
+                        .single();
+                    return {
+                        ...record,
+                        resource_name: pyq?.title || 'PYQ / PDF',
+                        price_paid: record.amount_paid || pyq?.price || 0
+                    };
+                }
+            } catch (e) {
+                // If enrichment fails, return original record
+            }
+            return { ...record, resource_name: record.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ / PDF', price_paid: record.amount_paid || 0 };
+        }));
+
         return res.status(200).json({
-            data,
+            data: enriched,
             total: count,
             page: Number(page),
-            limit: Number(limit)
+            limit: Number(limit),
+            totalPages: Math.ceil((count || 0) / Number(limit))
         });
     } catch (err: any) {
         logger.error('Server error fetching all premium access:', err);

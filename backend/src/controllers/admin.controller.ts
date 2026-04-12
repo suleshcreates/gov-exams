@@ -951,3 +951,59 @@ export async function getStudentHistoryByStudentController(
         res.status(500).json({ success: false, error: 'Failed to fetch student history' });
     }
 }
+
+// Special Exam Attempts for Admin
+export async function adminGetSpecialExamAttemptsController(
+    req: AuthRequest,
+    res: Response
+): Promise<void> {
+    try {
+        const { email, examId } = req.params;
+        const decodedEmail = decodeURIComponent(email);
+
+        // Fetch user submissions from special_exam_results
+        const { data: results, error } = await supabaseAdmin
+            .from('special_exam_results')
+            .select('*')
+            .eq('user_email', decodedEmail)
+            .eq('special_exam_id', examId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Fetch sets count to compute limits
+        const { count: setsCount, error: setsError } = await supabaseAdmin
+            .from('special_exam_sets')
+            .select('*', { count: 'exact', head: true })
+            .eq('special_exam_id', examId);
+
+        if (setsError) {
+            console.error("Error fetching sets count:", setsError);
+        }
+
+        const validSetsCount = setsCount || 0;
+        const maxSubmissions = validSetsCount * 10;
+        const totalSubmissions = results?.length || 0;
+        const limitReached = validSetsCount > 0 && totalSubmissions >= maxSubmissions;
+        const maxCompletions = 10;
+        const completedExams = validSetsCount > 0 ? Math.floor(totalSubmissions / validSetsCount) : 0;
+
+        res.json({
+            success: true,
+            attemptsData: {
+                totalSubmissions,
+                maxSubmissions,
+                limitReached,
+                setsCount: validSetsCount,
+                maxCompletions,
+                completedExams
+            },
+            history: results || []
+        });
+
+    } catch (error: any) {
+        logger.error('Get special exam attempts admin error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch attempts data' });
+    }
+}
+

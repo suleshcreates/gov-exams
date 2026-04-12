@@ -1360,4 +1360,55 @@ export const adminService = {
       throw error;
     }
   },
+
+  async getSpecialExamPurchases(page: number = 1, limit: number = 20, studentSearch: string = '') {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const params = new URLSearchParams({
+        resource_type: 'special_exam',
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      if (studentSearch) {
+        params.append('studentSearch', studentSearch);
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/premium-access?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch special exam purchases');
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error fetching special exam purchases:', error);
+      throw error;
+    }
+  },
+
+  async getSpecialExamAttempts(email: string, examId: string) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/special-exams/${examId}/attempts/${encodeURIComponent(email)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch special exam attempts');
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error fetching special exam attempts:', error);
+      throw error;
+    }
+  }
 };

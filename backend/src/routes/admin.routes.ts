@@ -19,7 +19,8 @@ import {
     deletePlanTemplateController,
     getStudentDetailsController,
     getStudentPlansByStudentController,
-    getStudentHistoryByStudentController
+    getStudentHistoryByStudentController,
+    adminGetSpecialExamAttemptsController
 } from '../controllers/admin.controller';
 import {
     createTopicController,
@@ -127,6 +128,7 @@ router.put('/special-exams/:id', updateSpecialExamController);
 router.delete('/special-exams/:id', deleteSpecialExamController);
 router.get('/special-exams/:id', getAdminSpecialExamByIdController);
 router.put('/special-exams/:examId/sets/:setNumber', assignQuestionSetController);
+router.get('/special-exams/:examId/attempts/:email', adminGetSpecialExamAttemptsController);
 
 // PYQ Management
 router.get('/pyq', getAdminPYQsController);

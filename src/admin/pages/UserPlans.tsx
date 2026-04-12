@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import logger from '@/lib/logger';
 import { adminService } from '../lib/adminService';
-import { Search, Filter, Plus, Edit, XCircle, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
+import { Search, Filter, Plus, Edit, XCircle, ChevronLeft, ChevronRight, CreditCard, Activity } from 'lucide-react';
 
 interface UserPlan {
   id: string;
@@ -16,22 +16,75 @@ interface UserPlan {
   is_active: boolean;
 }
 
+interface SpecialExamPurchase {
+  id: string;
+  user_email: string;
+  resource_id: string;
+  resource_name: string;
+  amount_paid: number;
+  created_at: string;
+  status: string;
+}
+
 const UserPlans = () => {
+  const [activeTab, setActiveTab] = useState<'main' | 'special'>('main');
   const [plans, setPlans] = useState<UserPlan[]>([]);
+  const [specialPurchases, setSpecialPurchases] = useState<SpecialExamPurchase[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [showManualPlanModal, setShowManualPlanModal] = useState(false);
   
+  const [globalStats, setGlobalStats] = useState({
+    totalPlans: 0,
+    activePlans: 0,
+    totalRevenue: 0,
+    avgPrice: 0
+  });
+
+  const [showAttemptsModal, setShowAttemptsModal] = useState<{
+    isOpen: boolean;
+    email: string;
+    examId: string;
+    examName: string;
+  }>({ isOpen: false, email: '', examId: '', examName: '' });
+
   const [filters, setFilters] = useState({
     status: 'all' as 'all' | 'active' | 'expired',
     studentSearch: '',
   });
 
   useEffect(() => {
-    loadPlans();
-  }, [page, filters]);
+    loadGlobalStats();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'main') {
+      loadPlans();
+    } else {
+      loadSpecialPurchases();
+    }
+  }, [page, filters, activeTab]);
+
+  const loadGlobalStats = async () => {
+    try {
+      const dashboard = await adminService.getDashboardMetrics();
+      if (dashboard?.stats) {
+        setGlobalStats({
+          totalPlans: (dashboard.stats.activePlans || 0), // Not directly having total plans historically without sum, fallback
+          activePlans: dashboard.stats.activePlans || 0,
+          totalRevenue: dashboard.stats.totalRevenue || 0,
+          avgPrice: dashboard.stats.activePlans && dashboard.stats.activePlans > 0 
+                    ? Math.round((dashboard.stats.totalRevenue || 0) / dashboard.stats.activePlans)
+                    : 0
+        });
+      }
+    } catch (e) {
+      logger.error('Error loading global stats in UserPlans:', e);
+    }
+  };
 
   const loadPlans = async () => {
     try {
@@ -43,8 +96,27 @@ const UserPlans = () => {
       setPlans(data.plans);
       setTotalPages(data.totalPages);
       setTotal(data.total);
+      
+      // Update total plans number more accurately if it's main tab and no filters
+      if (!filters.studentSearch && filters.status === 'all') {
+        setGlobalStats(prev => ({...prev, totalPlans: data.total}));
+      }
     } catch (error) {
       logger.error('Error loading user plans:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSpecialPurchases = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getSpecialExamPurchases(page, 20, filters.studentSearch);
+      setSpecialPurchases(data.data || []);
+      setTotalPages(data.totalPages || 1);
+      setTotal(data.total || 0);
+    } catch (error) {
+      logger.error('Error loading special purchases:', error);
     } finally {
       setLoading(false);
     }
@@ -63,6 +135,7 @@ const UserPlans = () => {
     try {
       await adminService.deactivateUserPlan(id);
       loadPlans();
+      loadGlobalStats();
     } catch (error) {
       logger.error('Error deactivating plan:', error);
       alert('Failed to deactivate plan');
@@ -81,7 +154,7 @@ const UserPlans = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">User Plans</h1>
-          <p className="text-gray-600 mt-1">Manage user subscriptions and access</p>
+          <p className="text-gray-600 mt-1">Manage user subscriptions, special exams, and access</p>
         </div>
         <button
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -89,6 +162,82 @@ const UserPlans = () => {
         >
           <Plus size={20} />
           Add Manual Plan
+        </button>
+      </div>
+
+      {/* Summary Stats using global variables */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <CreditCard className="text-blue-600" size={24} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total System Plans</p>
+              <p className="text-2xl font-bold">{globalStats.totalPlans || total}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-green-100 rounded-lg">
+              <CreditCard className="text-green-600" size={24} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Active Plans</p>
+              <p className="text-2xl font-bold">{globalStats.activePlans}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-purple-100 rounded-lg">
+              <CreditCard className="text-purple-600" size={24} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Plan/Exam Revenue</p>
+              <p className="text-2xl font-bold">
+                ₹{globalStats.totalRevenue.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-yellow-100 rounded-lg">
+              <CreditCard className="text-yellow-600" size={24} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Avg Value (Plans)</p>
+              <p className="text-2xl font-bold">₹{globalStats.avgPrice}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex border-b border-gray-200">
+        <button
+          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === 'main'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => { setActiveTab('main'); setPage(1); }}
+        >
+          Main Active Plans
+        </button>
+        <button
+          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === 'special'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => { setActiveTab('special'); setPage(1); }}
+        >
+          Special Exams Purchases
         </button>
       </div>
 
@@ -101,12 +250,13 @@ const UserPlans = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
+              Status (Main Plans)
             </label>
             <select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={activeTab === 'special'}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
             >
               <option value="all">All Plans</option>
               <option value="active">Active Only</option>
@@ -124,7 +274,7 @@ const UserPlans = () => {
                 type="text"
                 value={filters.studentSearch}
                 onChange={(e) => handleFilterChange('studentSearch', e.target.value)}
-                placeholder="Name or phone..."
+                placeholder="Name, email, or phone..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -132,34 +282,44 @@ const UserPlans = () => {
         </div>
       </div>
 
-      {/* Plans Table */}
+      {/* Plans/Purchases Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
-          ) : plans.length === 0 ? (
+          ) : activeTab === 'main' && plans.length === 0 ? (
             <div className="text-center py-12">
               <CreditCard className="mx-auto text-gray-400 mb-4" size={48} />
               <p className="text-gray-500">No plans found</p>
+            </div>
+          ) : activeTab === 'special' && specialPurchases.length === 0 ? (
+            <div className="text-center py-12">
+              <CreditCard className="mx-auto text-gray-400 mb-4" size={48} />
+              <p className="text-gray-500">No special exam purchases found</p>
             </div>
           ) : (
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    {activeTab === 'main' ? 'Student' : 'Student Email'}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    {activeTab === 'main' ? 'Plan' : 'Exam Title'}
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam Access</th>
+                  {activeTab === 'main' && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam Access</th>}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchased</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    {activeTab === 'main' ? 'Expires' : 'Status'}
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {plans.map((plan) => {
+                {activeTab === 'main' && plans.map((plan) => {
                   const isActive = isPlanActive(plan);
                   return (
                     <tr key={plan.id} className="hover:bg-gray-50">
@@ -205,19 +365,22 @@ const UserPlans = () => {
                         {plan.expires_at ? new Date(plan.expires_at).toLocaleDateString() : 'Never'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {isActive ? 'Active' : 'Inactive'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex items-center gap-2">
                           <button
+                            title="Edit Plan"
                             onClick={() => alert('Edit plan feature coming soon!')}
                             className="text-blue-600 hover:text-blue-800"
                           >
@@ -225,6 +388,7 @@ const UserPlans = () => {
                           </button>
                           {isActive && (
                             <button
+                              title="Deactivate Plan"
                               onClick={() => handleDeactivate(plan.id, plan.plan_name)}
                               className="text-red-600 hover:text-red-800"
                             >
@@ -236,18 +400,62 @@ const UserPlans = () => {
                     </tr>
                   );
                 })}
+
+                {activeTab === 'special' && specialPurchases.map((purchase) => {
+                  return (
+                    <tr key={purchase.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{purchase.user_email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{purchase.resource_name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ₹{purchase.amount_paid}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(purchase.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            purchase.status === 'success'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {purchase.status || 'Active'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          title="View Attempts"
+                          onClick={() => setShowAttemptsModal({
+                            isOpen: true,
+                            email: purchase.user_email,
+                            examId: purchase.resource_id,
+                            examName: purchase.resource_name
+                          })}
+                          className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium bg-blue-50 px-2 py-1 rounded"
+                        >
+                          <Activity size={16} /> Attempts
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
 
         {/* Pagination */}
-        {!loading && plans.length > 0 && (
+        {!loading && total > 0 && (
           <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
             <div className="text-sm text-gray-700">
               Showing <span className="font-medium">{(page - 1) * 20 + 1}</span> to{' '}
               <span className="font-medium">{Math.min(page * 20, total)}</span> of{' '}
-              <span className="font-medium">{total}</span> plans
+              <span className="font-medium">{total}</span> items
             </div>
             <div className="flex gap-2">
               <button
@@ -272,82 +480,172 @@ const UserPlans = () => {
         )}
       </div>
 
-      {/* Summary Stats */}
-      {!loading && plans.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <CreditCard className="text-blue-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Plans</p>
-                <p className="text-2xl font-bold">{total}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CreditCard className="text-green-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Active Plans</p>
-                <p className="text-2xl font-bold">
-                  {plans.filter(p => isPlanActive(p)).length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <CreditCard className="text-purple-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Revenue</p>
-                <p className="text-2xl font-bold">
-                  ₹{plans.reduce((sum, p) => sum + p.price_paid, 0).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <CreditCard className="text-yellow-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Avg Price</p>
-                <p className="text-2xl font-bold">
-                  ₹{plans.length > 0 ? Math.round(plans.reduce((sum, p) => sum + p.price_paid, 0) / plans.length) : 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Manual Plan Modal */}
       {showManualPlanModal && (
         <ManualPlanModal
           onClose={() => setShowManualPlanModal(false)}
           onSuccess={() => {
             setShowManualPlanModal(false);
-            loadPlans();
+            if (activeTab === 'main') loadPlans();
+            loadGlobalStats();
           }}
+        />
+      )}
+
+      {/* Attempts Modal */}
+      {showAttemptsModal.isOpen && (
+        <AttemptsModal 
+          email={showAttemptsModal.email}
+          examId={showAttemptsModal.examId}
+          examName={showAttemptsModal.examName}
+          onClose={() => setShowAttemptsModal({ isOpen: false, email: '', examId: '', examName: '' })}
         />
       )}
     </div>
   );
 };
 
+// Attempts Modal Component
+interface AttemptsModalProps {
+  email: string;
+  examId: string;
+  examName: string;
+  onClose: () => void;
+}
+
+interface AttemptRecord {
+  id: string;
+  created_at: string;
+  set_number: number;
+  score: number;
+  total_questions: number;
+  accuracy: number;
+  time_taken_seconds: number;
+}
+
+interface AttemptDataResponse {
+  attemptsData: {
+    totalSubmissions: number;
+    maxSubmissions: number;
+    limitReached: boolean;
+    setsCount: number;
+    maxCompletions: number;
+    completedExams: number;
+  };
+  history: AttemptRecord[];
+}
+
+const AttemptsModal: React.FC<AttemptsModalProps> = ({ email, examId, examName, onClose }) => {
+  const [data, setData] = useState<AttemptDataResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAttempts = async () => {
+      try {
+        const res = await adminService.getSpecialExamAttempts(email, examId);
+        setData(res);
+      } catch (error) {
+        logger.error('Error fetching special exam attempts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAttempts();
+  }, [email, examId]);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Student Attempts</h2>
+            <p className="text-sm text-gray-600 mt-1">{email} • {examName}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <XCircle size={24} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {loading ? (
+             <div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+          ) : data ? (
+            <>
+              {/* Attempt Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-blue-600 font-medium">Total Sets Completed</div>
+                  <div className="text-2xl font-bold text-blue-800">{data.attemptsData.totalSubmissions} / {data.attemptsData.maxSubmissions}</div>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="text-sm text-green-600 font-medium">Full Completions</div>
+                  <div className="text-2xl font-bold text-green-800">{data.attemptsData.completedExams} / 10</div>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <div className="text-sm text-purple-600 font-medium">Sets Count</div>
+                  <div className="text-2xl font-bold text-purple-800">{data.attemptsData.setsCount}</div>
+                </div>
+                <div className={`p-4 rounded-lg ${data.attemptsData.limitReached ? 'bg-red-50' : 'bg-gray-50'}`}>
+                  <div className="text-sm font-medium text-gray-600">Status</div>
+                  <div className={`text-lg font-bold ${data.attemptsData.limitReached ? 'text-red-600' : 'text-gray-800'}`}>
+                    {data.attemptsData.limitReached ? 'Limit Reached' : 'Active'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Submission History */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Submission History</h3>
+                {data.history && data.history.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-gray-50 text-gray-600">
+                        <tr>
+                          <th className="px-4 py-3">Date</th>
+                          <th className="px-4 py-3">Set</th>
+                          <th className="px-4 py-3">Score</th>
+                          <th className="px-4 py-3">Accuracy</th>
+                          <th className="px-4 py-3">Time Taken</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {data.history.map((record: AttemptRecord) => (
+                          <tr key={record.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-gray-800">{new Date(record.created_at).toLocaleString()}</td>
+                            <td className="px-4 py-3 font-medium text-gray-900">Set {record.set_number}</td>
+                            <td className="px-4 py-3 font-semibold text-blue-600">{record.score} / {record.total_questions}</td>
+                            <td className="px-4 py-3">{record.accuracy}%</td>
+                            <td className="px-4 py-3">{Math.ceil(record.time_taken_seconds / 60)} min</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No attempts recorded yet.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-red-500">Failed to load attempt details.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // Manual Plan Modal Component
 interface ManualPlanModalProps {
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface StudentSearchResult {
+  id: string;
+  name: string;
+  email: string;
 }
 
 const ManualPlanModal: React.FC<ManualPlanModalProps> = ({ onClose, onSuccess }) => {
@@ -359,8 +657,8 @@ const ManualPlanModal: React.FC<ManualPlanModalProps> = ({ onClose, onSuccess })
     expires_at: '',
   });
   const [studentSearch, setStudentSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<StudentSearchResult[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<StudentSearchResult | null>(null);
   const [examInput, setExamInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -380,7 +678,7 @@ const ManualPlanModal: React.FC<ManualPlanModalProps> = ({ onClose, onSuccess })
     }
   };
 
-  const handleSelectStudent = (student: any) => {
+  const handleSelectStudent = (student: StudentSearchResult) => {
     setSelectedStudent(student);
     setFormData({ ...formData, student_id: student.id });
     setStudentSearch(student.name);
