@@ -47,13 +47,17 @@ export const purchasePremiumAccessController = async (req: Request, res: Respons
 
         if (error) {
             logger.error('Error creating premium access:', error);
-            return res.status(500).json({ error: error.message });
+            return res.status(500).json({ success: false, error: error.message });
         }
 
-        return res.status(201).json(data);
+        return res.status(201).json({
+            success: true,
+            purchase: data,
+            message: 'Premium access purchased successfully'
+        });
     } catch (err: any) {
         logger.error('Server error creating premium access:', err);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };
 
