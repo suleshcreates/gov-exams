@@ -479,10 +479,10 @@ const Profile = () => {
                           <div className="shrink-0">
                             {!isExpired ? (
                               <Link
-                                to={isSpecialExam ? `/special-exam/${purchase.resource_id}` : '/pyq'}
-                                className="inline-flex items-center gap-1.5 px-5 py-2 bg-accent/10 text-accent-foreground hover:bg-accent hover:text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border border-accent/20 hover:border-accent"
+                                to={isCategoryPlan ? `/exams` : isSpecialExam ? `/special-exam/${purchase.resource_id}` : '/pyq'}
+                                className="inline-flex items-center gap-1.5 px-5 py-2 bg-accent/10 text-accent-foreground hover:bg-accent hover:text-white rounded-lg text-sm font-semibold transition-all border border-accent/20 hover:border-accent"
                               >
-                                {isSpecialExam ? 'Continue Exam' : 'View PDF'}
+                                {isCategoryPlan ? 'View Exams' : isSpecialExam ? 'Continue Exam' : 'View PDF'}
                                 <ChevronRight className="w-4 h-4" />
                               </Link>
                             ) : (

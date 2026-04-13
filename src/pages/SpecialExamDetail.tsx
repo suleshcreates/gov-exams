@@ -92,7 +92,7 @@ const SpecialExamDetail: React.FC = () => {
             const accessData = await accessRes.json();
             
             // Admin auto-access bypass
-            if (user?.role === 'admin') {
+            if ((auth.user as any)?.role === 'admin') {
                 accessData.hasAccess = true;
                 if (!accessData.attemptsData) {
                     accessData.attemptsData = {

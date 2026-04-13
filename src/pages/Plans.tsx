@@ -60,14 +60,14 @@ const Plans = () => {
         if (Array.isArray(categoryPlansRes)) {
             const mappedCategoryPlans = categoryPlansRes.map((cp: any) => ({
                 id: cp.id,
-                name: cp.name,
-                description: cp.description,
+                name: cp.title || cp.name || cp.category,
+                description: cp.description || `Access all ${cp.category} special exams`,
                 price: cp.price,
-                validity_days: cp.validity_days,
+                validity_days: null,
                 subjects: [cp.category],
                 is_active: cp.is_active,
-                display_order: cp.display_order || 99,
-                badge: cp.badge,
+                display_order: 99,
+                badge: null,
                 type: 'special_exam_category',
                 category: cp.category
             }));

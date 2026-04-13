@@ -109,7 +109,7 @@ const Exams = () => {
 
     // Check if user has access via direct purchase OR category plan
     const hasExamAccess = (exam: SpecialExam): boolean => {
-        if (user?.role === 'admin') return true;
+        if ((auth.user as any)?.role === 'admin') return true;
         if (userAccess[exam.id]) return true;
         const matchingPlan = categoryPlans.find(p =>
             p.category?.toLowerCase().trim() === exam.category?.toLowerCase().trim()
