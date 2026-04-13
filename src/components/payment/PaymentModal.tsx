@@ -17,7 +17,8 @@ interface PaymentModalProps {
         subjects: string[];
         validity_days: number | null;
         expiry_date?: string | null;
-        type?: 'plan' | 'subject'; // Distinguish type
+        type?: 'plan' | 'subject' | 'special_exam_category' | 'special_exam'; // Distinguish type
+        category?: string; // For category plans
     };
     onSuccess: () => void;
 }
@@ -85,29 +86,45 @@ const PaymentModal = ({ isOpen, onClose, plan, onSuccess }: PaymentModalProps) =
                 handler: async function (response: any) {
                     try {
                         // 4. Verify Payment and Save Purchase to Database
-                        const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-                            },
-                            body: JSON.stringify({
+                        const isPremiumAccess = plan.type === 'special_exam_category' || plan.type === 'special_exam';
+                        const verifyEndpoint = isPremiumAccess 
+                            ? `${import.meta.env.VITE_API_URL}/api/student/premium-access/purchase`
+                            : `${import.meta.env.VITE_API_URL}/api/payments/verify`;
+
+                        const verifyBody = isPremiumAccess
+                            ? {
+                                resource_type: plan.type,
+                                resource_id: plan.id,
+                                amount_paid: plan.price,
+                                payment_id: response.razorpay_payment_id,
+                                order_id: response.razorpay_order_id,
+                                signature: response.razorpay_signature
+                            }
+                            : {
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_signature: response.razorpay_signature,
-                                planId: plan.type === 'subject' ? null : plan.id, // Send null for subject (avoids FK error)
+                                planId: plan.type === 'subject' ? null : plan.id,
                                 planName: plan.name,
                                 pricePaid: plan.price,
                                 examIds: plan.subjects,
                                 validityDays: plan.validity_days,
                                 expiryDate: plan.expiry_date,
                                 resource_type: plan.type || 'plan',
-                                resource_id: plan.type === 'subject' ? plan.id : null, // Track subject ID here
+                                resource_id: plan.type === 'subject' ? plan.id : null,
                                 notes: {
                                     type: plan.type || 'plan',
                                     planId: plan.id || 'subject-purchase'
                                 }
-                            })
+                            };
+
+                        const verifyResponse = await fetch(verifyEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                            },
+                            body: JSON.stringify(verifyBody)
                         });
 
                         const verifyData = await verifyResponse.json();

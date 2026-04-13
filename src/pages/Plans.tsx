@@ -43,17 +43,38 @@ const Plans = () => {
         setLoading(true);
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-        // Fetch Plans and Subjects in parallel
-        const [plansRes, subjectsRes] = await Promise.all([
+        // Fetch Plans, Subjects, and Category Plans in parallel
+        const [plansRes, subjectsRes, categoryPlansRes] = await Promise.all([
           fetch(`${apiUrl}/api/public/plans`),
-          fetch(`${apiUrl}/api/public/subjects`)
+          fetch(`${apiUrl}/api/public/subjects`),
+          fetch(`${apiUrl}/api/public/category-plans`).then(r => r.ok ? r.json() : []).catch(() => [])
         ]);
 
         if (!plansRes.ok) throw new Error('Failed to fetch plans');
 
         const plansResult = await plansRes.json();
         const activePlans = (plansResult.data || []).filter((p: PlanTemplate) => p.is_active !== false);
-        setPlanTemplates(activePlans);
+        
+        let allPlans = [...activePlans];
+
+        if (Array.isArray(categoryPlansRes)) {
+            const mappedCategoryPlans = categoryPlansRes.map((cp: any) => ({
+                id: cp.id,
+                name: cp.name,
+                description: cp.description,
+                price: cp.price,
+                validity_days: cp.validity_days,
+                subjects: [cp.category],
+                is_active: cp.is_active,
+                display_order: cp.display_order || 99,
+                badge: cp.badge,
+                type: 'special_exam_category',
+                category: cp.category
+            }));
+            allPlans = [...allPlans, ...mappedCategoryPlans].sort((a, b) => a.display_order - b.display_order);
+        }
+
+        setPlanTemplates(allPlans);
 
         if (subjectsRes.ok) {
           const subjectsResult = await subjectsRes.json();
@@ -86,9 +107,18 @@ const Plans = () => {
 
       try {
         logger.debug('Loading purchased plans for phone:', auth.user.phone);
-        const { plans } = await supabaseService.getStudentPlans(auth.user.phone);
-        logger.debug('Purchased plans loaded:', plans);
-        setPurchasedPlans(plans.map((p: any) => p.plan_template_id || p.plan_id).filter(Boolean));
+        const [plansData, premiumData] = await Promise.all([
+            supabaseService.getStudentPlans(auth.user.phone),
+            supabaseService.getUserPremiumPurchases()
+        ]);
+        
+        logger.debug('Purchased plans loaded:', plansData.plans);
+        const regularPlanIds = plansData.plans.map((p: any) => p.plan_template_id || p.plan_id).filter(Boolean);
+        const premiumIds = premiumData
+            .filter((p: any) => p.resource_type === 'special_exam_category')
+            .map((p: any) => p.resource_id);
+
+        setPurchasedPlans([...regularPlanIds, ...premiumIds]);
       } catch (error) {
         logger.error("Error loading purchased plans:", error);
       }
@@ -262,9 +292,11 @@ const Plans = () => {
                             Includes:
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {subjects.length > 0
-                              ? subjects.map(id => subjectsMap[id] || 'Unknown Subject').join(', ')
-                              : 'No specific subjects'
+                            {plan.type === 'special_exam_category'
+                              ? `All ${plan.category} Special Exams`
+                              : subjects.length > 0
+                                ? subjects.map(id => subjectsMap[id] || 'Unknown Subject').join(', ')
+                                : 'No specific subjects'
                             }
                           </span>
                         </div>

@@ -227,8 +227,31 @@ const Home = () => {
     const loadPlans = async () => {
       try {
         setPlansLoading(true);
-        const plans = await apiService.getPublicPlans();
-        setPlanTemplates(plans);
+        const [plansRef, categoryPlansRes] = await Promise.all([
+          apiService.getPublicPlans(),
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/public/category-plans`).then(r => r.json()).catch(() => [])
+        ]);
+        
+        let allPlans = [...plansRef];
+        
+        if (Array.isArray(categoryPlansRes)) {
+            const mappedCategoryPlans = categoryPlansRes.map((cp: any) => ({
+                id: cp.id,
+                name: cp.name,
+                description: cp.description,
+                price: cp.price,
+                validity_days: cp.validity_days,
+                subjects: [cp.category], // Just use the category name directly
+                is_active: cp.is_active,
+                display_order: cp.display_order || 99,
+                badge: cp.badge,
+                type: 'special_exam_category',
+                category: cp.category
+            }));
+            allPlans = [...allPlans, ...mappedCategoryPlans].sort((a, b) => a.display_order - b.display_order);
+        }
+        
+        setPlanTemplates(allPlans);
       } catch (error) {
         logger.error("Error loading plans:", error);
       } finally {
@@ -236,7 +259,6 @@ const Home = () => {
       }
     };
 
-    loadPlans();
     loadPlans();
   }, []);
 
@@ -689,7 +711,10 @@ const Home = () => {
                         <ul className="space-y-2 mb-6">
                           <li className="flex items-start gap-2 text-sm text-muted-foreground">
                             <span className="text-primary">✓</span>
-                            {subjects.length} Subject{subjects.length !== 1 ? 's' : ''} Included
+                            {plan.type === 'special_exam_category' 
+                              ? `All ${plan.category} Special Exams`
+                              : `${subjects.length} Subject${subjects.length !== 1 ? 's' : ''} Included`
+                            }
                           </li>
                           <li className="flex items-start gap-2 text-sm text-muted-foreground">
                             <span className="text-primary">✓</span>
