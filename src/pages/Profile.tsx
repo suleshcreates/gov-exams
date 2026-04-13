@@ -436,10 +436,11 @@ const Profile = () => {
                     );
                   })}
 
-                  {/* PREMIUM PURCHASES (Special Exams & PYQ) */}
+                  {/* PREMIUM PURCHASES (Special Exams, PYQ, Category Plans) */}
                   {premiumPurchases.map((purchase: any) => {
                     const isSpecialExam = purchase.resource_type === 'special_exam';
-                    const label = purchase.resource_name || (isSpecialExam ? 'Special Exam' : 'PYQ / PDF');
+                    const isCategoryPlan = purchase.resource_type === 'special_exam_category';
+                    const label = purchase.resource_name || (isSpecialExam ? 'Special Exam' : isCategoryPlan ? 'Category Plan' : 'PYQ / PDF');
                     const isExpired = purchase.expires_at && new Date(purchase.expires_at) < new Date();
 
                     return (
@@ -449,7 +450,7 @@ const Profile = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className={`bg-white rounded-xl border ${isExpired ? 'border-destructive/30' : 'border-border'} shadow-sm overflow-hidden flex flex-col sm:flex-row group hover:shadow-md transition-shadow`}
                       >
-                        <div className={`w-full sm:w-2 ${isExpired ? 'bg-destructive/50' : isSpecialExam ? 'bg-gradient-to-b from-orange-500 to-red-500' : 'bg-gradient-to-b from-blue-500 to-indigo-500'}`}></div>
+                        <div className={`w-full sm:w-2 ${isExpired ? 'bg-destructive/50' : isCategoryPlan ? 'bg-gradient-to-b from-purple-500 to-pink-500' : isSpecialExam ? 'bg-gradient-to-b from-orange-500 to-red-500' : 'bg-gradient-to-b from-blue-500 to-indigo-500'}`}></div>
 
                         <div className="p-5 flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex-1">
@@ -459,11 +460,13 @@ const Profile = () => {
                             <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                               isExpired 
                                 ? 'bg-destructive/10 text-destructive border-destructive/20'
-                                : isSpecialExam 
-                                  ? 'bg-orange-100 text-orange-700 border-orange-200' 
-                                  : 'bg-blue-100 text-blue-700 border-blue-200'
+                                : isCategoryPlan
+                                  ? 'bg-purple-100 text-purple-700 border-purple-200'
+                                  : isSpecialExam 
+                                    ? 'bg-orange-100 text-orange-700 border-orange-200' 
+                                    : 'bg-blue-100 text-blue-700 border-blue-200'
                             }`}>
-                              {isExpired ? 'EXPIRED' : isSpecialExam ? 'SPECIAL EXAM' : 'PYQ / PDF'}
+                              {isExpired ? 'EXPIRED' : isCategoryPlan ? 'CATEGORY PLAN' : isSpecialExam ? 'SPECIAL EXAM' : 'PYQ / PDF'}
                             </span>
                             {purchase.purchased_at && (
                               <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
@@ -545,15 +548,15 @@ const Profile = () => {
                           </tr>
                         );
                       })}
-                      {/* PREMIUM PURCHASES (Special Exams & PYQ) */}
+                      {/* PREMIUM PURCHASES (Special Exams & PYQ & Categories) */}
                       {premiumPurchases.map((purchase: any) => (
                         <tr key={`premium-${purchase.id}`} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-3 font-medium text-foreground">{purchase.resource_name || (purchase.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ / PDF')}</td>
+                          <td className="px-4 py-3 font-medium text-foreground">{purchase.resource_name || (purchase.resource_type === 'special_exam' ? 'Special Exam' : purchase.resource_type === 'special_exam_category' ? 'Category Plan' : 'PYQ / PDF')}</td>
                           <td className="px-4 py-3 text-muted-foreground">
                             <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                              purchase.resource_type === 'special_exam' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                              purchase.resource_type === 'special_exam_category' ? 'bg-purple-100 text-purple-700' : purchase.resource_type === 'special_exam' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
                             }`}>
-                              {purchase.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ'}
+                              {purchase.resource_type === 'special_exam_category' ? 'Category Plan' : purchase.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ'}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">{purchase.purchased_at ? new Date(purchase.purchased_at).toLocaleDateString() : 'N/A'}</td>

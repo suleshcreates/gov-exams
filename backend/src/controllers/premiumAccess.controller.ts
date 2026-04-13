@@ -124,7 +124,15 @@ export const getUserPremiumAccessController = async (req: Request, res: Response
             } catch (e) {
                 // If enrichment fails, return original record
             }
-            return { ...record, resource_name: record.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ / PDF', price_paid: record.amount_paid || 0 };
+            return { 
+                ...record, 
+                resource_name: record.resource_type === 'special_exam' 
+                    ? 'Special Exam' 
+                    : record.resource_type === 'special_exam_category' 
+                        ? 'Category Plan' 
+                        : 'PYQ / PDF', 
+                price_paid: record.amount_paid || 0 
+            };
         }));
 
         return res.status(200).json(enriched);
@@ -203,7 +211,15 @@ export const getAllPremiumAccessController = async (req: Request, res: Response)
             } catch (e) {
                 // If enrichment fails, return original record
             }
-            return { ...record, resource_name: record.resource_type === 'special_exam' ? 'Special Exam' : 'PYQ / PDF', price_paid: record.amount_paid || 0 };
+            return { 
+                ...record, 
+                resource_name: record.resource_type === 'special_exam' 
+                    ? 'Special Exam' 
+                    : record.resource_type === 'special_exam_category' 
+                        ? 'Category Plan' 
+                        : 'PYQ / PDF', 
+                price_paid: record.amount_paid || 0 
+            };
         }));
 
         return res.status(200).json({
