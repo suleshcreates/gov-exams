@@ -252,6 +252,22 @@ export const checkExamAccessController = async (req: Request, res: Response) => 
         const user = (req as any).user;
         const userId = user.auth_user_id || user.id;
 
+        // Admin bypass
+        if (user.role === 'admin') {
+            return res.status(200).json({
+                hasAccess: true,
+                accessType: 'admin',
+                attemptsData: {
+                    totalSubmissions: 0,
+                    setsCount: 5,
+                    maxSubmissions: 50,
+                    completedExams: 0,
+                    maxCompletions: 10,
+                    limitReached: false
+                }
+            });
+        }
+
         // 1. Check direct exam access
         const { data: directAccess, error: directError } = await supabase
             .from('user_premium_access')
@@ -363,6 +379,33 @@ export const getExamSetQuestionsController = async (req: Request, res: Response)
         const user = (req as any).user;
         const userId = user.auth_user_id || user.id;
 
+        // Admin bypass
+        if (user.role === 'admin') {
+            // Bypass the check structure entirely, just fetch and return
+            const { data: examSet, error: setError } = await supabase
+                .from('special_exam_sets')
+                .select('question_set_id')
+                .eq('special_exam_id', examId)
+                .eq('set_number', parseInt(setNumber))
+                .single();
+
+            if (setError || !examSet?.question_set_id) {
+                return res.status(404).json({ error: 'Question set not found' });
+            }
+
+            const { data: questions, error: qError } = await supabase
+                .from('questions')
+                .select('*')
+                .eq('question_set_id', examSet.question_set_id)
+                .order('order_index', { ascending: true });
+
+            if (qError) {
+                return res.status(500).json({ error: qError.message });
+            }
+
+            return res.status(200).json(questions);
+        }
+
         // Check direct access
         const { data: directAccess } = await supabase
             .from('user_premium_access')
@@ -450,6 +493,27 @@ export const submitExamResultController = async (req: Request, res: Response) =>
         const user = (req as any).user;
         const userId = user.auth_user_id || user.id;
         const userEmail = user.email;
+
+        // Admin bypass - Admins don't hit limit and it just submits for testing
+        if (user.role === 'admin') {
+            const { data, error } = await supabase
+                .from('special_exam_results')
+                .insert([{
+                    user_auth_id: userId,
+                    user_email: userEmail,
+                    special_exam_id: examId,
+                    set_number: parseInt(setNumber),
+                    score,
+                    total_questions,
+                    accuracy,
+                    time_taken_seconds,
+                    user_answers: user_answers || {}, // Changed from stringify to JSON value
+                    completed_at: new Date().toISOString()
+                }])
+                .select()
+                .single();
+            return res.status(201).json({ message: 'Exam result submitted successfully (Admin Mode)', result: data });
+        }
 
         // Verify Attempt Limit First
         const { count: setsCount } = await supabase

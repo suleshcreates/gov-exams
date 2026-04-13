@@ -90,6 +90,22 @@ const SpecialExamDetail: React.FC = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const accessData = await accessRes.json();
+            
+            // Admin auto-access bypass
+            if (user?.role === 'admin') {
+                accessData.hasAccess = true;
+                if (!accessData.attemptsData) {
+                    accessData.attemptsData = {
+                        totalSubmissions: 0,
+                        setsCount: 5,
+                        maxSubmissions: 50,
+                        completedExams: 0,
+                        maxCompletions: 10,
+                        limitReached: false
+                    };
+                }
+            }
+
             setHasAccess(accessData.hasAccess);
             
             if (accessData.attemptsData) {
