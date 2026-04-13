@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../config/supabase';
-import { generateTokenPair } from '../utils/jwt';
+import { generateAdminTokenPair } from '../utils/jwt';
 import { createSession } from './session.service';
 import logger from '../utils/logger';
 import crypto from 'crypto';
@@ -89,7 +89,7 @@ export async function adminLogin(
         }
 
         // Generate JWT tokens (use admin.id as user_id)
-        const tokens = generateTokenPair(admin.id, admin.email);
+        const tokens = generateAdminTokenPair(admin.id, admin.email);
 
         // SINGLE DEVICE ENFORCEMENT: Delete all existing sessions for this admin
         const { deleteAllUserSessions } = await import('./session.service');

@@ -53,10 +53,38 @@ export function generateTokenPair(userId: string, email: string, sessionId?: str
     };
 }
 
+// Admin tokens with very long expiry (no frequent re-login needed)
+export function generateAdminTokenPair(userId: string, email: string, sessionId?: string) {
+    const payload: JWTPayload = {
+        userId,
+        email,
+        type: 'access',
+        sessionId,
+    };
+
+    const refreshPayload: JWTPayload = {
+        userId,
+        email,
+        type: 'refresh',
+        sessionId,
+    };
+
+    return {
+        accessToken: jwt.sign(payload, env.JWT_SECRET, {
+            expiresIn: '365d',
+        } as jwt.SignOptions) as string,
+        refreshToken: jwt.sign(refreshPayload, env.JWT_REFRESH_SECRET, {
+            expiresIn: '365d',
+        } as jwt.SignOptions) as string,
+        expiresIn: 365 * 24 * 60 * 60, // 1 year in seconds
+    };
+}
+
 export default {
     generateAccessToken,
     generateRefreshToken,
     verifyToken,
     verifyRefreshToken,
     generateTokenPair,
+    generateAdminTokenPair,
 };
