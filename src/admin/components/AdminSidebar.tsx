@@ -13,7 +13,8 @@ import {
     Award,
     FileCheck,
     Layers,
-    FolderOpen
+    FolderOpen,
+    MessageSquare
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -31,6 +32,7 @@ const AdminSidebar = () => {
         { path: '/admin/pricing/plans', icon: DollarSign, label: 'Pricing' },
         { path: '/admin/exam-results', icon: ClipboardList, label: 'Exam Results' },
         { path: '/admin/user-plans', icon: CreditCard, label: 'User Plans' },
+        { path: '/admin/messages', icon: MessageSquare, label: 'Messages' },
     ];
 
     return (

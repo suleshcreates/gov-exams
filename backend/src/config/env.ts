@@ -22,6 +22,7 @@ interface EnvironmentConfig {
     EMAILJS_TEMPLATE_ID: string;
     EMAILJS_PUBLIC_KEY: string;
     EMAILJS_PRIVATE_KEY: string;
+    EMAILJS_REPLY_TEMPLATE_ID: string;
 }
 
 // Validate required environment variables
@@ -66,6 +67,7 @@ export const env: EnvironmentConfig = {
     EMAILJS_TEMPLATE_ID: process.env.EMAILJS_TEMPLATE_ID!,
     EMAILJS_PUBLIC_KEY: process.env.EMAILJS_PUBLIC_KEY!,
     EMAILJS_PRIVATE_KEY: process.env.EMAILJS_PRIVATE_KEY!,
+    EMAILJS_REPLY_TEMPLATE_ID: process.env.EMAILJS_REPLY_TEMPLATE_ID || process.env.EMAILJS_TEMPLATE_ID!,
 };
 
 export default env;

@@ -12,6 +12,7 @@ import {
 } from '../controllers/pyq.controller';
 import { getCategoriesController } from '../controllers/premiumAccess.controller';
 import { getCategoryPlansController } from '../controllers/categoryPlan.controller';
+import { submitContactController } from '../controllers/contact.controller';
 import { getSubjectsController } from '../controllers/admin.controller';
 
 const router = Router();
@@ -33,6 +34,9 @@ router.get('/categories', getCategoriesController);
 
 // Category Plans (No auth required to view)
 router.get('/category-plans', getCategoryPlansController);
+
+// Contact Form (No auth required)
+router.post('/contact', submitContactController);
 
 export default router;
 

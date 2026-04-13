@@ -60,6 +60,11 @@ import {
 import { requireAuth } from '../middlewares/auth.middleware';
 import { requireAdmin } from '../middlewares/admin.middleware';
 import { upload, pdfUpload } from '../middlewares/upload.middleware';
+import {
+    getContactMessagesController,
+    replyContactMessageController,
+    updateMessageStatusController
+} from '../controllers/contact.controller';
 
 const router = Router();
 
@@ -151,6 +156,11 @@ router.get('/category-plans', getAdminCategoryPlansController);
 router.post('/category-plans', createCategoryPlanController);
 router.put('/category-plans/:id', updateCategoryPlanController);
 router.delete('/category-plans/:id', deleteCategoryPlanController);
+
+// Contact Messages Management
+router.get('/messages', getContactMessagesController);
+router.post('/messages/:id/reply', replyContactMessageController);
+router.patch('/messages/:id/status', updateMessageStatusController);
 
 export default router;
 
