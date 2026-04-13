@@ -252,7 +252,8 @@ export const checkExamAccessController = async (req: Request, res: Response) => 
         const user = (req as any).user;
         const userId = user.auth_user_id || user.id;
 
-        const { data, error } = await supabase
+        // 1. Check direct exam access
+        const { data: directAccess, error: directError } = await supabase
             .from('user_premium_access')
             .select('*')
             .eq('user_auth_id', userId)
@@ -260,12 +261,54 @@ export const checkExamAccessController = async (req: Request, res: Response) => 
             .eq('resource_id', id)
             .single();
 
-        if (error && error.code !== 'PGRST116') {
-            logger.error('Error checking exam access:', error);
-            return res.status(500).json({ error: error.message });
+        if (directError && directError.code !== 'PGRST116') {
+            logger.error('Error checking exam access:', directError);
+            return res.status(500).json({ error: directError.message });
         }
 
-        const hasAccess = !!data;
+        let hasAccess = !!directAccess;
+        let accessData = directAccess;
+        let accessType: 'direct' | 'category' | null = directAccess ? 'direct' : null;
+
+        // 2. If no direct access, check category plan access
+        if (!hasAccess) {
+            // Get the exam's category
+            const { data: exam } = await supabase
+                .from('special_exams')
+                .select('category')
+                .eq('id', id)
+                .single();
+
+            if (exam?.category) {
+                // Get user's category plan purchases (resource_ids are plan IDs)
+                const { data: categoryAccess } = await supabase
+                    .from('user_premium_access')
+                    .select('*')
+                    .eq('user_auth_id', userId)
+                    .eq('resource_type', 'special_exam_category');
+
+                if (categoryAccess && categoryAccess.length > 0) {
+                    // Get the plan details for each purchased category plan
+                    const planIds = categoryAccess.map((ca: any) => ca.resource_id);
+                    const { data: plans } = await supabase
+                        .from('special_exam_category_plans')
+                        .select('id, category, title')
+                        .in('id', planIds);
+
+                    if (plans && plans.length > 0) {
+                        const matchingPlan = plans.find((p: any) =>
+                            p.category?.toLowerCase().trim() === exam.category.toLowerCase().trim()
+                        );
+
+                        if (matchingPlan) {
+                            hasAccess = true;
+                            accessData = categoryAccess.find((ca: any) => ca.resource_id === matchingPlan.id);
+                            accessType = 'category';
+                        }
+                    }
+                }
+            }
+        }
         
         // Add attempt checks for Special Exams
         let attemptsData = {
@@ -304,7 +347,7 @@ export const checkExamAccessController = async (req: Request, res: Response) => 
             };
         }
 
-        return res.status(200).json({ hasAccess, accessData: data, attemptsData });
+        return res.status(200).json({ hasAccess, accessData, accessType, attemptsData });
     } catch (err: any) {
         logger.error('Server error checking exam access:', err);
         return res.status(500).json({ error: 'Internal server error' });
@@ -320,8 +363,8 @@ export const getExamSetQuestionsController = async (req: Request, res: Response)
         const user = (req as any).user;
         const userId = user.auth_user_id || user.id;
 
-        // Check access
-        const { data: access } = await supabase
+        // Check direct access
+        const { data: directAccess } = await supabase
             .from('user_premium_access')
             .select('*')
             .eq('user_auth_id', userId)
@@ -329,7 +372,40 @@ export const getExamSetQuestionsController = async (req: Request, res: Response)
             .eq('resource_id', examId)
             .single();
 
-        if (!access) {
+        let hasAccess = !!directAccess;
+
+        // If no direct access, check category plan access
+        if (!hasAccess) {
+            const { data: exam } = await supabase
+                .from('special_exams')
+                .select('category')
+                .eq('id', examId)
+                .single();
+
+            if (exam?.category) {
+                const { data: categoryAccess } = await supabase
+                    .from('user_premium_access')
+                    .select('*')
+                    .eq('user_auth_id', userId)
+                    .eq('resource_type', 'special_exam_category');
+
+                if (categoryAccess && categoryAccess.length > 0) {
+                    const planIds = categoryAccess.map((ca: any) => ca.resource_id);
+                    const { data: plans } = await supabase
+                        .from('special_exam_category_plans')
+                        .select('id, category')
+                        .in('id', planIds);
+
+                    if (plans && plans.length > 0) {
+                        hasAccess = plans.some((p: any) =>
+                            p.category?.toLowerCase().trim() === exam.category.toLowerCase().trim()
+                        );
+                    }
+                }
+            }
+        }
+
+        if (!hasAccess) {
             return res.status(403).json({ error: 'Purchase required to access this exam' });
         }
 

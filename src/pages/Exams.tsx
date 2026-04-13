@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Clock, Lock, CheckCircle, Filter, FileText } from 'lucide-react';
+import { BookOpen, Clock, Lock, CheckCircle, Filter, FileText, Package, Sparkles, Play } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface SpecialExam {
     id: string;
@@ -16,19 +17,31 @@ interface SpecialExam {
     thumbnail_url: string;
 }
 
+interface CategoryPlan {
+    id: string;
+    category: string;
+    title: string;
+    description: string;
+    price: number;
+}
+
 const Exams = () => {
     const [exams, setExams] = useState<SpecialExam[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [categories, setCategories] = useState<string[]>([]);
     const [userAccess, setUserAccess] = useState<Record<string, boolean>>({});
-    const { auth } = useAuth();
+    const [categoryPlans, setCategoryPlans] = useState<CategoryPlan[]>([]);
+    const [userCategoryAccess, setUserCategoryAccess] = useState<Record<string, boolean>>({});
+    const { auth, openAuthModal } = useAuth();
+    const navigate = useNavigate();
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
     useEffect(() => {
         loadExams();
         loadCategories();
+        loadCategoryPlans();
         if (auth.isAuthenticated) {
             loadUserAccess();
         }
@@ -56,6 +69,16 @@ const Exams = () => {
         }
     };
 
+    const loadCategoryPlans = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/public/category-plans`);
+            const data = await response.json();
+            setCategoryPlans(data || []);
+        } catch (error) {
+            console.error('Error loading category plans:', error);
+        }
+    };
+
     const loadUserAccess = async () => {
         try {
             const token = localStorage.getItem('access_token');
@@ -68,14 +91,50 @@ const Exams = () => {
                 accessMap[a.resource_id] = true;
             });
             setUserAccess(accessMap);
+
+            // Also check category plan access
+            const catResponse = await fetch(`${API_URL}/api/student/premium-access?resource_type=special_exam_category`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const catData = await catResponse.json();
+            const catAccessMap: Record<string, boolean> = {};
+            (catData || []).forEach((a: { resource_id: string }) => {
+                catAccessMap[a.resource_id] = true;
+            });
+            setUserCategoryAccess(catAccessMap);
         } catch (error) {
             console.error('Error loading user access:', error);
         }
     };
 
+    // Check if user has access via direct purchase OR category plan
+    const hasExamAccess = (exam: SpecialExam): boolean => {
+        if (userAccess[exam.id]) return true;
+        const matchingPlan = categoryPlans.find(p =>
+            p.category?.toLowerCase().trim() === exam.category?.toLowerCase().trim()
+        );
+        if (matchingPlan && userCategoryAccess[matchingPlan.id]) return true;
+        return false;
+    };
+
+    // Get the category plan for the selected category
+    const getSelectedCategoryPlan = (): CategoryPlan | null => {
+        if (selectedCategory === 'all') return null;
+        return categoryPlans.find(p =>
+            p.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim()
+        ) || null;
+    };
+
+    const hasUserBoughtCategoryPlan = (planId: string): boolean => {
+        return userCategoryAccess[planId] || false;
+    };
+
     const filteredExams = selectedCategory === 'all'
         ? exams
         : exams.filter(e => e.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
+
+    const activeCategoryPlan = getSelectedCategoryPlan();
+    const planAlreadyPurchased = activeCategoryPlan ? hasUserBoughtCategoryPlan(activeCategoryPlan.id) : false;
 
     // Animation Variants
     const containerVariants = {
@@ -175,6 +234,58 @@ const Exams = () => {
                 </div>
             </div>
 
+            {/* CATEGORY PLAN BANNER */}
+            {activeCategoryPlan && (
+                <div className="container mx-auto px-4 -mt-8 mb-8">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative rounded-3xl overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600" />
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L3N2Zz4=')] opacity-50" />
+                        
+                        <div className="relative px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-5">
+                                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                    <Package className="w-7 h-7 text-white" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Sparkles className="w-4 h-4 text-yellow-300" />
+                                        <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">Category Bundle</span>
+                                    </div>
+                                    <h3 className="text-xl md:text-2xl font-black text-white">{activeCategoryPlan.title}</h3>
+                                    <p className="text-sm text-white/70 font-medium mt-0.5">
+                                        Access all {filteredExams.length} exams in {activeCategoryPlan.category} — including upcoming ones!
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-3xl font-black text-white">₹{activeCategoryPlan.price}</div>
+                                    <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest">One-time</div>
+                                </div>
+                                {planAlreadyPurchased ? (
+                                    <div className="flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm rounded-2xl text-white font-bold">
+                                        <CheckCircle className="w-5 h-5" />
+                                        Purchased
+                                    </div>
+                                ) : (
+                                    <Link 
+                                        to={filteredExams.length > 0 ? `/special-exam/${filteredExams[0].id}?categoryPlan=${activeCategoryPlan.id}` : '#'}
+                                        className="px-8 py-3 bg-white text-indigo-700 rounded-2xl font-black text-sm hover:bg-white/90 transition-all active:scale-[0.98] shadow-xl"
+                                    >
+                                        Get Full Pack →
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
             {/* EXAMS GRID */}
             <div className="container mx-auto px-4 pb-32">
                 {filteredExams.length === 0 ? (
@@ -197,7 +308,7 @@ const Exams = () => {
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                     >
                         {filteredExams.map((exam, index) => {
-                            const hasAccess = userAccess[exam.id];
+                            const examOwned = hasExamAccess(exam);
                             return (
                                 <motion.div
                                     key={exam.id}
@@ -224,7 +335,7 @@ const Exams = () => {
 
                                         {/* Badges */}
                                         <div className="absolute top-3 right-3 flex gap-2">
-                                            {hasAccess && (
+                                            {examOwned && (
                                                 <div className="bg-green-500 text-white px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center gap-1 shadow-lg">
                                                     <CheckCircle className="w-3 h-3" />
                                                     OWNED
@@ -255,7 +366,7 @@ const Exams = () => {
                                         {/* Price + Stats row */}
                                         <div className="flex items-center justify-between">
                                             <span className="text-2xl font-extrabold text-orange-600">
-                                                {hasAccess ? '' : `₹${exam.price}`}
+                                                {examOwned ? '' : `₹${exam.price}`}
                                             </span>
                                             <div className="flex items-center gap-3 text-slate-400">
                                                 <div className="flex items-center gap-1">
@@ -271,11 +382,11 @@ const Exams = () => {
 
                                         {/* Action */}
                                         <Link to={`/special-exam/${exam.id}`} className="block">
-                                            <button className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${hasAccess
+                                            <button className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${examOwned
                                                 ? 'bg-slate-900 text-white hover:bg-slate-800'
                                                 : 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md hover:shadow-lg'
                                                 }`}>
-                                                {hasAccess ? 'Continue Series' : 'View Details'}
+                                                {examOwned ? 'Continue Series' : 'View Details'}
                                             </button>
                                         </Link>
                                     </div>

@@ -329,10 +329,19 @@ const AdminSpecialExamSets = () => {
                             <Label htmlFor="time" className="text-right">Time Limit</Label>
                             <Input
                                 id="time"
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={timeLimit}
-                                onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setTimeLimit(parseInt(val) || 0);
+                                }}
+                                onBlur={() => {
+                                    if (timeLimit < 1) setTimeLimit(1);
+                                }}
                                 className="col-span-3"
+                                placeholder="e.g. 30"
                             />
                             <span className="col-start-2 col-span-3 text-xs text-gray-500">Minutes</span>
                         </div>

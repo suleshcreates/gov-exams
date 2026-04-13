@@ -13,7 +13,7 @@ export const purchasePremiumAccessController = async (req: Request, res: Respons
         const userEmail = user.email;
 
         // Validate resource_type
-        if (!['special_exam', 'pyq'].includes(resource_type)) {
+        if (!['special_exam', 'pyq', 'special_exam_category'].includes(resource_type)) {
             return res.status(400).json({ error: 'Invalid resource type' });
         }
 
@@ -108,6 +108,18 @@ export const getUserPremiumAccessController = async (req: Request, res: Response
                         resource_name: pyq?.title || 'PYQ / PDF',
                         price_paid: record.amount_paid || pyq?.price || 0
                     };
+                } else if (record.resource_type === 'special_exam_category') {
+                    const { data: plan } = await supabase
+                        .from('special_exam_category_plans')
+                        .select('title, price, category')
+                        .eq('id', record.resource_id)
+                        .single();
+                    return {
+                        ...record,
+                        resource_name: plan?.title || 'Category Plan',
+                        price_paid: record.amount_paid || plan?.price || 0,
+                        category: plan?.category
+                    };
                 }
             } catch (e) {
                 // If enrichment fails, return original record
@@ -174,6 +186,18 @@ export const getAllPremiumAccessController = async (req: Request, res: Response)
                         ...record,
                         resource_name: pyq?.title || 'PYQ / PDF',
                         price_paid: record.amount_paid || pyq?.price || 0
+                    };
+                } else if (record.resource_type === 'special_exam_category') {
+                    const { data: plan } = await supabase
+                        .from('special_exam_category_plans')
+                        .select('title, price, category')
+                        .eq('id', record.resource_id)
+                        .single();
+                    return {
+                        ...record,
+                        resource_name: plan?.title || 'Category Plan',
+                        price_paid: record.amount_paid || plan?.price || 0,
+                        category: plan?.category
                     };
                 }
             } catch (e) {

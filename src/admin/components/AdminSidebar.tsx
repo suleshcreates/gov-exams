@@ -26,6 +26,7 @@ const AdminSidebar = () => {
         { path: '/admin/topics', icon: Layers, label: 'Topics' },
         { path: '/admin/subject-content', icon: FolderOpen, label: 'Subject Content' },
         { path: '/admin/special-exams', icon: Award, label: 'Special Exams' },
+        { path: '/admin/category-plans', icon: FileText, label: 'Category Plans' },
         { path: '/admin/pyq', icon: FileCheck, label: 'PYQ PDFs' },
         { path: '/admin/pricing/plans', icon: DollarSign, label: 'Pricing' },
         { path: '/admin/exam-results', icon: ClipboardList, label: 'Exam Results' },

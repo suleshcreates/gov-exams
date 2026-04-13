@@ -51,6 +51,12 @@ import {
     getAdminPYQsController
 } from '../controllers/pyq.controller';
 import { getAllPremiumAccessController } from '../controllers/premiumAccess.controller';
+import {
+    getAdminCategoryPlansController,
+    createCategoryPlanController,
+    updateCategoryPlanController,
+    deleteCategoryPlanController
+} from '../controllers/categoryPlan.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
 import { requireAdmin } from '../middlewares/admin.middleware';
 import { upload, pdfUpload } from '../middlewares/upload.middleware';
@@ -139,6 +145,12 @@ router.post('/pyq/upload', pdfUpload.single('pdf'), uploadPYQFileController);
 
 // Premium Access Management
 router.get('/premium-access', getAllPremiumAccessController);
+
+// Category Plans Management
+router.get('/category-plans', getAdminCategoryPlansController);
+router.post('/category-plans', createCategoryPlanController);
+router.put('/category-plans/:id', updateCategoryPlanController);
+router.delete('/category-plans/:id', deleteCategoryPlanController);
 
 export default router;
 

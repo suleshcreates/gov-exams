@@ -375,11 +375,21 @@ const AdminSpecialExams = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Time per Set (minutes)</label>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     value={formData.time_limit_minutes}
-                                    onChange={(e) => setFormData({ ...formData, time_limit_minutes: parseInt(e.target.value) || 30 })}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setFormData({ ...formData, time_limit_minutes: parseInt(val) || 0 });
+                                    }}
+                                    onBlur={(e) => {
+                                        if (!formData.time_limit_minutes || formData.time_limit_minutes < 1) {
+                                            setFormData({ ...formData, time_limit_minutes: 1 });
+                                        }
+                                    }}
                                     className="w-full px-3 py-2 border rounded-lg"
-                                    min="1"
+                                    placeholder="e.g. 30"
                                 />
                             </div>
                             <div className="flex gap-3 pt-4">

@@ -1410,5 +1410,98 @@ export const adminService = {
       logger.error('[adminService] Error fetching special exam attempts:', error);
       throw error;
     }
+  },
+
+  // Category Plans Management
+  async getCategoryPlans() {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/category-plans`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch category plans');
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error fetching category plans:', error);
+      throw error;
+    }
+  },
+
+  async createCategoryPlan(data: { category: string; title: string; description?: string; price: number; is_active?: boolean }) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/category-plans`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create category plan');
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error creating category plan:', error);
+      throw error;
+    }
+  },
+
+  async updateCategoryPlan(id: string, data: { category?: string; title?: string; description?: string; price?: number; is_active?: boolean }) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/category-plans/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update category plan');
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.error('[adminService] Error updating category plan:', error);
+      throw error;
+    }
+  },
+
+  async deleteCategoryPlan(id: string) {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/category-plans/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete category plan');
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('[adminService] Error deleting category plan:', error);
+      throw error;
+    }
   }
 };

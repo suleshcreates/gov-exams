@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     BookOpen, Clock, Lock, CheckCircle, Play, Timer,
-    ShieldCheck, ArrowLeft, Loader2, AlertCircle
+    ShieldCheck, ArrowLeft, Loader2, AlertCircle, Package
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -41,8 +41,10 @@ const SpecialExamDetail: React.FC = () => {
     const [hasAccess, setHasAccess] = useState(false);
     const [examSets, setExamSets] = useState<ExamSet[]>([]);
     const [purchasing, setPurchasing] = useState(false);
+    const [purchasingCategory, setPurchasingCategory] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [attemptsInfo, setAttemptsInfo] = useState<any>(null);
+    const [categoryPlan, setCategoryPlan] = useState<any>(null);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -58,6 +60,19 @@ const SpecialExamDetail: React.FC = () => {
                 const examData = await examRes.json();
                 setExam(examData);
                 if (auth.isAuthenticated) await checkAccessAndProgress();
+
+                // Load matching category plan
+                if (examData.category) {
+                    try {
+                        const plansRes = await fetch(`${API_URL}/api/public/category-plans?category=${encodeURIComponent(examData.category)}`);
+                        const plans = await plansRes.json();
+                        if (plans && plans.length > 0) {
+                            setCategoryPlan(plans[0]);
+                        }
+                    } catch (e) {
+                        console.error('Error loading category plans:', e);
+                    }
+                }
             } catch (error) {
                 console.error('Error loading exam:', error);
             } finally {
@@ -263,6 +278,88 @@ const SpecialExamDetail: React.FC = () => {
             alert('Failed to initiate purchase. Please try again.');
         } finally {
             setPurchasing(false);
+        }
+    };
+
+    const handleCategoryPlanPurchase = async () => {
+        if (!auth.isAuthenticated) {
+            navigate('/login');
+            return;
+        }
+
+        if (!categoryPlan) return;
+
+        setPurchasingCategory(true);
+        try {
+            const token = localStorage.getItem('access_token');
+
+            const orderRes = await fetch(`${API_URL}/api/payments/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    amount: categoryPlan.price,
+                    planId: `category_plan_${categoryPlan.id}`,
+                    receipt: `receipt_cp_${categoryPlan.id}_${Date.now()}`
+                })
+            });
+
+            if (!orderRes.ok) throw new Error('Failed to create order');
+            const orderData = await orderRes.json();
+
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "GovExams",
+                description: `Category Plan: ${categoryPlan.title}`,
+                order_id: orderData.id,
+                prefill: {
+                    name: auth.user?.name,
+                    email: auth.user?.email,
+                    contact: auth.user?.phone
+                },
+                theme: {
+                    color: "#7c3aed"
+                },
+                handler: async function (response: any) {
+                    try {
+                        const verifyRes = await fetch(`${API_URL}/api/student/premium-access/purchase`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({
+                                resource_type: 'special_exam_category',
+                                resource_id: categoryPlan.id,
+                                amount_paid: categoryPlan.price,
+                                payment_id: response.razorpay_payment_id,
+                                order_id: response.razorpay_order_id,
+                                signature: response.razorpay_signature
+                            })
+                        });
+
+                        if (verifyRes.ok) {
+                            setHasAccess(true);
+                            await checkAccessAndProgress();
+                        } else {
+                            throw new Error('Payment verification failed');
+                        }
+                    } catch (verifyError) {
+                        console.error('Verification Error:', verifyError);
+                        alert('Payment successful but verification failed. Please contact support.');
+                    }
+                }
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                alert(`Payment Failed: ${response.error.description}`);
+            });
+            rzp.open();
+
+        } catch (error) {
+            console.error('Category plan purchase error:', error);
+            alert('Failed to initiate purchase. Please try again.');
+        } finally {
+            setPurchasingCategory(false);
         }
     };
 
@@ -592,6 +689,48 @@ const SpecialExamDetail: React.FC = () => {
                     <div className="space-y-6">
                         {/* Purchase Card */}
                         {!hasAccess ? (
+                            <>
+                            {/* Category Plan Option */}
+                            {categoryPlan && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                                    <div className="relative">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.15em] bg-white/10 px-2 py-0.5 rounded-full">💎 Best Value</span>
+                                        </div>
+                                        <h3 className="text-lg font-black mb-1">{categoryPlan.title}</h3>
+                                        <p className="text-sm text-white/60 mb-4">
+                                            Get all exams in <strong>{categoryPlan.category}</strong> — including future exams!
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="text-3xl font-black">₹{categoryPlan.price}</div>
+                                                <div className="text-[10px] text-white/40 font-bold uppercase tracking-widest">One-time</div>
+                                            </div>
+                                            <button
+                                                onClick={handleCategoryPlanPurchase}
+                                                disabled={purchasingCategory}
+                                                className="px-6 py-3 bg-white text-purple-700 rounded-2xl font-bold text-sm hover:bg-white/90 transition-all active:scale-[0.98] disabled:opacity-50"
+                                            >
+                                                {purchasingCategory ? 'Processing...' : 'Get Full Pack'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {categoryPlan && (
+                                <div className="flex items-center gap-3 text-slate-300">
+                                    <div className="h-px flex-1 bg-slate-200" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">or buy individually</span>
+                                    <div className="h-px flex-1 bg-slate-200" />
+                                </div>
+                            )}
+
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -607,7 +746,7 @@ const SpecialExamDetail: React.FC = () => {
                                 <div className="space-y-4 mb-8">
                                     <div className="flex items-center gap-3 text-white/70">
                                         <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] text-white">✓</div>
-                                        <span className="text-sm font-medium">Lifetime access to all sets</span>
+                                        <span className="text-sm font-medium">10 attempts across all sets</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-white/70">
                                         <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] text-white">✓</div>
@@ -648,6 +787,7 @@ const SpecialExamDetail: React.FC = () => {
                                     Secure Payment Guaranteed
                                 </p>
                             </motion.div>
+                            </>
                         ) : (
                             <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
                                 <div className="flex items-center gap-3 mb-6">
@@ -697,7 +837,7 @@ const SpecialExamDetail: React.FC = () => {
                                         <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
                                             <ShieldCheck className="w-4 h-4 text-indigo-500" />
                                         </div>
-                                        <span className="text-sm font-bold">Lifetime Validity</span>
+                                        <span className="text-sm font-bold">10 Completions Allowed</span>
                                     </div>
                                     <p className="text-xs text-slate-400 font-medium leading-relaxed">
                                         Each set unlocks sequentially. Once you complete a set, the next one will unlock after a short revision cooldown.

@@ -50,6 +50,7 @@ import PlanTemplateEditor from "./admin/pages/PlanTemplateEditor";
 import BulkImportQuestions from "./admin/pages/BulkImportQuestions";
 import AdminSpecialExams from "./admin/pages/AdminSpecialExams";
 import AdminSpecialExamSets from "./admin/pages/AdminSpecialExamSets";
+import AdminCategoryPlans from "./admin/pages/AdminCategoryPlans";
 import AdminPYQ from "./admin/pages/AdminPYQ";
 import AdminTopicsTab from "./admin/pages/AdminTopicsTab";
 import AdminSubjectContent from "./admin/pages/AdminSubjectContent";
@@ -122,6 +123,7 @@ const AppContent = () => {
           <Route path="/admin/pricing/plans/:planId/edit" element={<AdminLayout><PlanTemplateEditor /></AdminLayout>} />
           <Route path="/admin/special-exams" element={<AdminLayout><AdminSpecialExams /></AdminLayout>} />
           <Route path="/admin/special-exams/:examId/sets" element={<AdminLayout><AdminSpecialExamSets /></AdminLayout>} />
+          <Route path="/admin/category-plans" element={<AdminLayout><AdminCategoryPlans /></AdminLayout>} />
           <Route path="/admin/pyq" element={<AdminLayout><AdminPYQ /></AdminLayout>} />
           <Route path="/admin/topics" element={<AdminLayout><AdminTopicsTab /></AdminLayout>} />
           <Route path="/admin/subject-content" element={<AdminLayout><AdminSubjectContent /></AdminLayout>} />
