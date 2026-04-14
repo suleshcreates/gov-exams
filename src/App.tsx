@@ -57,6 +57,7 @@ import AdminSubjectContent from "./admin/pages/AdminSubjectContent";
 import AdminMessages from "./admin/pages/AdminMessages";
 import SupabaseTest from "./admin/pages/SupabaseTest";
 
+import { useEffect } from "react";
 import { useSiteProtection } from "./hooks/useSiteProtection";
 
 // ✅ helper component to handle navbar & footer visibility based on route
@@ -69,6 +70,19 @@ const AppContent = () => {
     /^\/exam\/[^/]+\/topic\/[^/]+$/.test(location.pathname) || // Also hide for Learning Console
     location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/secure-viewer');
+
+  // Scroll to hash fragment (e.g. /#contact-form)
+  useEffect(() => {
+    if (location.hash) {
+      const timer = setTimeout(() => {
+        const el = document.querySelector(location.hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">

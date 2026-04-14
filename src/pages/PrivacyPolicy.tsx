@@ -109,8 +109,8 @@ const PrivacyPolicy = () => {
                                 If you have any questions about this Privacy Policy, please contact us:
                             </p>
                             <div className="bg-primary/5 rounded-lg p-4 mt-4">
-                                <p className="text-muted-foreground"><strong>Email:</strong> governmentadamany23@gmail.com</p>
-                                <p className="text-muted-foreground"><strong>Phone:</strong> +91 9834100959</p>
+                                <p className="text-muted-foreground"><strong>Email:</strong> kirkanbalasaheb4@gmail.com</p>
+                                <p className="text-muted-foreground"><strong>Phone:</strong> +91 82754 37940</p>
                                 <p className="text-muted-foreground"><strong>Address:</strong> Nanded, Maharashtra, India</p>
                             </div>
                         </section>

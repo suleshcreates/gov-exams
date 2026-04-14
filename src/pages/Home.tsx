@@ -14,6 +14,7 @@ import AcademyJourney from "@/components/AcademyJourney";
 import MotivationSection from "@/components/MotivationSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import FAQSection from "@/components/FAQSection";
+import ContactFormSection from "@/components/ContactFormSection";
 import logger from "@/lib/logger";
 import PaymentModal from "@/components/payment/PaymentModal";
 
@@ -718,15 +719,15 @@ const Home = () => {
                           </li>
                           <li className="flex items-start gap-2 text-sm text-muted-foreground">
                             <span className="text-primary">✓</span>
-                            All Question Sets
+                            <span>Time bonded pattern</span>
                           </li>
                           <li className="flex items-start gap-2 text-sm text-muted-foreground">
                             <span className="text-primary">✓</span>
-                            Bilingual Support
+                            <span>PYQ & Live online exam</span>
                           </li>
                           <li className="flex items-start gap-2 text-sm text-muted-foreground">
                             <span className="text-primary">✓</span>
-                            Instant Results & Analytics
+                            <span>Weekly live exam MPSC pattern</span>
                           </li>
                         </ul>
 
@@ -862,6 +863,9 @@ const Home = () => {
 
       {/* FAQ Section */}
       <FAQSection />
+
+      {/* Contact Form Section */}
+      <ContactFormSection />
     </div>
   );
 };

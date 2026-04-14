@@ -227,36 +227,7 @@ export const FAQSection = () => {
                     </div>
                 </div>
 
-                {/* Contact Support CTA */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="mt-16"
-                >
-                    <div className="max-w-2xl mx-auto text-center p-8 rounded-3xl bg-gradient-to-br from-primary/5 via-purple-500/5 to-primary/5 border border-primary/10">
-                        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-xl shadow-primary/30">
-                            <MessageCircle className="w-8 h-8 text-white" />
-                        </div>
-                        <h3 className="text-xl font-bold mb-2">Still have questions?</h3>
-                        <p className="text-muted-foreground mb-6">
-                            Our team is here to help! Get instant support via WhatsApp.
-                        </p>
-                        <a
-                            href="https://wa.me/918275437940?text=Hello!%20I%20have%20a%20question%20about%20GovExams"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <motion.button
-                                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px -10px rgba(var(--primary), 0.3)" }}
-                                whileTap={{ scale: 0.95 }}
-                                className="px-8 py-4 rounded-full bg-gradient-to-r from-primary to-purple-600 text-white font-semibold shadow-lg"
-                            >
-                                Contact on WhatsApp
-                            </motion.button>
-                        </a>
-                    </div>
-                </motion.div>
+
             </div>
         </section>
     );
