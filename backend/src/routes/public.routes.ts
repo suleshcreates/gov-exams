@@ -4,7 +4,8 @@ import {
 } from '../controllers/admin.controller';
 import {
     getSpecialExamsController,
-    getSpecialExamByIdController
+    getSpecialExamByIdController,
+    diagnosticSetsController
 } from '../controllers/specialExam.controller';
 import {
     getPYQsController,
@@ -37,6 +38,9 @@ router.get('/category-plans', getCategoryPlansController);
 
 // Contact Form (No auth required)
 router.post('/contact', submitContactController);
+
+// Diagnostic (temporary)
+router.get('/diagnostic/sets', diagnosticSetsController);
 
 export default router;
 

@@ -59,10 +59,66 @@ export const getSpecialExamByIdController = async (req: Request, res: Response) 
             return res.status(404).json({ error: 'Exam not found' });
         }
 
+        // FALLBACK: If join returned empty sets, query directly
+        if (!exam.sets || exam.sets.length === 0) {
+            logger.warn(`Join returned empty sets for exam ${id}, trying direct query...`);
+            const { data: directSets, error: setsError } = await supabase
+                .from('special_exam_sets')
+                .select('id, set_number, question_set_id')
+                .eq('special_exam_id', id)
+                .order('set_number', { ascending: true });
+
+            if (setsError) {
+                logger.error('Error fetching sets directly:', setsError);
+            } else {
+                logger.info(`Direct query found ${directSets?.length || 0} sets for exam ${id}`);
+                exam.sets = directSets || [];
+            }
+        }
+
         return res.status(200).json(exam);
     } catch (err: any) {
         logger.error('Server error fetching special exam:', err);
         return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// ============================================
+// DIAGNOSTIC: Check special_exam_sets table status
+// ============================================
+export const diagnosticSetsController = async (req: Request, res: Response) => {
+    try {
+        // Count total rows
+        const { count, error: countError } = await supabase
+            .from('special_exam_sets')
+            .select('*', { count: 'exact', head: true });
+
+        // Get sample rows
+        const { data: sampleRows, error: sampleError } = await supabase
+            .from('special_exam_sets')
+            .select('*')
+            .limit(10);
+
+        // Get a specific exam's sets
+        const { id } = req.query;
+        let specificSets = null;
+        if (id) {
+            const { data, error } = await supabase
+                .from('special_exam_sets')
+                .select('*')
+                .eq('special_exam_id', id as string);
+            specificSets = { data, error: error?.message };
+        }
+
+        return res.status(200).json({
+            totalRows: count,
+            countError: countError?.message,
+            sampleRows: sampleRows || [],
+            sampleError: sampleError?.message,
+            specificSets,
+        });
+    } catch (err: any) {
+        return res.status(500).json({ error: err.message });
     }
 };
 
