@@ -3,10 +3,7 @@ import { supabaseAdmin } from '../config/supabase';
 import logger from '../utils/logger';
 import { AuthRequest } from '../types';
 
-/**
- * Middleware to check if authenticated user is an admin
- * Must be used AFTER requireAuth middleware
- */
+
 export const requireAdmin = async (
     req: AuthRequest,
     res: Response,
@@ -21,7 +18,6 @@ export const requireAdmin = async (
             return;
         }
 
-        // Check if user exists in admins table
         const { data: admin, error } = await supabaseAdmin
             .from('admins')
             .select('*')
@@ -37,7 +33,6 @@ export const requireAdmin = async (
             return;
         }
 
-        // User is admin, proceed
         next();
     } catch (error: any) {
         logger.error('Admin middleware error:', error);

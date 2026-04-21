@@ -79,7 +79,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
   }, []);
 
-  // Session validation polling - check every 5 minutes if session is still valid
   useEffect(() => {
     if (!user) return; // Only run if user is logged in
 
@@ -94,17 +93,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           window.location.href = '/';
         }
-        // If response fails for other reasons (network error, server down), DON'T logout
       } catch (error) {
-        // Network errors should NOT trigger logout — user might just have poor connectivity
         logger.warn('[AuthContext] Session validation network error (ignoring):', error);
       }
     };
 
-    // Check after a delay (not immediately on mount to avoid race conditions)
     const initialTimeout = setTimeout(validateSession, 10000);
 
-    // Then check every 5 minutes
     const interval = setInterval(validateSession, 300000);
 
     return () => {
@@ -113,7 +108,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  // Load user profile from backend
   const loadUserProfile = async () => {
     try {
       const response = await api.getProfile();
@@ -133,7 +127,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Request OTP for new signup
   const requestOTP = async (email: string, name: string) => {
     logger.debug('[AuthContext] Requesting OTP for:', email);
     const response = await api.requestOTP(email, name);
@@ -143,7 +136,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return response;
   };
 
-  // Verify OTP and complete signup
   const verifyOTPAndSignup = async (email: string, otp: string, data: SignUpData) => {
     logger.debug('[AuthContext] Verifying OTP and completing signup for:', email);
     const response = await api.verifyOTPAndSignup(email, otp, {
@@ -163,7 +155,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Sign up new user (Legacy direct signup)
   const signUp = async (data: SignUpData) => {
     try {
       logger.debug('[AuthContext] Creating new account for:', data.email);
@@ -180,7 +171,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(response.error || 'Signup failed');
       }
 
-      // User is automatically logged in after signup
       if (response.user) {
         setUser(response.user);
       }
@@ -192,7 +182,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Sign in with email/username and password
   const signIn = async (identifier: string, password: string) => {
     try {
       logger.debug('[AuthContext] Attempting login for:', identifier);
@@ -203,7 +192,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(response.error || 'Login failed');
       }
 
-      // Load user profile
       if (response.user) {
         setUser(response.user);
       }
@@ -215,7 +203,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Sign out
   const signOut = async () => {
     try {
       logger.debug('[AuthContext] Signing out');
@@ -223,20 +210,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
     } catch (error: any) {
       logger.error('[AuthContext] Sign out error:', error);
-      // Clear tokens anyway
       api.clearTokens();
       setUser(null);
     }
   };
 
-  // Refresh user profile (for use after profile updates)
   const refreshUser = async () => {
     if (api.isAuthenticated()) {
       await loadUserProfile();
     }
   };
 
-  // Verify OTP (uses session storage OTP verification)
   const verifyOTP = (email: string, otp: string): { valid: boolean; message: string } => {
     const storedData = sessionStorage.getItem(`otp_${email}`);
 
@@ -256,12 +240,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { valid: false, message: 'Invalid verification code. Please try again.' };
     }
 
-    // OTP is valid, remove it from storage
     sessionStorage.removeItem(`otp_${email}`);
     return { valid: true, message: 'Verification successful!' };
   };
 
-  // Reset password
   const resetPassword = async (email: string, newPassword: string, resetToken: string): Promise<void> => {
     try {
       logger.debug('[AuthContext] Resetting password for:', email);

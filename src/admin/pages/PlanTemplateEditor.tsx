@@ -132,7 +132,7 @@ const PlanTemplateEditor = () => {
         alert('Plan created successfully!');
       }
 
-      navigate('/admin/pricing/plans');
+      navigate('/hq/pricing/plans');
     } catch (error: any) {
       logger.error('Error saving plan:', error);
       alert(error.message || 'Failed to save plan');
@@ -164,7 +164,7 @@ const PlanTemplateEditor = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            to="/admin/pricing/plans"
+            to="/hq/pricing/plans"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -330,7 +330,7 @@ const PlanTemplateEditor = () => {
             {/* Actions */}
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
               <Link
-                to="/admin/pricing/plans"
+                to="/hq/pricing/plans"
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-center"
               >
                 Cancel

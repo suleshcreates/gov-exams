@@ -14,6 +14,7 @@ interface SpecialExam {
     sets_count: number;
     time_limit_minutes: number;
     is_active: boolean;
+    is_pinned: boolean;
     thumbnail_url: string;
     created_at: string;
 }
@@ -32,7 +33,8 @@ const AdminSpecialExams = () => {
         category: '',
         price: 0,
         time_limit_minutes: 30,
-        thumbnail_url: ''
+        thumbnail_url: '',
+        is_pinned: false
     });
 
     useEffect(() => {
@@ -98,7 +100,7 @@ const AdminSpecialExams = () => {
 
             setShowModal(false);
             setEditingExam(null);
-            setFormData({ title: '', description: '', category: '', price: 0, time_limit_minutes: 30, thumbnail_url: '' });
+            setFormData({ title: '', description: '', category: '', price: 0, time_limit_minutes: 30, thumbnail_url: '', is_pinned: false });
             loadExams();
         } catch (error: any) {
             alert('Error: ' + error.message);
@@ -145,7 +147,8 @@ const AdminSpecialExams = () => {
             category: exam.category || '',
             price: exam.price,
             time_limit_minutes: exam.time_limit_minutes,
-            thumbnail_url: exam.thumbnail_url || ''
+            thumbnail_url: exam.thumbnail_url || '',
+            is_pinned: exam.is_pinned || false
         });
         setShowModal(true);
     };
@@ -169,7 +172,7 @@ const AdminSpecialExams = () => {
                 <button
                     onClick={() => {
                         setEditingExam(null);
-                        setFormData({ title: '', description: '', category: '', price: 0, time_limit_minutes: 30, thumbnail_url: '' });
+                        setFormData({ title: '', description: '', category: '', price: 0, time_limit_minutes: 30, thumbnail_url: '', is_pinned: false });
                         setShowModal(true);
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -225,7 +228,7 @@ const AdminSpecialExams = () => {
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-2">
-                                        <Link to={`/admin/special-exams/${exam.id}/sets`} className="text-blue-600 hover:text-blue-800 text-sm">
+                                        <Link to={`/hq/special-exams/${exam.id}/sets`} className="text-blue-600 hover:text-blue-800 text-sm">
                                             Manage Sets
                                         </Link>
                                         <button onClick={() => openEditModal(exam)} className="p-1 text-gray-600 hover:bg-gray-100 rounded">
@@ -391,6 +394,18 @@ const AdminSpecialExams = () => {
                                     className="w-full px-3 py-2 border rounded-lg"
                                     placeholder="e.g. 30"
                                 />
+                            </div>
+                            <div className="flex items-center gap-2 mt-4">
+                                <input
+                                    type="checkbox"
+                                    id="is_pinned"
+                                    checked={formData.is_pinned}
+                                    onChange={(e) => setFormData({ ...formData, is_pinned: e.target.checked })}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="is_pinned" className="text-sm font-medium text-gray-700 cursor-pointer">
+                                    Pin this exam (show at top)
+                                </label>
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button

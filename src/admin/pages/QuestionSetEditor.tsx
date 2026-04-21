@@ -103,11 +103,11 @@ const QuestionSetEditor = () => {
       if (isEditing && setId) {
         await adminService.updateQuestionSet(setId, formData);
         alert('Question set updated successfully');
-        navigate(`/admin/question-sets/${setId}/questions`);
+        navigate(`/hq/question-sets/${setId}/questions`);
       } else {
         const newSet = await adminService.createQuestionSet(formData);
         alert('Question set created successfully');
-        navigate(`/admin/question-sets/${newSet.id}/questions`);
+        navigate(`/hq/question-sets/${newSet.id}/questions`);
       }
     } catch (error: any) {
       logger.error('Error saving question set:', error);
@@ -143,7 +143,7 @@ const QuestionSetEditor = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link
-            to={subjectId ? `/admin/subjects/${subjectId}` : '/admin/subjects'}
+            to={subjectId ? `/hq/subjects/${subjectId}` : '/hq/subjects'}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -161,7 +161,7 @@ const QuestionSetEditor = () => {
         {/* Bulk Import Button - Only show when editing existing set */}
         {isEditing && setId && (
           <Link
-            to={`/admin/subjects/${subjectId}/question-sets/${setId}/bulk-import`}
+            to={`/hq/subjects/${subjectId}/question-sets/${setId}/bulk-import`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,7 +278,7 @@ const QuestionSetEditor = () => {
         {/* Actions */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
           <Link
-            to={subjectId ? `/admin/subjects/${subjectId}` : '/admin/subjects'}
+            to={subjectId ? `/hq/subjects/${subjectId}` : '/hq/subjects'}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-center"
           >
             Cancel

@@ -504,13 +504,13 @@ export default function AdminSubjectContent() {
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Link
-                                  to={`/admin/question-sets/${qSet.id}/questions`}
+                                  to={`/hq/question-sets/${qSet.id}/questions`}
                                   className="flex items-center gap-1 text-xs bg-blue-600 text-white px-2.5 py-1 rounded hover:bg-blue-700 font-medium"
                                 >
                                   Add Questions <ArrowRight className="w-3 h-3" />
                                 </Link>
                                 <Link
-                                  to={`/admin/subjects/${selectedSubjectId}/question-sets/${qSet.id}/bulk-import`}
+                                  to={`/hq/subjects/${selectedSubjectId}/question-sets/${qSet.id}/bulk-import`}
                                   className="flex items-center gap-1 text-xs bg-green-600 text-white px-2.5 py-1 rounded hover:bg-green-700 font-medium"
                                 >
                                   <Upload className="w-3 h-3" /> Bulk

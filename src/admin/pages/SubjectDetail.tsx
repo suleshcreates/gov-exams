@@ -90,7 +90,7 @@ const SubjectDetail = () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Subject not found</p>
-        <Link to="/admin/subjects" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
+        <Link to="/hq/subjects" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
           Back to Subjects
         </Link>
       </div>
@@ -103,7 +103,7 @@ const SubjectDetail = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            to="/admin/subjects"
+            to="/hq/subjects"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -117,14 +117,14 @@ const SubjectDetail = () => {
         </div>
         <div className="flex items-center gap-4">
           <Link
-            to={`/admin/subjects/${subjectId}/topics`}
+            to={`/hq/subjects/${subjectId}/topics`}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
             <Video size={20} />
             Manage Topics
           </Link>
           <Link
-            to={`/admin/subjects/${subjectId}/question-sets/new`}
+            to={`/hq/subjects/${subjectId}/question-sets/new`}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus size={20} />
@@ -145,7 +145,7 @@ const SubjectDetail = () => {
             <p className="text-gray-500 text-lg">No question sets yet</p>
             <p className="text-gray-400 mt-2">Create your first question set to get started</p>
             <Link
-              to={`/admin/subjects/${subjectId}/question-sets/new`}
+              to={`/hq/subjects/${subjectId}/question-sets/new`}
               className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <Plus size={20} />
@@ -204,13 +204,13 @@ const SubjectDetail = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
                         <Link
-                          to={`/admin/question-sets/${set.id}/questions`}
+                          to={`/hq/question-sets/${set.id}/questions`}
                           className="text-blue-600 hover:text-blue-800 font-medium"
                         >
                           Manage Questions
                         </Link>
                         <Link
-                          to={`/admin/subjects/${subjectId}/question-sets/${set.id}`}
+                          to={`/hq/subjects/${subjectId}/question-sets/${set.id}`}
                           className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                         >
                           <Edit size={16} />

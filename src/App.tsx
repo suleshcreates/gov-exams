@@ -68,7 +68,7 @@ const AppContent = () => {
   // Hide navbar & footer on exam start route and admin routes
   const hideLayout = /^\/exam\/[^/]+\/start\/[^/]+$/.test(location.pathname) ||
     /^\/exam\/[^/]+\/topic\/[^/]+$/.test(location.pathname) || // Also hide for Learning Console
-    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/hq') ||
     location.pathname.startsWith('/secure-viewer');
 
   // Scroll to hash fragment (e.g. /#contact-form)
@@ -119,30 +119,30 @@ const AppContent = () => {
           <Route path="/secure-viewer/material/:id" element={<ProtectedRoute><SecurePDFViewer type="material" /></ProtectedRoute>} />
 
           {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/test" element={<SupabaseTest />} />
-          <Route path="/admin/dashboard" element={<AdminLayout><Dashboard /></AdminLayout>} />
-          <Route path="/admin/students" element={<AdminLayout><Students /></AdminLayout>} />
-          <Route path="/admin/students/:email" element={<AdminLayout><StudentDetail /></AdminLayout>} />
-          <Route path="/admin/subjects" element={<AdminLayout><Subjects /></AdminLayout>} />
-          <Route path="/admin/subjects/:subjectId" element={<AdminLayout><SubjectDetail /></AdminLayout>} />
-          <Route path="/admin/subjects/:subjectId/topics" element={<AdminLayout><AdminTopics /></AdminLayout>} />
-          <Route path="/admin/subjects/:subjectId/question-sets/:setId" element={<AdminLayout><QuestionSetEditor /></AdminLayout>} />
-          <Route path="/admin/subjects/:subjectId/question-sets/:setId/bulk-import" element={<AdminLayout><BulkImportQuestions /></AdminLayout>} />
-          <Route path="/admin/question-sets/:setId/questions" element={<AdminLayout><QuestionManager /></AdminLayout>} />
-          <Route path="/admin/exam-results" element={<AdminLayout><ExamResults /></AdminLayout>} />
-          <Route path="/admin/user-plans" element={<AdminLayout><UserPlans /></AdminLayout>} />
-          <Route path="/admin/pricing/subjects" element={<AdminLayout><SubjectPricing /></AdminLayout>} />
-          <Route path="/admin/pricing/plans" element={<AdminLayout><PlanTemplates /></AdminLayout>} />
-          <Route path="/admin/pricing/plans/new" element={<AdminLayout><PlanTemplateEditor /></AdminLayout>} />
-          <Route path="/admin/pricing/plans/:planId/edit" element={<AdminLayout><PlanTemplateEditor /></AdminLayout>} />
-          <Route path="/admin/special-exams" element={<AdminLayout><AdminSpecialExams /></AdminLayout>} />
-          <Route path="/admin/special-exams/:examId/sets" element={<AdminLayout><AdminSpecialExamSets /></AdminLayout>} />
-          <Route path="/admin/category-plans" element={<AdminLayout><AdminCategoryPlans /></AdminLayout>} />
-          <Route path="/admin/pyq" element={<AdminLayout><AdminPYQ /></AdminLayout>} />
-          <Route path="/admin/topics" element={<AdminLayout><AdminTopicsTab /></AdminLayout>} />
-          <Route path="/admin/subject-content" element={<AdminLayout><AdminSubjectContent /></AdminLayout>} />
-          <Route path="/admin/messages" element={<AdminLayout><AdminMessages /></AdminLayout>} />
+          <Route path="/hq/login" element={<AdminLogin />} />
+          <Route path="/hq/test" element={<SupabaseTest />} />
+          <Route path="/hq/dashboard" element={<AdminLayout><Dashboard /></AdminLayout>} />
+          <Route path="/hq/students" element={<AdminLayout><Students /></AdminLayout>} />
+          <Route path="/hq/students/:email" element={<AdminLayout><StudentDetail /></AdminLayout>} />
+          <Route path="/hq/subjects" element={<AdminLayout><Subjects /></AdminLayout>} />
+          <Route path="/hq/subjects/:subjectId" element={<AdminLayout><SubjectDetail /></AdminLayout>} />
+          <Route path="/hq/subjects/:subjectId/topics" element={<AdminLayout><AdminTopics /></AdminLayout>} />
+          <Route path="/hq/subjects/:subjectId/question-sets/:setId" element={<AdminLayout><QuestionSetEditor /></AdminLayout>} />
+          <Route path="/hq/subjects/:subjectId/question-sets/:setId/bulk-import" element={<AdminLayout><BulkImportQuestions /></AdminLayout>} />
+          <Route path="/hq/question-sets/:setId/questions" element={<AdminLayout><QuestionManager /></AdminLayout>} />
+          <Route path="/hq/exam-results" element={<AdminLayout><ExamResults /></AdminLayout>} />
+          <Route path="/hq/user-plans" element={<AdminLayout><UserPlans /></AdminLayout>} />
+          <Route path="/hq/pricing/subjects" element={<AdminLayout><SubjectPricing /></AdminLayout>} />
+          <Route path="/hq/pricing/plans" element={<AdminLayout><PlanTemplates /></AdminLayout>} />
+          <Route path="/hq/pricing/plans/new" element={<AdminLayout><PlanTemplateEditor /></AdminLayout>} />
+          <Route path="/hq/pricing/plans/:planId/edit" element={<AdminLayout><PlanTemplateEditor /></AdminLayout>} />
+          <Route path="/hq/special-exams" element={<AdminLayout><AdminSpecialExams /></AdminLayout>} />
+          <Route path="/hq/special-exams/:examId/sets" element={<AdminLayout><AdminSpecialExamSets /></AdminLayout>} />
+          <Route path="/hq/category-plans" element={<AdminLayout><AdminCategoryPlans /></AdminLayout>} />
+          <Route path="/hq/pyq" element={<AdminLayout><AdminPYQ /></AdminLayout>} />
+          <Route path="/hq/topics" element={<AdminLayout><AdminTopicsTab /></AdminLayout>} />
+          <Route path="/hq/subject-content" element={<AdminLayout><AdminSubjectContent /></AdminLayout>} />
+          <Route path="/hq/messages" element={<AdminLayout><AdminMessages /></AdminLayout>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

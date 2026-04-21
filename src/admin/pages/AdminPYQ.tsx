@@ -65,7 +65,7 @@ const AdminPYQ = () => {
                 console.error('API Error:', response.status, errorData);
                 if (response.status === 401 || response.status === 403) {
                     alert("Session expired. Please login again.");
-                    // Optional: window.location.href = '/admin/login';
+                    // Optional: window.location.href = '/hq/login';
                 }
                 throw new Error(errorData.error || 'Failed to fetch PYQs');
             }

@@ -23,7 +23,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     }
 
     if (!isAuthenticated) {
-        return <Navigate to="/admin/login" replace />;
+        return <Navigate to="/hq/login" replace />;
     }
 
     return (

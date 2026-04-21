@@ -86,7 +86,7 @@ const PlanTemplates = () => {
           <h1 className="text-3xl font-bold text-gray-900">Plan Templates</h1>
           <p className="text-gray-600 mt-1">Create and manage subscription plans</p>
           <Link
-            to="/admin/pricing/subjects"
+            to="/hq/pricing/subjects"
             className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-block"
           >
             → Manage Subject Pricing
@@ -101,7 +101,7 @@ const PlanTemplates = () => {
             {showInactive ? 'Hide Inactive' : 'Show Inactive'}
           </button>
           <Link
-            to="/admin/pricing/plans/new"
+            to="/hq/pricing/plans/new"
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus size={20} />
@@ -117,7 +117,7 @@ const PlanTemplates = () => {
           <p className="text-gray-500 text-lg">No plan templates yet</p>
           <p className="text-gray-400 mt-2">Create your first plan to get started</p>
           <Link
-            to="/admin/pricing/plans/new"
+            to="/hq/pricing/plans/new"
             className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus size={20} />
@@ -194,7 +194,7 @@ const PlanTemplates = () => {
                   {/* Actions */}
                   <div className="flex items-center gap-2">
                     <Link
-                      to={`/admin/pricing/plans/${plan.id}/edit`}
+                      to={`/hq/pricing/plans/${plan.id}/edit`}
                       className="flex-1 text-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium"
                     >
                       <Edit size={16} className="inline mr-1" />

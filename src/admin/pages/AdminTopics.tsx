@@ -200,7 +200,7 @@ export default function AdminTopics() {
             }
 
             // Navigate to question manager
-            navigate(`/admin/question-sets/${topicSet.id}/questions`);
+            navigate(`/hq/question-sets/${topicSet.id}/questions`);
         } catch (error) {
             console.error(error);
             toast.error("Failed to access questions");
@@ -253,7 +253,7 @@ export default function AdminTopics() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/admin/subjects')}
+                            onClick={() => navigate('/hq/subjects')}
                             className="p-2 hover:bg-white rounded-full transition-colors"
                         >
                             <ArrowLeft className="w-6 h-6 text-slate-600" />

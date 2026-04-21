@@ -225,7 +225,10 @@ const AuthModal = () => {
                 </div>
 
                 <div className="flex justify-end">
-                  <button type="button" onClick={() => openAuthModal('forgot-password')} className="text-sm font-medium text-primary hover:underline">
+                  <button type="button" onClick={() => {
+                    closeAuthModal();
+                    navigate('/forgot-password');
+                  }} className="text-sm font-medium text-primary hover:underline">
                     Forgot password?
                   </button>
                 </div>
@@ -388,39 +391,6 @@ const AuthModal = () => {
               </form>
             )}
 
-            {authModalType === 'forgot-password' && (
-              <form onSubmit={handleForgotPassword} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="email"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                      placeholder="name@example.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 rounded-xl gradient-primary text-white font-bold text-lg hover:shadow-lg transition-all disabled:opacity-50"
-                >
-                  {loading ? 'Processing...' : 'Send Reset Link'}
-                </button>
-
-                <p className="text-center text-sm text-gray-600 mt-4">
-                  Remembered your password?{' '}
-                  <button type="button" onClick={() => openAuthModal('login')} className="text-primary font-bold hover:underline">
-                    Back to Login
-                  </button>
-                </p>
-              </form>
-            )}
           </div>
         </motion.div>
       </div>

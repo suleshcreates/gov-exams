@@ -15,6 +15,7 @@ interface SpecialExam {
     sets_count: number;
     time_limit_minutes: number;
     thumbnail_url: string;
+    is_pinned?: boolean;
 }
 
 interface CategoryPlan {
@@ -218,7 +219,9 @@ const Exams = () => {
                             >
                                 All Exams
                             </button>
-                            {categories.map(cat => (
+                            {categories
+                                .filter(cat => exams.some(e => e.category?.toLowerCase().trim() === cat.toLowerCase().trim()))
+                                .map(cat => (
                                 <button
                                     key={cat}
                                     onClick={() => setSelectedCategory(cat)}
@@ -336,6 +339,12 @@ const Exams = () => {
 
                                         {/* Badges */}
                                         <div className="absolute top-3 right-3 flex gap-2">
+                                            {exam.is_pinned && (
+                                                <div className="bg-yellow-500 text-white px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center gap-1 shadow-lg">
+                                                    <Sparkles className="w-3 h-3" />
+                                                    PINNED
+                                                </div>
+                                            )}
                                             {examOwned && (
                                                 <div className="bg-green-500 text-white px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center gap-1 shadow-lg">
                                                     <CheckCircle className="w-3 h-3" />

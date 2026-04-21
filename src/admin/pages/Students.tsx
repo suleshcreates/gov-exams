@@ -142,7 +142,7 @@ const Students = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <Link
-                        to={`/admin/students/${encodeURIComponent(student.email)}`}
+                        to={`/hq/students/${encodeURIComponent(student.email)}`}
                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
                       >
                         <Eye size={16} />

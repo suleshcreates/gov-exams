@@ -278,7 +278,7 @@ export default function TopicContentManager({ isOpen, onClose, topic }: TopicCon
                                         </div>
 
                                         <button
-                                            onClick={() => navigate(`/admin/question-sets/${set.id}/questions`)}
+                                            onClick={() => navigate(`/hq/question-sets/${set.id}/questions`)}
                                             className="w-full py-2 bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-700 font-medium rounded-lg text-sm border border-slate-200"
                                         >
                                             Manage Questions

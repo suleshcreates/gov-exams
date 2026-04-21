@@ -190,7 +190,7 @@ const StudentDetail = () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Student not found</p>
-        <Link to="/admin/students" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
+        <Link to="/hq/students" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
           Back to Students
         </Link>
       </div>
@@ -202,7 +202,7 @@ const StudentDetail = () => {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
-          to="/admin/students"
+          to="/hq/students"
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft size={20} />

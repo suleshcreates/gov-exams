@@ -21,18 +21,18 @@ const AdminSidebar = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const menuItems = [
-        { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/admin/students', icon: Users, label: 'Students' },
-        { path: '/admin/subjects', icon: BookOpen, label: 'Subjects' },
-        { path: '/admin/topics', icon: Layers, label: 'Topics' },
-        { path: '/admin/subject-content', icon: FolderOpen, label: 'Subject Content' },
-        { path: '/admin/special-exams', icon: Award, label: 'Special Exams' },
-        { path: '/admin/category-plans', icon: FileText, label: 'Category Plans' },
-        { path: '/admin/pyq', icon: FileCheck, label: 'PYQ PDFs' },
-        { path: '/admin/pricing/plans', icon: DollarSign, label: 'Pricing' },
-        { path: '/admin/exam-results', icon: ClipboardList, label: 'Exam Results' },
-        { path: '/admin/user-plans', icon: CreditCard, label: 'User Plans' },
-        { path: '/admin/messages', icon: MessageSquare, label: 'Messages' },
+        { path: '/hq/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/hq/students', icon: Users, label: 'Students' },
+        { path: '/hq/subjects', icon: BookOpen, label: 'Subjects' },
+        { path: '/hq/topics', icon: Layers, label: 'Topics' },
+        { path: '/hq/subject-content', icon: FolderOpen, label: 'Subject Content' },
+        { path: '/hq/special-exams', icon: Award, label: 'Special Exams' },
+        { path: '/hq/category-plans', icon: FileText, label: 'Category Plans' },
+        { path: '/hq/pyq', icon: FileCheck, label: 'PYQ PDFs' },
+        { path: '/hq/pricing/plans', icon: DollarSign, label: 'Pricing' },
+        { path: '/hq/exam-results', icon: ClipboardList, label: 'Exam Results' },
+        { path: '/hq/user-plans', icon: CreditCard, label: 'User Plans' },
+        { path: '/hq/messages', icon: MessageSquare, label: 'Messages' },
     ];
 
     return (

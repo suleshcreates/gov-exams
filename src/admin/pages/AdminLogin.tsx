@@ -13,7 +13,7 @@ const AdminLogin = () => {
 
     useEffect(() => {
         if (isAuthenticated) {
-            navigate('/admin/dashboard');
+            navigate('/hq/dashboard');
         }
     }, [isAuthenticated, navigate]);
 
@@ -32,7 +32,7 @@ const AdminLogin = () => {
             const success = await login(email, password);
 
             if (success) {
-                navigate('/admin/dashboard');
+                navigate('/hq/dashboard');
             } else {
                 setError('Invalid credentials or insufficient permissions');
             }

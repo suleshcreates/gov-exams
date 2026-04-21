@@ -13,6 +13,7 @@ export const getSpecialExamsController = async (req: Request, res: Response) => 
             .from('special_exams')
             .select('*')
             .eq('is_active', true)
+            .order('is_pinned', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false });
 
         if (category) {
@@ -163,7 +164,7 @@ export const getAdminSpecialExamByIdController = async (req: Request, res: Respo
 // ============================================
 export const createSpecialExamController = async (req: Request, res: Response) => {
     try {
-        const { title, description, category, price, time_limit_minutes, thumbnail_url } = req.body;
+        const { title, description, category, price, time_limit_minutes, thumbnail_url, is_pinned } = req.body;
 
         const { data, error } = await supabase
             .from('special_exams')
@@ -173,7 +174,8 @@ export const createSpecialExamController = async (req: Request, res: Response) =
                 category,
                 price: price || 0,
                 time_limit_minutes: time_limit_minutes || 30,
-                thumbnail_url
+                thumbnail_url,
+                is_pinned: is_pinned || false
             }])
             .select()
             .single();
@@ -190,7 +192,13 @@ export const createSpecialExamController = async (req: Request, res: Response) =
             question_set_id: null
         }));
 
-        await supabase.from('special_exam_sets').insert(setsToInsert);
+        const { error: setsError } = await supabase.from('special_exam_sets').insert(setsToInsert);
+        if (setsError) {
+            logger.error(`Error creating sets for special exam ${data.id}:`, setsError);
+            // Don't fail the whole request, but log it clearly
+        } else {
+            logger.info(`Created 5 sets for special exam ${data.id}`);
+        }
 
         return res.status(201).json(data);
     } catch (err: any) {

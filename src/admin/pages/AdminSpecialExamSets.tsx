@@ -147,8 +147,8 @@ const AdminSpecialExamSets = () => {
 
             await adminService.assignQuestionSetToSpecialExam(examId!, setNumber, newSet.id);
 
-            const returnUrl = encodeURIComponent(`/admin/special-exams/${examId}/sets`);
-            navigate(`/admin/subjects/${specialExamsSubjectId}/question-sets/${newSet.id}/bulk-import?returnTo=${returnUrl}`);
+            const returnUrl = encodeURIComponent(`/hq/special-exams/${examId}/sets`);
+            navigate(`/hq/subjects/${specialExamsSubjectId}/question-sets/${newSet.id}/bulk-import?returnTo=${returnUrl}`);
 
             toast.success(`Set container created with ${timeLimit} mins limit.`);
             setDialogState({ ...dialogState, open: false });
@@ -191,7 +191,7 @@ const AdminSpecialExamSets = () => {
             <div className="p-8 text-center text-red-500">
                 <AlertCircle className="mx-auto h-12 w-12 mb-4" />
                 <h2 className="text-2xl font-bold">Exam Not Found</h2>
-                <Link to="/admin/special-exams" className="text-blue-600 hover:underline mt-4 inline-block">Back to Exams</Link>
+                <Link to="/hq/special-exams" className="text-blue-600 hover:underline mt-4 inline-block">Back to Exams</Link>
             </div>
         );
     }
@@ -201,7 +201,7 @@ const AdminSpecialExamSets = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Link to="/admin/special-exams" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <Link to="/hq/special-exams" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <ArrowLeft size={20} />
                     </Link>
                     <div>
@@ -256,14 +256,14 @@ const AdminSpecialExamSets = () => {
 
                                         <div className="flex flex-col gap-2">
                                             <Link
-                                                to={`/admin/question-sets/${set?.question_set_id}/questions`}
+                                                to={`/hq/question-sets/${set?.question_set_id}/questions`}
                                                 className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
                                             >
                                                 <Edit size={16} />
                                                 Edit Questions
                                             </Link>
                                             <Link
-                                                to={`/admin/subjects/${specialExamsSubjectId}/question-sets/${set?.question_set_id}/bulk-import?returnTo=${encodeURIComponent(`/admin/special-exams/${examId}/sets`)}`}
+                                                to={`/hq/subjects/${specialExamsSubjectId}/question-sets/${set?.question_set_id}/bulk-import?returnTo=${encodeURIComponent(`/hq/special-exams/${examId}/sets`)}`}
                                                 className="flex items-center justify-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors"
                                             >
                                                 <Upload size={16} />
@@ -299,7 +299,7 @@ const AdminSpecialExamSets = () => {
                                 </span>
                                 {isUploaded && (
                                     <Link
-                                        to={`/admin/question-sets/${set?.question_set_id}/questions`}
+                                        to={`/hq/question-sets/${set?.question_set_id}/questions`}
                                         className="hover:underline opacity-60 hover:opacity-100"
                                     >
                                         Preview Questions →

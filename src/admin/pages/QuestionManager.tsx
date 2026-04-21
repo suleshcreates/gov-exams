@@ -114,7 +114,7 @@ const QuestionManager = () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Question set not found</p>
-        <Link to="/admin/subjects" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
+        <Link to="/hq/subjects" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
           Back to Subjects
         </Link>
       </div>
@@ -129,7 +129,7 @@ const QuestionManager = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            to={questionSet.subject ? (isTopicSet ? `/admin/subjects/${questionSet.subject.id}/topics` : `/admin/subjects/${questionSet.subject.id}`) : '/admin/subjects'}
+            to={questionSet.subject ? (isTopicSet ? `/hq/subjects/${questionSet.subject.id}/topics` : `/hq/subjects/${questionSet.subject.id}`) : '/hq/subjects'}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -147,14 +147,14 @@ const QuestionManager = () => {
           {questionSet.subject?.id && (
             <>
               <Link
-                to={`/admin/subjects/${questionSet.subject.id}/question-sets/${setId}`}
+                to={`/hq/subjects/${questionSet.subject.id}/question-sets/${setId}`}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               >
                 <Settings size={20} />
                 Settings
               </Link>
               <Link
-                to={`/admin/subjects/${questionSet.subject.id}/question-sets/${setId}/bulk-import`}
+                to={`/hq/subjects/${questionSet.subject.id}/question-sets/${setId}/bulk-import`}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 <Upload size={20} />

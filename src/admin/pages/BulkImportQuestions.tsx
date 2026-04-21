@@ -162,7 +162,7 @@ const BulkImportQuestions = () => {
                 if (returnTo) {
                     navigate(returnTo);
                 } else {
-                    navigate(`/admin/subjects/${subjectId}/question-sets/${setId}`);
+                    navigate(`/hq/subjects/${subjectId}/question-sets/${setId}`);
                 }
             }, 2000);
         } catch (error: any) {
